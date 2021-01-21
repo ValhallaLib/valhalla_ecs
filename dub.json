@@ -1,0 +1,12 @@
+{
+	"name": "valhala_ecs",
+	"description": "A simple, easy-to-use yet robust ecs lib in D",
+	"importPaths": ["source"],
+	"sourcePaths": ["source"],
+	"targetPath": "bin",
+	"license": "MIT",
+	"targetType": "library",
+	"dependencies": {
+		"aurorafw:unit": "~>0.0.1-alpha.4"
+	}
+}
