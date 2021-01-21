@@ -1,0 +1,30 @@
+# binaries
+bin/
+
+# compiled dynamic libs
+*.dll
+*.dylib
+*.so
+
+# compiled object files
+*.o
+*.obj
+
+# compiled static libs
+*.a
+*.lib
+
+# coverage
+*.lst
+
+# dub
+*.dub
+
+# executables
+*.exe
+
+# others
+docs.json
+
+# vscode
+*.vscode
