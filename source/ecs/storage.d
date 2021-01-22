@@ -115,7 +115,7 @@ unittest
 	auto sinfo = StorageInfo!(uint)().__ctor!(ValidComponent)();
 	Storage!(uint, ValidComponent) storage = sinfo.getStorage!(ValidComponent);
 
-	assertTrue(storage.add(Entity!uint(0), ValidComponent()));
+	assertTrue(storage.set(Entity!uint(0), ValidComponent()));
 	assertEquals(1, storage._packedEntities.length);
 	assertEquals(Entity!uint(0), storage._packedEntities.front);
 
@@ -136,22 +136,44 @@ unittest
 package class Storage(EntityType, Component)
 	if (isComponent!Component)
 {
+	/**
+	 * Connects a component to an entity. If the entity is already connected to
+	 *     a component of this type then it'll be replaced by the new one. A
+	 *     component cannot be connected to an invalid storage entity.
+	 *
+	 * Params:
+	 *     entity = an entity to set the component.
+	 *     component = a valid component.
+	 *
+	 * Returns: true if the component was set, false otherwise.
+	 */
 	@safe
-	bool add(in Entity!EntityType entity, in Component component)
+	bool set(in Entity!EntityType entity, in Component component)
 	{
-		// don't add if exists one with the same id
 		if (entity.id < _sparsedEntities.length
 			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
-		)
+			&& _packedEntities[_sparsedEntities[entity.id]] != entity
+		) {
+			// don't set if the entity is storage invalid
 			return false;
+		}
+		else if (entity.id < _sparsedEntities.length
+			&& _sparsedEntities[entity.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[entity.id]] == entity
+		) {
+			// the entity already has a component of this type, so replace it
+			_components[_sparsedEntities[entity.id]] = component;
+		}
+		else
+		{
+			// the entity does not exist in this Storage, add it and set it's component
+			_packedEntities ~= entity; // set entity
+			_components ~= component; // set component
 
-		_packedEntities ~= entity; // add entity
-		_components ~= component; // add component
-
-		// map to the correct entity from the packedEntities from sparsedEntities
-		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
-		_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe cast
+			// map to the correct entity from the packedEntities from sparsedEntities
+			if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
+			_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe cast
+		}
 
 		return true;
 	}
@@ -206,25 +228,13 @@ unittest
 }
 
 @safe
-@("storage: Storage: add")
-unittest
-{
-	auto storage = new Storage!(uint, Foo);
-
-	assertTrue(storage.add(Entity!uint(0), Foo(3, 2)));
-	assertFalse(storage.add(Entity!uint(0, 4), Foo(3, 2)));
-	assertEquals(Entity!uint(0), storage._packedEntities[storage._sparsedEntities[0]]);
-	assertEquals(Entity!uint(0), storage._packedEntities[0]);
-}
-
-@safe
 @("storage: Storage: remove")
 unittest
 {
 	auto storage = new Storage!(ubyte, Bar);
 
-	storage.add(Entity!ubyte(0), Bar("bar"));
-	storage.add(Entity!ubyte(1), Bar("bar"));
+	storage.set(Entity!ubyte(0), Bar("bar"));
+	storage.set(Entity!ubyte(1), Bar("bar"));
 
 	assertFalse(storage.remove(Entity!ubyte(0, 5)));
 	assertFalse(storage.remove(Entity!ubyte(42)));
@@ -233,4 +243,23 @@ unittest
 	assertEquals(1, storage._sparsedEntities[0]);
 	assertEquals(Entity!ubyte(1), storage._packedEntities[storage._sparsedEntities[1]]);
 	assertEquals(Entity!ubyte(1), storage._packedEntities[0]);
+}
+
+@safe
+@("storage: Storage: set")
+unittest
+{
+	auto storage = new Storage!(uint, Foo);
+
+	assertTrue(storage.set(Entity!uint(0), Foo(3, 2)));
+	assertFalse(storage.set(Entity!uint(0, 4), Foo(3, 2)));
+	assertEquals(Entity!uint(0), storage._packedEntities[storage._sparsedEntities[0]]);
+	assertEquals(Entity!uint(0), storage._packedEntities[0]);
+	assertEquals(Foo(3, 2), storage._components[0]);
+
+
+	assertTrue(storage.set(Entity!uint(0), Foo(5, 5)));
+	assertEquals(Entity!uint(0), storage._packedEntities[storage._sparsedEntities[0]]);
+	assertEquals(Entity!uint(0), storage._packedEntities[0]);
+	assertEquals(Foo(5, 5), storage._components[0]);
 }
