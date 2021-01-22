@@ -206,6 +206,28 @@ package class Storage(EntityType, Component)
 		return true;
 	}
 
+
+	/**
+	 * Fetches the component of entity if exists. If the entity is not storage
+	 *     valid it returns null.
+	 *
+	 * Params: entity = the entity used to search for the component.
+	 *
+	 * Returns: a pointer to the component if search was successful, null otherwise.
+	 */
+	@safe
+	Component* get(in Entity!EntityType entity)
+	{
+		// return null if the entity is invalid
+		if (!(entity.id < _sparsedEntities.length
+			&& _sparsedEntities[entity.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[entity.id]] == entity)
+		)
+			return null;
+
+		return &_components[_sparsedEntities[entity.id]];
+	}
+
 private:
 	EntityType[] _sparsedEntities;
 	Entity!EntityType[] _packedEntities;
@@ -225,6 +247,22 @@ unittest
 	assertTrue(__traits(compiles, new Storage!(uint, Foo)));
 	assertTrue(__traits(compiles, new Storage!(uint, Bar)));
 	assertFalse(__traits(compiles, new Storage!(uint, InvalidComponent)));
+}
+
+@safe
+@("storage: Storage: get")
+unittest
+{
+	auto storage = new Storage!(size_t, Foo);
+
+	storage.set(Entity!size_t(0), Foo(3, 3));
+
+	assertNotNull(storage.get(Entity!size_t(0)));
+
+	assertNull(storage.get(Entity!size_t(0, 54)));
+	assertNull(storage.get(Entity!size_t(21)));
+
+	assertEquals(Foo(3, 3), *storage.get(Entity!size_t(0)));
 }
 
 @safe
