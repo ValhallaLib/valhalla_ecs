@@ -1,5 +1,7 @@
 module ecs.entity;
 
+import ecs.storage;
+
 import std.exception : basicExceptionCtors, enforce;
 import std.typecons : Nullable;
 
@@ -254,6 +256,55 @@ public:
 		return true;
 	}
 
+
+	/**
+	 * Associates an entity to a component. Invalid cannot be associated with
+	 *     components. If set fails false is returned and the operation is
+	 *     halted.
+	 *
+	 * Params:
+	 *     entity = the entity to associate.
+	 *     component = a valid component to set.
+	 *
+	 * Returns: true if the component is set, false otherwise.
+	 */
+	bool set(Component)(Entity!T entity, Component component = Component.init)
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length && entities[entity.id] == entity))
+			return false;
+
+		return _set(entity, component);
+	}
+
+
+	///
+	bool set(ComponentRange ...)(Entity!T entity, ComponentRange components)
+		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length && entities[entity.id] == entity))
+			return false;
+
+		foreach (component; components) _set(entity, component);
+
+		return true;
+	}
+
+
+	///
+	bool set(ComponentRange ...)(Entity!T entity)
+		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length && entities[entity.id] == entity))
+			return false;
+
+		foreach (Component; ComponentRange) _set!Component(entity);
+
+		return true;
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
@@ -297,8 +348,23 @@ private:
 	}
 
 
+	bool _set(Component)(Entity!T entity, Component component = Component.init)
+		if (isComponent!Component)
+	{
+		if (componentId!Component !in storageInfoMap)
+		{
+			// there isn't a Storage of this Component, create one
+			storageInfoMap[componentId!Component] = StorageInfo!(T)().__ctor!(Component)();
+		}
+
+		// set the component to entity
+		return storageInfoMap[componentId!Component].getStorage!(Component).set(entity, component);
+	}
+
+
 	Entity!(T)[] entities;
 	Nullable!(Entity!(T), entityNull) queue;
+	StorageInfo!(T)[TypeInfo] storageInfoMap;
 }
 
 
@@ -384,4 +450,25 @@ unittest
 
 	entity0 = em.gen(); // recycles
 	assertEquals(Entity!uint(0, 1), em.entities.front);
+}
+
+@safe
+@("entity: EntityManager: set")
+unittest
+{
+	auto em = new EntityManager!uint();
+
+	auto e = em.gen();
+	assertTrue(em.set(e, Foo(4, 5)));
+	assertFalse(em.set(Entity!uint(0, 5), Foo(4, 5)));
+	assertFalse(em.set(Entity!uint(2), Foo(4, 5)));
+	assertEquals(Foo(4, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
+
+	assertTrue(em.set(em.gen(), Foo(4, 5), Bar("str")));
+	assertTrue(em.set!(Foo, Bar, ValidComponent)(em.gen()));
+
+	assertFalse(__traits(compiles, em.set!(Foo, Bar, ValidComponent, Bar)(em.gen())));
+	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
+	assertFalse(__traits(compiles, em.set!(Foo, Bar, InvalidComponent)(em.gen())));
+	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
 }
