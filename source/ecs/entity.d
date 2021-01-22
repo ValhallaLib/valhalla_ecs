@@ -3,6 +3,7 @@ module ecs.entity;
 import ecs.storage;
 
 import std.exception : basicExceptionCtors, enforce;
+import std.meta : AliasSeq, NoDuplicates;
 import std.typecons : Nullable;
 
 version(unittest) import aurorafw.unit.assertion;
@@ -225,11 +226,78 @@ public:
 	 * Returns: a newly generated Entity!T.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
+	 *
+	 * See_Also: `gen`**`(Component)(Component component)`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
 	@safe
 	Entity!(T) gen()
 	{
 		return queue.isNull ? fabricate() : recycle();
+	}
+
+
+	/**
+	 * Generates a new entity and assigns the component to it. If the component
+	 *     has no ctor or a default ctor then only it's type can be passed.
+	 *
+	 * Examples:
+	 * --------------------
+	 * @Component struct Foo { int x; } // x gets default initialized to int.init
+	 * auto em = new EntityManager!size_t;
+	 * em.gen!Foo(); // generates a new entity with Foo.init values
+	 * --------------------
+	 *
+	 * Params: component = a valid component.
+	 *
+	 * Returns: a newly generated Entity!T.
+	 *
+	 * Throws: `MaximumEntitiesReachedException`.
+	 *
+	 * See_Also: `gen`**`()`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
+	 */
+	Entity!(T) gen(Component)(Component component = Component.init)
+	{
+		immutable e = gen();
+		_set(e, component);
+		return e;
+	}
+
+
+	/**
+	 * Generates a new entity and assigns the components to it.
+	 *
+	 * Examples:
+	 * --------------------
+	 * @Component struct Foo { int x; }
+	 * @Component struct Bar { int x; }
+	 * auto em = new EntityManager!size_t;
+	 * em.gen(Foo(3), Bar(6));
+	 * --------------------
+	 *
+	 * Params: component = a valid component.
+	 *
+	 * Returns: a newly generated Entity!T.
+	 *
+	 * Throws: `MaximumEntitiesReachedException`.
+	 *
+	 * See_Also: `gen`**`()`**, `gen`**`(Component)(Component component)`**
+	 */
+	Entity!(T) gen(ComponentRange ...)(ComponentRange components)
+		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+	{
+		immutable e = gen();
+		foreach (component; components) _set(e, component);
+		return e;
+	}
+
+
+	///
+	Entity!(T) gen(ComponentRange ...)()
+		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+	{
+		immutable e = gen();
+		foreach (Component; ComponentRange) _set!Component(e);
+		return e;
 	}
 
 
@@ -434,6 +502,28 @@ unittest
 	assertEquals(Entity!(uint)(0), em.gen());
 	assertEquals(1, em.entities.length);
 	assertEquals(Entity!(uint)(0), em.entities.front);
+}
+
+@safe
+@("entity: EntityManager: gen with components")
+unittest
+{
+	import std.range : front;
+	auto em = new EntityManager!uint();
+
+	auto e = em.gen(Foo(3, 5), Bar("str"));
+	assertEquals(Foo(3, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
+	assertEquals(Bar("str"), *em.storageInfoMap[componentId!Bar].getStorage!(Bar).get(e));
+
+	e = em.gen!(ValidComponent, OtherValidComponent, ValidImmutable);
+	assertEquals(ValidComponent.init, *em.storageInfoMap[componentId!ValidComponent].getStorage!(ValidComponent).get(e));
+	assertEquals(OtherValidComponent.init, *em.storageInfoMap[componentId!OtherValidComponent].getStorage!(OtherValidComponent).get(e));
+	assertEquals(ValidImmutable.init, *em.storageInfoMap[componentId!ValidImmutable].getStorage!(ValidImmutable).get(e));
+
+	assertFalse(__traits(compiles, em.gen!(ValidImmutable, ValidImmutable)()));
+	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
+	assertFalse(__traits(compiles, em.gen!(Foo, Bar, InvalidComponent)()));
+	assertFalse(__traits(compiles, em.gen!InvalidComponent()));
 }
 
 @safe
