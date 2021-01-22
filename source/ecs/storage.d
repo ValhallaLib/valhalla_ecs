@@ -179,6 +179,17 @@ package class Storage(EntityType, Component)
 	}
 
 
+	/**
+	 * Disaasociates an entity from it's component. If the entity is storage
+	 *     invalid false is returned and the operation is halted. Both the
+	 *     component and the entity get swapped with the last elements from it's
+	 *     packed arrays and then removed. The sparse array is then mapped to
+	 *     the new location of the swapped entity.
+	 *
+	 * Params: entity = the entity to disassociate from it's component.
+	 *
+	 * Returns: true if successfuly removed, false otherwise;
+	 */
 	@safe
 	bool remove(in Entity!EntityType entity)
 	{
