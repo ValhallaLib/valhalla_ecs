@@ -12,7 +12,8 @@ enum Component;
 
 /**
  * Evalute is some T is a valid component. A component is defined by being a
- *     **struct** and must have the **Component** UDA.
+ *     **struct** with **all fields mutable** and must have the **Component**
+ *     UDA.
  *
  * Params: T = valid component type.
  *
@@ -20,8 +21,11 @@ enum Component;
  */
 template isComponent(T)
 {
-	import std.traits : hasUDA;
-	enum isComponent = is(T == struct) && hasUDA!(T, Component);
+	import std.meta : allSatisfy;
+	import std.traits : hasUDA, isMutable, Fields;
+	enum isComponent = is(T == struct)
+		&& hasUDA!(T, Component)
+		&& allSatisfy!(isMutable, Fields!T);
 }
 
 version(unittest)
@@ -29,6 +33,10 @@ version(unittest)
 	@Component struct ValidComponent {}
 	@Component struct OtherValidComponent { int a; }
 	struct InvalidComponent {}
+
+	@Component struct InvalidImmutable { immutable int x; }
+	@Component struct InvalidConst { const string x; }
+	@Component struct ValidImmutable { immutable(char)[] x; } // aka string
 }
 
 ///
@@ -38,7 +46,11 @@ unittest
 {
 	assertTrue(isComponent!ValidComponent);
 	assertTrue(isComponent!OtherValidComponent);
+	assertTrue(isComponent!ValidImmutable);
+
 	assertFalse(isComponent!InvalidComponent);
+	assertFalse(isComponent!InvalidImmutable);
+	assertFalse(isComponent!InvalidConst);
 }
 
 
