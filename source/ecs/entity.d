@@ -437,6 +437,29 @@ public:
 		return storageInfoMap[componentId!Component].getStorage!(Component).get(entity);
 	}
 
+
+	/**
+	 * Fetch the component if associated to the entity, otherwise the component
+	 *     passed in the parameters is set and returned. If the entity is
+	 *     invalid null is returned instead.
+	 *
+	 * Params:
+	 *     entity = the entity to fetch the associated component.
+	 *     component = a valid component to set if there is none associated.
+	 *
+	 * Returns: the Component* associated or created if successful, null otherwise.
+	 */
+	Component* getOrSet(Component)(in Entity!T entity, in Component component = Component.init)
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length && entities[entity.id] == entity))
+			return null;
+		else if (componentId!Component !in storageInfoMap)
+			storageInfoMap[componentId!Component] = StorageInfo!(T)().__ctor!(Component)();
+
+		return storageInfoMap[componentId!Component].getStorage!(Component).getOrSet(entity, component);
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
@@ -613,6 +636,21 @@ unittest
 	assertEquals(Foo(int.init, 10.0f), *em.get!Foo(e));
 
 	assertFalse(__traits(compiles, em.get!InvalidComponent(em.gen())));
+}
+
+@safe
+@("entity: EntityManager: getOrSet")
+unittest
+{
+	auto em = new EntityManager!size_t();
+
+	auto e = em.gen!(Foo)();
+	assertEquals(Foo.init, *em.getOrSet!Foo(e));
+	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
+	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
+
+	assertNull(em.getOrSet!Foo(Entity!size_t(0, 12)));
+	assertNull(em.getOrSet!Foo(Entity!size_t(3)));
 }
 
 @safe
