@@ -413,6 +413,30 @@ public:
 		return true;
 	}
 
+
+	/**
+	 * Fetch a component associated to an entity. If the entity is invalid, the
+	 *     Component wasn't associated with any entity or the entity does not
+	 *     have this Component associated to it a null is returned instead.
+	 *
+	 * Params:
+	 *     entity = the entity to get the associated Component.
+	 *     Component = a valid component type to retrieve.
+	 *
+	 * Returns: Component* with the associated component if sucessful, null otherwise
+	 */
+	Component* get(Component)(in Entity!T entity)
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length
+			&& entities[entity.id] == entity
+			&& componentId!Component in storageInfoMap)
+		)
+			return null;
+
+		return storageInfoMap[componentId!Component].getStorage!(Component).get(entity);
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
@@ -571,6 +595,24 @@ unittest
 	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
 	assertFalse(__traits(compiles, em.gen!(Foo, Bar, InvalidComponent)()));
 	assertFalse(__traits(compiles, em.gen!InvalidComponent()));
+}
+
+@safe
+@("entity: EntityManager: get")
+unittest
+{
+	auto em = new EntityManager!size_t();
+
+	auto e = em.gen!(Foo, Bar);
+
+	assertEquals(Foo.init, *em.get!Foo(e));
+	assertEquals(Bar.init, *em.get!Bar(e));
+	assertNull(em.get!ValidComponent(e));
+
+	em.get!Foo(e).y = 10.0f;
+	assertEquals(Foo(int.init, 10.0f), *em.get!Foo(e));
+
+	assertFalse(__traits(compiles, em.get!InvalidComponent(em.gen())));
 }
 
 @safe
