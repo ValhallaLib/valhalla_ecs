@@ -100,7 +100,7 @@ public:
 			: null;
 	}
 
-	bool delegate(Entity!EntityType entity) remove;
+	bool delegate(Entity!EntityType entity) @safe remove;
 
 private:
 	TypeInfo cid;
