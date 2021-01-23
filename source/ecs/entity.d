@@ -318,6 +318,7 @@ public:
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
 			return false;
 
+		removeAll(entity);                                        // remove all components
 		entities[entity.id] = queue.isNull ? entityNull : queue ; // move the next in queue to back
 		queue = entity;                                           // update the next in queue
 		queue.incrementBatch();                                   // increment batch for when it's revived
@@ -369,6 +370,45 @@ public:
 			return false;
 
 		foreach (Component; ComponentRange) _set!Component(entity);
+
+		return true;
+	}
+
+
+	/**
+	 * Disassociates an entity from a component. If the entity is invalid or the
+	 *     does not exist within the storageInfoMap, meaning that an instance of
+	 *     the component was not ever associated to an entity yet false is
+	 *     returned.
+	 *
+	 * Params:
+	 *     entity = an entity to disassociate.
+	 *     Component = a valid component to remove.
+	 *
+	 * Returns: true is the component is sucessfuly removed, false otherwise.
+	 */
+	bool remove(Component)(in Entity!T entity)
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length
+			&& entities[entity.id] == entity
+			&& componentId!Component in storageInfoMap)
+		)
+			return false;
+
+		return _remove!Component(entity);
+	}
+
+
+	///
+	@safe
+	bool removeAll(in Entity!T entity)
+	{
+		// Invalid action if the entity is not valid
+		if (!(entity.id < entities.length && entities[entity.id] == entity))
+			return false;
+
+		foreach (storage; storageInfoMap) storage.remove(entity);
 
 		return true;
 	}
@@ -427,6 +467,13 @@ private:
 
 		// set the component to entity
 		return storageInfoMap[componentId!Component].getStorage!(Component).set(entity, component);
+	}
+
+
+	bool _remove(Component)(in Entity!T entity)
+		if (isComponent!Component)
+	{
+		return storageInfoMap[componentId!Component].remove(entity);
 	}
 
 
@@ -540,6 +587,34 @@ unittest
 
 	entity0 = em.gen(); // recycles
 	assertEquals(Entity!uint(0, 1), em.entities.front);
+}
+
+@safe
+@("entity: EntityManager: remove")
+unittest
+{
+	auto em = new EntityManager!size_t();
+
+	auto e = em.gen!(Foo, Bar, ValidComponent);
+	assertFalse(em.remove!ValidImmutable(e)); // not in the storageInfoMap
+
+	assertTrue(em.remove!Foo(e)); // removes Foo
+	assertFalse(em.remove!Foo(e)); // e does not contain Foo
+	assertNull(em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
+
+	// removes only if associated
+	assertTrue(em.removeAll(e)); // removes ValidComponent
+	assertTrue(em.removeAll(e)); // doesn't remove any
+
+	assertFalse(em.remove!Foo(e)); // e does not contain Foo
+	assertFalse(em.remove!Bar(e)); // e does not contain Bar
+	assertFalse(em.remove!ValidImmutable(e)); // e does not contain ValidImmutable
+
+	// removing from invalid entities returns null
+	assertFalse(em.removeAll(Entity!size_t(15)));
+
+	// cannot call with invalid components
+	assertFalse(__traits(compiles, em.remove!InvalidComponent(e)));
 }
 
 @safe
