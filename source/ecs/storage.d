@@ -164,7 +164,8 @@ package class Storage(EntityType, Component)
 	{
 		if (entity.id < _sparsedEntities.length
 			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]] != entity
+			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
+			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
 		) {
 			// don't set if the entity is storage invalid
 			return false;
@@ -179,12 +180,7 @@ package class Storage(EntityType, Component)
 		else
 		{
 			// the entity does not exist in this Storage, add it and set it's component
-			_packedEntities ~= entity; // set entity
-			_components ~= component; // set component
-
-			// map to the correct entity from the packedEntities from sparsedEntities
-			if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
-			_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe cast
+			_set(entity, component);
 		}
 
 		return true;
@@ -251,7 +247,54 @@ package class Storage(EntityType, Component)
 		return &_components[_sparsedEntities[entity.id]];
 	}
 
+
+	/**
+	 * Fetch the component if associated to the entity, otherwise the component
+	 *     passed in the parameters is set and returned. If the entity is
+	 *     storage invalid then null is returned.
+	 *
+	 * Params:
+	 *     entity = the entity to fetch the associated component.
+	 *     component = a valid component to set if there is none associated.
+	 *
+	 * Returns: the Component* associated or created if successful, null otherwise.
+	 */
+	@safe
+	Component* getOrSet(in Entity!EntityType entity, in Component component)
+	{
+		if (entity.id < _sparsedEntities.length
+			&& _sparsedEntities[entity.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
+			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
+		) {
+			// don't set if the entity is storage invalid, the entity exists but
+			// with a diferent batch
+			return null;
+		}
+		else if (!(entity.id < _sparsedEntities.length
+			&& _sparsedEntities[entity.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[entity.id]] == entity)
+		) {
+			// set if the entity is invalid
+			return _set(entity, component);
+		}
+
+		return &_components[_sparsedEntities[entity.id]];
+	}
+
 private:
+	Component* _set(in Entity!EntityType entity, in Component component)
+	{
+		_packedEntities ~= entity; // set entity
+		_components ~= component; // set component
+
+		// map to the correct entity from the packedEntities from sparsedEntities
+		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
+		_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe cast
+
+		return &_components[_sparsedEntities[entity.id]];
+	}
+
 	EntityType[] _sparsedEntities;
 	Entity!EntityType[] _packedEntities;
 	Component[] _components;
@@ -259,7 +302,7 @@ private:
 
 version(unittest)
 {
-	@Component struct Foo { int x; float y; }
+	@Component struct Foo { int x; float y = 0.0f; }
 	@Component struct Bar { string str; }
 }
 
@@ -286,6 +329,17 @@ unittest
 	assertNull(storage.get(Entity!size_t(21)));
 
 	assertEquals(Foo(3, 3), *storage.get(Entity!size_t(0)));
+}
+
+@safe
+@("storage: Storage: getOrSet")
+unittest
+{
+	auto storage = new Storage!(size_t, Foo)();
+
+	assertEquals(Foo.init, *storage.getOrSet(Entity!size_t(0), Foo.init));
+	assertEquals(Foo.init, *storage.getOrSet(Entity!size_t(0), Foo(2, 3)));
+	assertNull(storage.getOrSet(Entity!size_t(0, 54), Foo(2, 3)));
 }
 
 @safe
