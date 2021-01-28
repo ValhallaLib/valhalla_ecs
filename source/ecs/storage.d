@@ -40,7 +40,7 @@ version(unittest)
 }
 
 ///
-@safe
+@safe pure
 @("storage: isComponent")
 unittest
 {
@@ -61,7 +61,7 @@ template componentId(Component)
 }
 
 ///
-@safe
+@safe pure
 @("storage: componentId")
 unittest
 {
@@ -95,23 +95,24 @@ public:
 		this.size = &storage.size;
 	}
 
+	///
 	Storage!(EntityType, Component) getStorage(Component)()
 	{
 		return cid is componentId!Component
-			? (() @trusted => cast(Storage!(EntityType, Component)) storage)() // safe cast
+			? (() @trusted => cast(Storage!(EntityType, Component)) storage)() // safe pure cast
 			: null;
 	}
 
-	bool delegate(Entity!EntityType entity) @safe remove;
-	void delegate() @safe removeAll;
-	size_t delegate() @safe size;
+	bool delegate(Entity!EntityType entity) @safe pure remove;
+	void delegate() @safe pure removeAll;
+	size_t delegate() @safe pure size;
 
 private:
 	TypeInfo cid;
 	void* storage;
 }
 
-@safe
+@safe pure
 @("storage: StorageInfo")
 unittest
 {
@@ -122,7 +123,7 @@ unittest
 	assertFalse(__traits(compiles, sinfo.getStorage!InvalidComponent));
 }
 
-@safe
+@safe pure
 @("storage: StorageInfo")
 unittest
 {
@@ -163,7 +164,7 @@ package class Storage(EntityType, Component)
 	 *
 	 * Returns: true if the component was set, false otherwise.
 	 */
-	@safe
+	@safe pure
 	bool set(in Entity!EntityType entity, in Component component)
 	{
 		if (entity.id < _sparsedEntities.length
@@ -202,7 +203,7 @@ package class Storage(EntityType, Component)
 	 *
 	 * Returns: true if successfuly removed, false otherwise;
 	 */
-	@safe
+	@safe pure
 	bool remove(in Entity!EntityType entity)
 	{
 		if (!(entity.id < _sparsedEntities.length
@@ -231,7 +232,7 @@ package class Storage(EntityType, Component)
 
 
 	///
-	@safe
+	@safe pure
 	void removeAll()
 	{
 		_sparsedEntities = [];
@@ -248,7 +249,7 @@ package class Storage(EntityType, Component)
 	 *
 	 * Returns: a pointer to the component if search was successful, null otherwise.
 	 */
-	@safe
+	@safe pure
 	Component* get(in Entity!EntityType entity)
 	{
 		// return null if the entity is invalid
@@ -273,7 +274,7 @@ package class Storage(EntityType, Component)
 	 *
 	 * Returns: the Component* associated or created if successful, null otherwise.
 	 */
-	@safe
+	@safe pure
 	Component* getOrSet(in Entity!EntityType entity, in Component component)
 	{
 		if (entity.id < _sparsedEntities.length
@@ -297,13 +298,14 @@ package class Storage(EntityType, Component)
 	}
 
 
-	@safe
+	@safe pure
 	size_t size() const
 	{
 		return _components.length;
 	}
 
 private:
+	@safe pure
 	Component* _set(in Entity!EntityType entity, in Component component)
 	{
 		_packedEntities ~= entity; // set entity
@@ -311,7 +313,7 @@ private:
 
 		// map to the correct entity from the packedEntities from sparsedEntities
 		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
-		_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe cast
+		_sparsedEntities[entity.id] = cast(EntityType)(_packedEntities.length - 1); // safe pure cast
 
 		return &_components[_sparsedEntities[entity.id]];
 	}
@@ -323,11 +325,11 @@ private:
 
 version(unittest)
 {
-	@Component struct Foo { int x; float y = 0.0f; }
+	@Component struct Foo { int x, y; }
 	@Component struct Bar { string str; }
 }
 
-@safe
+@safe pure
 @("storage: Storage")
 unittest
 {
@@ -336,7 +338,7 @@ unittest
 	assertFalse(__traits(compiles, new Storage!(uint, InvalidComponent)));
 }
 
-@safe
+@safe pure
 @("storage: Storage: get")
 unittest
 {
@@ -352,7 +354,7 @@ unittest
 	assertEquals(Foo(3, 3), *storage.get(Entity!size_t(0)));
 }
 
-@safe
+@safe pure
 @("storage: Storage: getOrSet")
 unittest
 {
@@ -363,7 +365,7 @@ unittest
 	assertNull(storage.getOrSet(Entity!size_t(0, 54), Foo(2, 3)));
 }
 
-@safe
+@safe pure
 @("storage: Storage: remove")
 unittest
 {
@@ -381,7 +383,7 @@ unittest
 	assertEquals(Entity!ubyte(1), storage._packedEntities[0]);
 }
 
-@safe
+@safe pure
 @("storage: Storage: set")
 unittest
 {
