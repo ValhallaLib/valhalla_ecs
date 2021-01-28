@@ -61,7 +61,7 @@ public:
 	}
 
 
-	@safe
+	@safe pure
 	auto gen()
 	{
 		entities ~= em.gen();
@@ -83,7 +83,7 @@ public:
 	}
 
 
-	@safe
+	@safe pure
 	auto get()
 	{
 		return entities;

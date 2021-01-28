@@ -25,7 +25,7 @@ private template isEntityType(T)
 }
 
 ///
-@safe
+@safe pure
 @("entity: isEntityType")
 unittest
 {
@@ -85,7 +85,7 @@ private mixin template genBitMask(T)
 }
 
 ///
-@safe
+@safe pure
 @("entity: genBitMask")
 unittest
 {
@@ -141,7 +141,6 @@ class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
  *
  * See_Also: [skypjack - entt](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/)
  */
-@safe
 struct Entity(T)
 	if (isEntityType!T)
 {
@@ -149,17 +148,19 @@ public:
 	this(in T id) { _id = id; }
 	this(in T id, in T batch) { _id = id; _batch = batch; }
 
-	bool opEquals(in Entity other) const
+	@safe pure
+	bool opEquals(in Entity!T other) const
 	{
 		return other.signature == signature;
 	}
 
-	@property
+	@property @safe pure
 	T id() const { return _id; }
 
-	@property
+	@property @safe pure
 	T batch() const { return _batch; }
 
+	@safe pure
 	auto incrementBatch()
 	{
 		_batch = _batch >= EntityManager!(T).batchMask ? 0 : cast(T)(_batch + 1);
@@ -167,6 +168,7 @@ public:
 		return this;
 	}
 
+	@safe pure
 	T signature() const
 	{
 		return cast(T)(_id | (_batch << EntityManager!(T).entityShift));
@@ -177,7 +179,7 @@ private:
 	T _batch;
 }
 
-@safe
+@safe pure
 @("entity: Entity")
 unittest
 {
@@ -229,7 +231,7 @@ public:
 	 *
 	 * See_Also: `gen`**`(Component)(Component component)`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
-	@safe
+	@safe pure
 	Entity!(T) gen()
 	{
 		return queue.isNull ? fabricate() : recycle();
@@ -311,7 +313,7 @@ public:
 	 *
 	 * Returns: true if successful, false otherwise.
 	 */
-	@safe
+	@safe pure
 	bool discard(in Entity!(T) entity)
 	{
 		// Invalid action if the entity is not valid
@@ -401,7 +403,7 @@ public:
 
 
 	///
-	@safe
+	@safe pure
 	bool removeAll(in Entity!T entity)
 	{
 		// Invalid action if the entity is not valid
@@ -414,7 +416,7 @@ public:
 	}
 
 
-	@safe
+	///
 	bool removeAll(Component)()
 	{
 		if (componentId!Component !in storageInfoMap)
@@ -499,7 +501,7 @@ private:
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
 	 */
-	@safe
+	@safe pure
 	Entity!(T) fabricate()
 	{
 		import std.format : format;
@@ -509,7 +511,7 @@ private:
 		);
 
 		import std.range : back;
-		entities ~= Entity!(T)(cast(T)entities.length); // safe cast
+		entities ~= Entity!(T)(cast(T)entities.length); // safe pure cast
 		return entities.back;
 	}
 
@@ -521,7 +523,7 @@ private:
 	 *
 	 * Returns: an Entity!T previously fabricated with a new batch.
 	 */
-	@safe
+	@safe pure
 	Entity!(T) recycle()
 		in (!queue.isNull)
 	{
@@ -559,7 +561,7 @@ private:
 }
 
 
-@safe
+@safe pure
 @("entity: EntityManager")
 unittest
 {
@@ -567,7 +569,7 @@ unittest
 	assertFalse(__traits(compiles, EntityManager!int));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: discard")
 unittest
 {
@@ -582,11 +584,11 @@ unittest
 	em.discard(entity1);
 	assertFalse(em.queue.isNull);
 	assertEquals(em.entityNull, em.entities[entity1.id]);
-	(() @trusted => assertEquals(Entity!uint(1, 1), em.queue))(); // batch was incremented
+	(() @trusted pure => assertEquals(Entity!uint(1, 1), em.queue.get))(); // batch was incremented
 
 	assertTrue(em.discard(entity0));
 	assertEquals(Entity!uint(1, 1), em.entities[entity0.id]);
-	(() @trusted => assertEquals(Entity!uint(0, 1), em.queue))(); // batch was incremented
+	(() @trusted pure => assertEquals(Entity!uint(0, 1), em.queue.get))(); // batch was incremented
 
 	// cannot discard invalid entities
 	assertFalse(em.discard(Entity!uint(50)));
@@ -595,7 +597,7 @@ unittest
 	assertEquals(3, em.entities.length);
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: fabricate")
 unittest
 {
@@ -615,7 +617,7 @@ unittest
 	expectThrows!MaximumEntitiesReachedException(em.gen());
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: gen")
 unittest
 {
@@ -627,7 +629,7 @@ unittest
 	assertEquals(Entity!(uint)(0), em.entities.front);
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: gen with components")
 unittest
 {
@@ -649,7 +651,7 @@ unittest
 	assertFalse(__traits(compiles, em.gen!InvalidComponent()));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: get")
 unittest
 {
@@ -661,13 +663,13 @@ unittest
 	assertEquals(Bar.init, *em.get!Bar(e));
 	assertNull(em.get!ValidComponent(e));
 
-	em.get!Foo(e).y = 10.0f;
-	assertEquals(Foo(int.init, 10.0f), *em.get!Foo(e));
+	em.get!Foo(e).y = 10;
+	assertEquals(Foo(int.init, 10), *em.get!Foo(e));
 
 	assertFalse(__traits(compiles, em.get!InvalidComponent(em.gen())));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: getOrSet")
 unittest
 {
@@ -682,7 +684,7 @@ unittest
 	assertNull(em.getOrSet!Foo(Entity!size_t(3)));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: recycle")
 unittest
 {
@@ -691,14 +693,14 @@ unittest
 
 	auto entity0 = em.gen(); // calls fabricate
 	em.discard(entity0); // discards
-	(() @trusted => assertEquals(Entity!uint(0, 1), em.queue))(); // batch was incremented
+	(() @trusted pure => assertEquals(Entity!uint(0, 1), em.queue.get))(); // batch was incremented
 	assertFalse(Entity!uint(0, 1) == entity0); // entity's batch is not updated
 
 	entity0 = em.gen(); // recycles
 	assertEquals(Entity!uint(0, 1), em.entities.front);
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: remove")
 unittest
 {
@@ -726,7 +728,7 @@ unittest
 	assertFalse(__traits(compiles, em.remove!InvalidComponent(e)));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: removeAll")
 unittest
 {
@@ -739,7 +741,7 @@ unittest
 	assertEquals(0, em.size!Foo());
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: set")
 unittest
 {
@@ -760,7 +762,7 @@ unittest
 	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
 }
 
-@safe
+@safe pure
 @("entity: EntityManager: size")
 unittest
 {
