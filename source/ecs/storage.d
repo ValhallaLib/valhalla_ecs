@@ -92,6 +92,7 @@ public:
 		(() @trusted => this.storage = cast(void*) storage)();
 		this.remove = &storage.remove;
 		this.removeAll = &storage.removeAll;
+		this.size = &storage.size;
 	}
 
 	Storage!(EntityType, Component) getStorage(Component)()
@@ -103,6 +104,7 @@ public:
 
 	bool delegate(Entity!EntityType entity) @safe remove;
 	void delegate() @safe removeAll;
+	size_t delegate() @safe size;
 
 private:
 	TypeInfo cid;
@@ -292,6 +294,13 @@ package class Storage(EntityType, Component)
 		}
 
 		return &_components[_sparsedEntities[entity.id]];
+	}
+
+
+	@safe
+	size_t size() const
+	{
+		return _components.length;
 	}
 
 private:
