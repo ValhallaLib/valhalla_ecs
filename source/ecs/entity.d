@@ -460,6 +460,23 @@ public:
 		return storageInfoMap[componentId!Component].getStorage!(Component).getOrSet(entity, component);
 	}
 
+
+	/**
+	 * Get the size of Component Storage. The size represents how many entities
+	 *     are associated to a component type.
+	 *
+	 * Params: Component = a Component type to search.
+	 *
+	 * Returns: the amount of entities/components within that Storage or 0 if it
+	 *     fails.
+	 */
+	size_t size(Component)() const
+	{
+		return componentId!Component in storageInfoMap
+			? storageInfoMap[componentId!Component].size()
+			: 0;
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
@@ -716,4 +733,18 @@ unittest
 	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
 	assertFalse(__traits(compiles, em.set!(Foo, Bar, InvalidComponent)(em.gen())));
 	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
+}
+
+@safe
+@("entity: EntityManager: size")
+unittest
+{
+	auto em = new EntityManager!size_t();
+
+	auto e = em.gen!Foo;
+	assertEquals(1, em.size!Foo());
+	assertEquals(0, em.size!Bar());
+
+	em.remove!Foo(e);
+	assertEquals(0, em.size!Foo());
 }
