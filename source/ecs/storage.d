@@ -91,6 +91,7 @@ public:
 
 		(() @trusted => this.storage = cast(void*) storage)();
 		this.remove = &storage.remove;
+		this.removeAll = &storage.removeAll;
 	}
 
 	Storage!(EntityType, Component) getStorage(Component)()
@@ -101,6 +102,7 @@ public:
 	}
 
 	bool delegate(Entity!EntityType entity) @safe remove;
+	void delegate() @safe removeAll;
 
 private:
 	TypeInfo cid;
@@ -223,6 +225,16 @@ package class Storage(EntityType, Component)
 		_packedEntities.popBack;
 
 		return true;
+	}
+
+
+	///
+	@safe
+	void removeAll()
+	{
+		_sparsedEntities = [];
+		_packedEntities = [];
+		_components = [];
 	}
 
 
