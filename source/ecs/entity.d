@@ -414,6 +414,18 @@ public:
 	}
 
 
+	@safe
+	bool removeAll(Component)()
+	{
+		if (componentId!Component !in storageInfoMap)
+			return false;
+
+		storageInfoMap[componentId!Component].removeAll();
+
+		return true;
+	}
+
+
 	/**
 	 * Fetch a component associated to an entity. If the entity is invalid, the
 	 *     Component wasn't associated with any entity or the entity does not
@@ -712,6 +724,19 @@ unittest
 
 	// cannot call with invalid components
 	assertFalse(__traits(compiles, em.remove!InvalidComponent(e)));
+}
+
+@safe
+@("entity: EntityManager: removeAll")
+unittest
+{
+	auto em = new EntityManager!size_t();
+
+	foreach (i; 0..10) em.gen!(Foo, Bar);
+
+	assertEquals(10, em.size!Foo());
+	assertTrue(em.removeAll!Foo());
+	assertEquals(0, em.size!Foo());
 }
 
 @safe
