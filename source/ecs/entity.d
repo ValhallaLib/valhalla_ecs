@@ -437,6 +437,19 @@ public:
 			: 0;
 	}
 
+
+	/**
+	 * Helper struct to perform multiple actions sequences.
+	 *
+	 * Returns: an EntityBuilder.
+	 */
+	@safe pure
+	auto entityBuilder()
+	{
+		import ecs.entitybuilder : EntityBuilder;
+		return EntityBuilder(this);
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
