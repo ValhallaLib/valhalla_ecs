@@ -9,214 +9,160 @@ import std.typecons : Nullable;
 version(unittest) import aurorafw.unit.assertion;
 
 
-/**
- * EntityType is defined as being an integral and unsigned value. Possible
- *     type are **ubyte, ushort, uint, ulong, size_t**. All remaining type are
- *     defined as being invalid.
- *
- * Params: T = type to classify.
- *
- * Returns: true if it's a valid type, false otherwise.
- */
-private template isEntityType(T)
-{
-	import std.traits : isIntegral, isUnsigned;
-	enum isEntityType = isIntegral!T && isUnsigned!T;
-}
-
-///
-@safe pure
-@("entity: isEntityType")
-unittest
-{
-	import std.meta : AliasSeq, allSatisfy;
-	assertTrue(allSatisfy!(isEntityType, AliasSeq!(ubyte, ushort, uint, ulong, size_t)));
-
-	assertFalse(allSatisfy!(isEntityType, AliasSeq!(byte, short, int, long, ptrdiff_t)));
-	assertFalse(allSatisfy!(isEntityType, AliasSeq!(float, double, real, ifloat, idouble, ireal)));
-	assertFalse(allSatisfy!(isEntityType, AliasSeq!(char, dchar, wchar, string, bool)));
-}
-
-
-/**
- * Defines ground constants used to manipulate entities internaly.
- *
- * Constants:
- *     `entityShift` = division point between the entity's **id** and **batch**. \
- *     `entityMask` = bit mask related to the entity's **id** portion. \
- *     `batchMask` = bit mask related to the entity's **batch** portion. \
- *     `entityNull` = Entity!(T) with an **id** of the max value available for T.
- *
- * Code_Gen:
- * | type   | entityShift | entityMask  | batchMask   | entityNull                    |
- * | :------| :---------: | :---------- | :---------- | :---------------------------- |
- * | ubyte  | 4           | 0xF         | 0xF         | Entity!(ubyte)(15)            |
- * | ushort | 8           | 0xFF        | 0xFF        | Entity!(ushort)(255)          |
- * | uint   | 20          | 0xFFFF_F    | 0xFFF       | Entity!(uint)(1_048_575)      |
- * | ulong  | 32          | 0xFFFF_FFFF | 0xFFFF_FFFF | Entity!(ulong)(4_294_967_295) |
- *
- * Sizes:
- * | type   | id-(bits) | batch-(bits) | max-entities  | batch-reset   |
- * | :----- | :-------: | :----------: | :-----------: | :-----------: |
- * | ubyte  | 4         | 4            | 14            | 15            |
- * | ushort | 8         | 8            | 254           | 255           |
- * | uint   | 20        | 12           | 1_048_574     | 4_095         |
- * | ulong  | 32        | 32           | 4_294_967_295 | 4_294_967_295 |
- *
- * Params: T = valid entity type.
- */
-private mixin template genBitMask(T)
-	if (isEntityType!T)
-{
-	static if (is(T == uint))
-	{
-		enum T entityShift = 20U;
-		enum T entityMask = (1UL << 20U) - 1;
-		enum T batchMask = (1UL << (T.sizeof * 8 - 20U)) - 1;
-	}
-	else
-	{
-		enum T entityShift = T.sizeof * 8 / 2;
-		enum T entityMask = (1UL << T.sizeof * 8 / 2) - 1;
-		enum T batchMask = (1UL << (T.sizeof * 8 - T.sizeof * 8 / 2)) - 1;
-	}
-
-	enum Entity!T entityNull = Entity!T(entityMask);
-}
-
-///
-@safe pure
-@("entity: genBitMask")
-unittest
-{
-	{
-		mixin genBitMask!uint;
-		assertTrue(is(typeof(entityShift) == uint));
-
-		assertEquals(20, entityShift);
-		assertEquals(0xFFFF_F, entityMask);
-		assertEquals(0xFFF, batchMask);
-		assertEquals(Entity!uint(entityMask), entityNull);
-	}
-
-	{
-		mixin genBitMask!ulong;
-		assertTrue(is(typeof(entityShift) == ulong));
-
-		assertEquals(32, entityShift);
-		assertEquals(0xFFFF_FFFF, entityMask);
-		assertEquals(0xFFFF_FFFF, batchMask);
-		assertEquals(Entity!ulong(entityMask), entityNull);
-	}
-}
-
-
 class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
 
 
 /**
- * Defines an entity of entity type T. An entity is defined by an **id** and a
- *     **batch**. It's signature is the combination of both values. The first N
- *     bits belong to the **id** and the last M ending bits to the `batch`. \
+ * An entity is defined by an **id** and a  **batch**. It's signature is the
+ *     combination of both values. The first N bits belong to the **id** and the
+ *     last M ending bits to the `batch`. \
  * \
- * An entity in it's raw form is simply a value of entity type T formed by the
- *     junction of the id with the batch. The constant values which define all
- *     masks are calculated in the `genBitMask` mixin template. \
+ * An entity in it's raw form is simply an integral value formed by the junction
+ *     of the id with the batch.
  * \
- * An entity is then defined by: **id | (batch << entity_shift)**. \
+ * An entity is then defined by: **id | (batch << idshift)**. \
  * \
- * Let's imagine an entity of the ubyte type. By default it's **id** and **batch**
- *     occupy **4 bits** each, half the sizeof ubyte. \
+ * Let's imagine an entity of 8 bites. By default it's **id** and **batch**
+ *     occupy **4 bits** each. \
  * \
- * `Entity!ubyte` = **0000 0000** = ***(batch << 4) | id***.
- * \
- * What this means is that for a given value of `ubyte` it's first half is
- *     composed with the **id** and it's second half with the **batch**. This
- *     allows entities to be reused at some time in the program's life without
- *     having to resort to a more complicated process. Every time an entity is
- *     **discarded** it's **id** doesn't suffer any alterations however it's
- *     **batch** is increased by **1**, allowing the usage of an entity with the
- *     the same **id** but mantaining it's uniqueness with a new **batch**
- *     generating a completely new signature.
+ * `Entity` = **0000 0000** = ***(batch << 4) | id***.
+ *
+ * Constants:
+ *     `idshift` = division point between the entity's **id** and **batch**. \
+ *     `idmask` = bit mask related to the entity's **id** portion. \
+ *     `batchmask` = bit mask related to the entity's **batch** portion. \
+ *     `maxid` = the maximum number of ids allowed
+ *     `maxbatch` = the maximum number of batches allowed
+ *
+ * Values:
+ * | void* size (bits) | idshift | idmask      | batchmask         |
+ * | :-----------------| :-----: | :---------- | :---------------- |
+ * | 4                 | 20      | 0xFFFF_F    | 0xFFF << 20       |
+ * | 8                 | 32      | 0xFFFF_FFFF | 0xFFFF_FFFF << 32 |
+ *
+ * Sizes:
+ * | void* size (bits) | id (bits) | batch (bits) | maxid         | maxbatch      |
+ * | :---------------- | :-------: | :----------: | :-----------: | :-----------: |
+ * | 4                 | 20        | 12           | 1_048_574     | 4_095         |
+ * | 8                 | 32        | 32           | 4_294_967_295 | 4_294_967_295 |
  *
  * See_Also: [skypjack - entt](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/)
  */
-struct Entity(T)
-	if (isEntityType!T)
+struct Entity
 {
 public:
-	this(in T id) { _id = id; }
-	this(in T id, in T batch) { _id = id; _batch = batch; }
+	@safe pure this(in size_t id)
+		in (id <= maxid)
+	{
+		_id = id;
+	}
+
+	@safe pure this(in size_t id, in size_t batch)
+		in (id <= maxid)
+		in (batch <= maxbatch)
+	{
+		_id = id;
+		_batch = batch;
+	}
+
 
 	@safe pure
-	bool opEquals(in Entity!T other) const
+	bool opEquals(in Entity other) const
 	{
 		return other.signature == signature;
 	}
 
-	@property @safe pure
-	T id() const { return _id; }
 
 	@property @safe pure
-	T batch() const { return _batch; }
+	size_t id() const { return _id; }
+
+
+	@property @safe pure
+	size_t batch() const { return _batch; }
+
 
 	@safe pure
 	auto incrementBatch()
 	{
-		_batch = _batch >= EntityManager!(T).batchMask ? 0 : cast(T)(_batch + 1);
+		_batch = _batch >= maxbatch ? 0 : _batch + 1;
 
 		return this;
 	}
 
 	@safe pure
-	T signature() const
+	size_t signature() const
 	{
-		return cast(T)(_id | (_batch << EntityManager!(T).entityShift));
+		return (_id | (_batch << idshift));
 	}
 
+	static if (typeof(int.sizeof).sizeof == 4)
+	{
+		enum size_t idshift = 20UL;   // 20 bits for ids
+		enum size_t maxid = 0xFFFF_F; // 1_048_575 unique ids
+		enum size_t maxbatch = 0xFFF; // 4_095 unique batches
+	}
+	else static if (typeof(int.sizeof).sizeof == 8)
+	{
+		enum size_t idshift = 32UL;      // 32 bits for ids
+		enum size_t maxid = 0xFFFF_FFFF; // 4_294_967_295 unique ids
+		enum size_t maxbatch = maxid;    // 4_294_967_295 unique batches
+	}
+	else
+		static assert(false, "unsuported target");
+
+	enum size_t idmask = maxid; // first 20 bits (sizeof==4), 32 bits (sizeof==8)
+	enum size_t batchmask = maxbatch << idshift; // last 12 bits (sizeof==4), 32 bits (sizeof==8)
+
+	alias signature this;
+
 private:
-	T _id;
-	T _batch;
+	size_t _id;
+	size_t _batch;
 }
 
 @safe pure
 @("entity: Entity")
 unittest
 {
-	auto entity0 = Entity!ubyte(0);
+	auto entity0 = Entity(0);
 
 	assertEquals(0, entity0.id);
 	assertEquals(0, entity0.batch);
 	assertEquals(0, entity0.signature);
-	assertEquals(Entity!ubyte(0, 0), entity0);
+	assertEquals(Entity(0, 0), entity0);
 
 	entity0.incrementBatch();
 	assertEquals(0, entity0.id);
 	assertEquals(1, entity0.batch);
-	assertEquals(16, entity0.signature);
-	assertEquals(Entity!ubyte(0, 1), entity0);
 
-	entity0 = Entity!ubyte(0, 15);
+	static if (typeof(int.sizeof).sizeof == 4)
+		assertEquals(1_048_576, entity0.signature);
+	else
+		assertEquals(4_294_967_296, entity0.signature);
+
+	assertEquals(Entity(0, 1), entity0);
+
+	entity0 = Entity(0, Entity.maxbatch);
 	entity0.incrementBatch();
 	assertEquals(0, entity0.batch); // batch reseted
 
-	assertEquals(15, Entity!ubyte(0, 15).batch);
+	static if (typeof(int.sizeof).sizeof == 4)
+		assertEquals(0xFFF, Entity.maxbatch);
+	else
+		assertEquals(0xFFFF_FFFF, Entity.maxbatch);
 }
 
 
 /**
  * Responsible for managing all entities lifetime and access to components as
  *     well as any operation related to them.
- *
- * Params: T = valid entity type.
  */
-class EntityManager(T)
+class EntityManager
 {
 public:
-	mixin genBitMask!T;
+	enum Entity entityNull = Entity(Entity.maxid);
 
-
-	this() { queue = entityNull; }
+	@safe pure this() { queue = entityNull; }
 
 
 	/**
@@ -225,14 +171,14 @@ public:
 	 *     **MaximumEntitiesReachedException** if the amount of entities alive
 	 *     allowed reaches it's maximum value.
 	 *
-	 * Returns: a newly generated Entity!T.
+	 * Returns: a newly generated Entity.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
 	 *
 	 * See_Also: `gen`**`(Component)(Component component)`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
 	@safe pure
-	Entity!(T) gen()
+	Entity gen()
 	{
 		return queue.isNull ? fabricate() : recycle();
 	}
@@ -245,19 +191,19 @@ public:
 	 * Examples:
 	 * --------------------
 	 * @Component struct Foo { int x; } // x gets default initialized to int.init
-	 * auto em = new EntityManager!size_t;
+	 * auto em = new EntityManager;
 	 * em.gen!Foo(); // generates a new entity with Foo.init values
 	 * --------------------
 	 *
 	 * Params: component = a valid component.
 	 *
-	 * Returns: a newly generated Entity!T.
+	 * Returns: a newly generated Entity.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
 	 *
 	 * See_Also: `gen`**`()`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
-	Entity!(T) gen(Component)(Component component = Component.init)
+	Entity gen(Component)(Component component = Component.init)
 	{
 		immutable e = gen();
 		_set(e, component);
@@ -272,19 +218,19 @@ public:
 	 * --------------------
 	 * @Component struct Foo { int x; }
 	 * @Component struct Bar { int x; }
-	 * auto em = new EntityManager!size_t;
+	 * auto em = new EntityManager;
 	 * em.gen(Foo(3), Bar(6));
 	 * --------------------
 	 *
 	 * Params: component = a valid component.
 	 *
-	 * Returns: a newly generated Entity!T.
+	 * Returns: a newly generated Entity.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
 	 *
 	 * See_Also: `gen`**`()`**, `gen`**`(Component)(Component component)`**
 	 */
-	Entity!(T) gen(ComponentRange ...)(ComponentRange components)
+	Entity gen(ComponentRange ...)(ComponentRange components)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
 		immutable e = gen();
@@ -294,7 +240,7 @@ public:
 
 
 	///
-	Entity!(T) gen(ComponentRange ...)()
+	Entity gen(ComponentRange ...)()
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
 		immutable e = gen();
@@ -314,7 +260,7 @@ public:
 	 * Returns: true if successful, false otherwise.
 	 */
 	@safe pure
-	bool discard(in Entity!(T) entity)
+	bool discard(in Entity entity)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
@@ -339,7 +285,7 @@ public:
 	 *
 	 * Returns: true if the component is set, false otherwise.
 	 */
-	bool set(Component)(Entity!T entity, Component component = Component.init)
+	bool set(Component)(Entity entity, Component component = Component.init)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
@@ -350,7 +296,7 @@ public:
 
 
 	///
-	bool set(ComponentRange ...)(Entity!T entity, ComponentRange components)
+	bool set(ComponentRange ...)(Entity entity, ComponentRange components)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
 		// Invalid action if the entity is not valid
@@ -364,7 +310,7 @@ public:
 
 
 	///
-	bool set(ComponentRange ...)(Entity!T entity)
+	bool set(ComponentRange ...)(Entity entity)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
 		// Invalid action if the entity is not valid
@@ -389,7 +335,7 @@ public:
 	 *
 	 * Returns: true is the component is sucessfuly removed, false otherwise.
 	 */
-	bool remove(Component)(in Entity!T entity)
+	bool remove(Component)(in Entity entity)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length
@@ -404,7 +350,7 @@ public:
 
 	///
 	@safe pure
-	bool removeAll(in Entity!T entity)
+	bool removeAll(in Entity entity)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
@@ -439,7 +385,7 @@ public:
 	 *
 	 * Returns: Component* with the associated component if sucessful, null otherwise
 	 */
-	Component* get(Component)(in Entity!T entity)
+	Component* get(Component)(in Entity entity)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length
@@ -463,13 +409,13 @@ public:
 	 *
 	 * Returns: the Component* associated or created if successful, null otherwise.
 	 */
-	Component* getOrSet(Component)(in Entity!T entity, in Component component = Component.init)
+	Component* getOrSet(Component)(in Entity entity, in Component component = Component.init)
 	{
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
 			return null;
 		else if (componentId!Component !in storageInfoMap)
-			storageInfoMap[componentId!Component] = StorageInfo!(T)().__ctor!(Component)();
+			storageInfoMap[componentId!Component] = StorageInfo().__ctor!(Component)();
 
 		return storageInfoMap[componentId!Component].getStorage!(Component).getOrSet(entity, component);
 	}
@@ -497,21 +443,21 @@ private:
 	 *     value of entities created. Throws a **MaximumEntitiesReachedException**
 	 *     if the maximum amount of entities allowed is reached.
 	 *
-	 * Returns: an Entity!T with a new id.
+	 * Returns: an Entity with a new id.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
 	 */
 	@safe pure
-	Entity!(T) fabricate()
+	Entity fabricate()
 	{
 		import std.format : format;
 		enforce!MaximumEntitiesReachedException(
-			entities.length < entityMask,
-			format!"Reached the maximum amount of entities supported for type %s: %s!"(T.stringof, entityMask)
+			entities.length < Entity.maxid,
+			format!"Reached the maximum amount of entities supported: %s!"(Entity.maxid)
 		);
 
 		import std.range : back;
-		entities ~= Entity!(T)(cast(T)entities.length); // safe pure cast
+		entities ~= Entity(entities.length); // safe pure cast
 		return entities.back;
 	}
 
@@ -521,10 +467,10 @@ private:
 	 *     **batch**. Swaps the current discarded entity stored the queue's entity
 	 *     place with it.
 	 *
-	 * Returns: an Entity!T previously fabricated with a new batch.
+	 * Returns: an Entity previously fabricated with a new batch.
 	 */
 	@safe pure
-	Entity!(T) recycle()
+	Entity recycle()
 		in (!queue.isNull)
 	{
 		immutable next = queue;     // get the next entity in queue
@@ -534,13 +480,13 @@ private:
 	}
 
 
-	bool _set(Component)(Entity!T entity, Component component = Component.init)
+	bool _set(Component)(Entity entity, Component component = Component.init)
 		if (isComponent!Component)
 	{
 		if (componentId!Component !in storageInfoMap)
 		{
 			// there isn't a Storage of this Component, create one
-			storageInfoMap[componentId!Component] = StorageInfo!(T)().__ctor!(Component)();
+			storageInfoMap[componentId!Component] = StorageInfo().__ctor!(Component)();
 		}
 
 		// set the component to entity
@@ -548,32 +494,24 @@ private:
 	}
 
 
-	bool _remove(Component)(in Entity!T entity)
+	bool _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
 		return storageInfoMap[componentId!Component].remove(entity);
 	}
 
 
-	Entity!(T)[] entities;
-	Nullable!(Entity!(T), entityNull) queue;
-	StorageInfo!(T)[TypeInfo] storageInfoMap;
+	Entity[] entities;
+	Nullable!(Entity, entityNull) queue;
+	StorageInfo[TypeInfo] storageInfoMap;
 }
 
-
-@safe pure
-@("entity: EntityManager")
-unittest
-{
-	assertTrue(__traits(compiles, EntityManager!uint));
-	assertFalse(__traits(compiles, EntityManager!int));
-}
 
 @safe pure
 @("entity: EntityManager: discard")
 unittest
 {
-	auto em = new EntityManager!uint();
+	auto em = new EntityManager();
 	assertTrue(em.queue.isNull);
 
 	auto entity0 = em.gen();
@@ -584,15 +522,15 @@ unittest
 	em.discard(entity1);
 	assertFalse(em.queue.isNull);
 	assertEquals(em.entityNull, em.entities[entity1.id]);
-	(() @trusted pure => assertEquals(Entity!uint(1, 1), em.queue.get))(); // batch was incremented
+	(() @trusted pure => assertEquals(Entity(1, 1), em.queue.get))(); // batch was incremented
 
 	assertTrue(em.discard(entity0));
-	assertEquals(Entity!uint(1, 1), em.entities[entity0.id]);
-	(() @trusted pure => assertEquals(Entity!uint(0, 1), em.queue.get))(); // batch was incremented
+	assertEquals(Entity(1, 1), em.entities[entity0.id]);
+	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 
 	// cannot discard invalid entities
-	assertFalse(em.discard(Entity!uint(50)));
-	assertFalse(em.discard(Entity!uint(entity2.id, 40)));
+	assertFalse(em.discard(Entity(50)));
+	assertFalse(em.discard(Entity(entity2.id, 40)));
 
 	assertEquals(3, em.entities.length);
 }
@@ -602,19 +540,18 @@ unittest
 unittest
 {
 	import std.range : back;
-	auto em = new EntityManager!ubyte();
+	auto em = new EntityManager();
 
 	auto entity0 = em.gen(); // calls fabricate
 	em.discard(entity0); // discards
 	em.gen(); // recycles
 	assertTrue(em.queue.isNull);
 
-	assertEquals(Entity!(ubyte)(1), em.gen()); // calls fabricate again
+	assertEquals(Entity(1), em.gen()); // calls fabricate again
 	assertEquals(2, em.entities.length);
-	assertEquals(Entity!(ubyte)(1), em.entities.back);
+	assertEquals(Entity(1), em.entities.back);
 
-	em.entities.length = 15; // max entities allowed for ubyte
-	expectThrows!MaximumEntitiesReachedException(em.gen());
+	// FIXME: add MaximumEntitiesReachedException
 }
 
 @safe pure
@@ -622,11 +559,11 @@ unittest
 unittest
 {
 	import std.range : front;
-	auto em = new EntityManager!uint();
+	auto em = new EntityManager();
 
-	assertEquals(Entity!(uint)(0), em.gen());
+	assertEquals(Entity(0), em.gen());
 	assertEquals(1, em.entities.length);
-	assertEquals(Entity!(uint)(0), em.entities.front);
+	assertEquals(Entity(0), em.entities.front);
 }
 
 @safe pure
@@ -634,7 +571,7 @@ unittest
 unittest
 {
 	import std.range : front;
-	auto em = new EntityManager!uint();
+	auto em = new EntityManager();
 
 	auto e = em.gen(Foo(3, 5), Bar("str"));
 	assertEquals(Foo(3, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
@@ -655,7 +592,7 @@ unittest
 @("entity: EntityManager: get")
 unittest
 {
-	auto em = new EntityManager!size_t();
+	auto em = new EntityManager();
 
 	auto e = em.gen!(Foo, Bar);
 
@@ -673,15 +610,15 @@ unittest
 @("entity: EntityManager: getOrSet")
 unittest
 {
-	auto em = new EntityManager!size_t();
+	auto em = new EntityManager();
 
 	auto e = em.gen!(Foo)();
 	assertEquals(Foo.init, *em.getOrSet!Foo(e));
 	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
 	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
 
-	assertNull(em.getOrSet!Foo(Entity!size_t(0, 12)));
-	assertNull(em.getOrSet!Foo(Entity!size_t(3)));
+	assertNull(em.getOrSet!Foo(Entity(0, 12)));
+	assertNull(em.getOrSet!Foo(Entity(3)));
 }
 
 @safe pure
@@ -689,22 +626,22 @@ unittest
 unittest
 {
 	import std.range : front;
-	auto em = new EntityManager!uint();
+	auto em = new EntityManager();
 
 	auto entity0 = em.gen(); // calls fabricate
 	em.discard(entity0); // discards
-	(() @trusted pure => assertEquals(Entity!uint(0, 1), em.queue.get))(); // batch was incremented
-	assertFalse(Entity!uint(0, 1) == entity0); // entity's batch is not updated
+	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
+	assertFalse(Entity(0, 1) == entity0); // entity's batch is not updated
 
 	entity0 = em.gen(); // recycles
-	assertEquals(Entity!uint(0, 1), em.entities.front);
+	assertEquals(Entity(0, 1), em.entities.front);
 }
 
 @safe pure
 @("entity: EntityManager: remove")
 unittest
 {
-	auto em = new EntityManager!size_t();
+	auto em = new EntityManager();
 
 	auto e = em.gen!(Foo, Bar, ValidComponent);
 	assertFalse(em.remove!ValidImmutable(e)); // not in the storageInfoMap
@@ -722,7 +659,7 @@ unittest
 	assertFalse(em.remove!ValidImmutable(e)); // e does not contain ValidImmutable
 
 	// removing from invalid entities returns null
-	assertFalse(em.removeAll(Entity!size_t(15)));
+	assertFalse(em.removeAll(Entity(15)));
 
 	// cannot call with invalid components
 	assertFalse(__traits(compiles, em.remove!InvalidComponent(e)));
@@ -732,7 +669,7 @@ unittest
 @("entity: EntityManager: removeAll")
 unittest
 {
-	auto em = new EntityManager!size_t();
+	auto em = new EntityManager();
 
 	foreach (i; 0..10) em.gen!(Foo, Bar);
 
@@ -745,12 +682,12 @@ unittest
 @("entity: EntityManager: set")
 unittest
 {
-	auto em = new EntityManager!uint();
+	auto em = new EntityManager();
 
 	auto e = em.gen();
 	assertTrue(em.set(e, Foo(4, 5)));
-	assertFalse(em.set(Entity!uint(0, 5), Foo(4, 5)));
-	assertFalse(em.set(Entity!uint(2), Foo(4, 5)));
+	assertFalse(em.set(Entity(0, 5), Foo(4, 5)));
+	assertFalse(em.set(Entity(2), Foo(4, 5)));
 	assertEquals(Foo(4, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
 
 	assertTrue(em.set(em.gen(), Foo(4, 5), Bar("str")));
@@ -766,7 +703,7 @@ unittest
 @("entity: EntityManager: size")
 unittest
 {
-	auto em = new EntityManager!size_t();
+	auto em = new EntityManager();
 
 	auto e = em.gen!Foo;
 	assertEquals(1, em.size!Foo());
