@@ -676,6 +676,8 @@ unittest
 	assertEquals(10, em.size!Foo());
 	assertTrue(em.removeAll!Foo());
 	assertEquals(0, em.size!Foo());
+
+	assertFalse(em.removeAll!ValidComponent);
 }
 
 @safe pure
@@ -692,6 +694,10 @@ unittest
 
 	assertTrue(em.set(em.gen(), Foo(4, 5), Bar("str")));
 	assertTrue(em.set!(Foo, Bar, ValidComponent)(em.gen()));
+
+	assertFalse(em.set!Foo(Entity(45)));
+	assertFalse(em.set!(Foo, Bar)(Entity(45)));
+	assertFalse(em.set(Entity(45), Foo.init, Bar.init));
 
 	assertFalse(__traits(compiles, em.set!(Foo, Bar, ValidComponent, Bar)(em.gen())));
 	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
