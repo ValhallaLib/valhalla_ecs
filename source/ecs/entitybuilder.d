@@ -12,23 +12,23 @@ version(unittest) import aurorafw.unit.assertion;
  *
  * Returns: an EntityBuilder!EntityType.
  */
-auto entityBuilder(EntityType)(EntityManager!EntityType em)
+auto entityBuilder(EntityManager em)
 {
-	return EntityBuilder!EntityType(em);
+	return EntityBuilder(em);
 }
 
 @("entitybuilder: entityBuilder")
 unittest
 {
 	import ecs.storage;
-	EntityManager!uint em = new EntityManager!uint();
+	EntityManager em = new EntityManager();
 	auto entities = em.entityBuilder
 		.gen()
 		.gen()
 		.gen()
 		.get();
 
-	assertEquals([Entity!uint(0), Entity!uint(1), Entity!uint(2)], entities);
+	assertEquals([Entity(0), Entity(1), Entity(2)], entities);
 
 	entities = em.entityBuilder
 		.gen!(Foo)()
@@ -37,7 +37,7 @@ unittest
 		.gen!(Foo, ValidComponent)()
 		.get();
 
-	assertEquals([Entity!uint(3), Entity!uint(4), Entity!uint(5), Entity!uint(6)], entities);
+	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entities);
 
 	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, Foo)()));
 	assertFalse(__traits(compiles, em.entityBuilder.gen(Foo.init, Bar.init, Foo(3, 4))));
@@ -52,10 +52,10 @@ unittest
  *     EntityType = a valid entity type.
  *     em = an entity manager to update.
  */
-struct EntityBuilder(EntityType)
+struct EntityBuilder
 {
 public:
-	this(EntityManager!EntityType em)
+	this(EntityManager em)
 	{
 		this.em = em;
 	}
@@ -91,6 +91,6 @@ public:
 
 
 private:
-	Entity!(EntityType)[] entities;
-	EntityManager!EntityType em;
+	Entity[] entities;
+	EntityManager em;
 }
