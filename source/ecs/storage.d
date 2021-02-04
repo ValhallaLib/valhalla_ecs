@@ -1,6 +1,7 @@
 module ecs.storage;
 
 import ecs.entity : Entity;
+import std.traits : isDelegate, isFunctionPointer;
 
 version(unittest)
 {
@@ -102,6 +103,50 @@ template TypeInfoComponent(Component)
 }
 
 
+///
+auto assumePure(T)(T t)
+if (isFunctionPointer!T || isDelegate!T)
+{
+	import std.traits : FunctionAttribute, functionAttributes, functionLinkage, SetFunctionAttributes;
+    enum attrs = functionAttributes!T | FunctionAttribute.pure_;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
+
+
+///
+@safe
+private static size_t nextId()
+{
+	static size_t value;
+	return value++;
+}
+
+
+///
+template ComponentId(Component)
+	if (isComponent!Component)
+{
+	size_t ComponentId()
+	{
+		auto ComponentIdImpl = ()
+		{
+			static bool initialized;
+			static size_t id;
+
+			if (!initialized)
+			{
+				id = nextId();
+				initialized = true;
+			}
+
+			return id;
+		};
+
+		return (() @trusted => assumePure(ComponentIdImpl)())();
+	}
+}
+
+
 /**
  * Structure to communicate with the Storage. Easier to keep diferent components
  *     in the same data structure for better access to it's storage. It can also
@@ -137,7 +182,7 @@ public:
 	void delegate(in Entity e) @safe pure removeIfHas;
 	size_t delegate() @safe pure size;
 
-private:
+package:
 	TypeInfo cid;
 	void* storage;
 }
@@ -292,6 +337,7 @@ package class Storage(Component)
 	}
 
 
+	///
 	@safe pure
 	size_t size() const
 	{

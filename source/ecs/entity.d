@@ -326,10 +326,9 @@ public:
 
 	/**
 	 * Disassociates an entity from a component. The entity must be associated
-	 *     with the Component passed. Passing and invalid entity or an
-	 *     unregistered Component leads to undefined behaviour. See
-	 *     **removeIfHas** which removes the Component only if the entity is
-	 *     associated to it.
+	 *     with the Component passed. Passing and invalid entity leads to
+	 *     undefined behaviour. See **removeIfHas** which removes the Component
+	 *     only if the entity is associated to it.
 	 *
 	 * Params:
 	 *     e = an entity to disassociate.
@@ -337,7 +336,6 @@ public:
 	 */
 	void remove(Component)(in Entity e)
 		in (has(e))
-		in (TypeInfoComponent!Component in storageInfoMap)
 	{
 		_remove!Component(e);
 	}
@@ -346,7 +344,7 @@ public:
 	/**
 	 * Disassociates an entity from a component. If the entity is not associated
 	 *     with the given Component nothing happens. Passing and invalid entity
-	 *     or an unregistered Component leads to undefined behaviour.
+	 *     leads to undefined behaviour.
 	 *
 	 * Params:
 	 *     e = an entity to disassociate.
@@ -354,9 +352,8 @@ public:
 	 */
 	void removeIfHas(Component)(in Entity e)
 		in (has(e))
-		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		storageInfoMap[TypeInfoComponent!Component].removeIfHas(e);
+		_assure!Component().removeIfHas(e);
 	}
 
 
@@ -373,28 +370,27 @@ public:
 	void removeAll(in Entity e)
 		in (has(e))
 	{
-		foreach (storage; storageInfoMap) storage.removeIfHas(e);
+		foreach (sinfo; storageInfoMap)
+			if (sinfo.storage !is null)
+				sinfo.removeIfHas(e);
 	}
 
 
 	/**
 	 * Disassociates al entities from a Component, reseting the Storage for that
-	 *     Component. If an unregistered Component is passed it leads to
-	 *     undefined behaviour.
+	 *     Component.
 	 *
 	 * Params: Component = a valid Component.
 	 */
 	void removeAll(Component)()
-		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		storageInfoMap[TypeInfoComponent!Component].removeAll();
+		_assure!Component().removeAll();
 	}
 
 
 	/**
 	 * Fetch a component associated to an entity. The entity must be associated
-	 *     with the Component passed. Passing and invalid entity or an
-	 *     unregistered Component leads to undefined behaviour. See **getOrSet**
+	 *     with the Component passed. Passing and invalid entity. See **getOrSet**
 	 *     which sets a component to an entity if the same isn't associated with
 	 *     one.
 	 *
@@ -406,9 +402,8 @@ public:
 	 */
 	Component* get(Component)(in Entity e)
 		in (has(e))
-		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		return storageInfoMap[TypeInfoComponent!Component].get!(Component).get(e);
+		return _assure!Component().get(e);
 	}
 
 
@@ -422,31 +417,26 @@ public:
 	 *     e = the entity to fetch the associated component.
 	 *     component = a valid component to set if there is none associated.
 	 *
-	 * Returns: the Component* associated or created if successful, null otherwise.
+	 * Returns: a pointer to the Component.
 	 */
 	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
 		in (has(e))
 	{
-		if (TypeInfoComponent!Component !in storageInfoMap)
-			return _set(e, component);
-
-		return storageInfoMap[TypeInfoComponent!Component].get!(Component).getOrSet(e, component);
+		return _assure!Component().getOrSet(e, component);
 	}
 
 
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
-	 *     are associated to a component type. If the Component passed isn't
-	 *     registered it leads to undefined behaviour.
+	 *     are associated to a component type.
 	 *
 	 * Params: Component = a Component type to search.
 	 *
 	 * Returns: the amount of entities in the Component Storage.
 	 */
-	size_t size(Component)() const
-		in (TypeInfoComponent!Component in storageInfoMap)
+	size_t size(Component)()
 	{
-		return storageInfoMap[TypeInfoComponent!Component].size();
+		return _assure!Component().size();
 	}
 
 
@@ -518,14 +508,8 @@ private:
 	Component* _set(Component)(in Entity entity, Component component = Component.init)
 		if (isComponent!Component)
 	{
-		if (TypeInfoComponent!Component !in storageInfoMap)
-		{
-			// there isn't a Storage of this Component, create one
-			storageInfoMap[TypeInfoComponent!Component] = StorageInfo().__ctor!(Component)();
-		}
-
 		// set the component to entity
-		return storageInfoMap[TypeInfoComponent!Component].get!(Component).set(entity, component);
+		return _assure!Component().set(entity, component);
 	}
 
 
@@ -533,13 +517,33 @@ private:
 	void _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
-		storageInfoMap[TypeInfoComponent!Component].remove(entity);
+		_assure!Component().remove(entity);
+	}
+
+
+	///
+	Storage!Component _assure(Component)()
+		if (isComponent!Component)
+	{
+		immutable index = ComponentId!Component;
+
+		if (index >= storageInfoMap.length)
+		{
+			storageInfoMap.length = index + 1;
+		}
+
+		if (storageInfoMap[index].storage is null)
+		{
+			storageInfoMap[index] = StorageInfo().__ctor!(Component)();
+		}
+
+		return storageInfoMap[index].get!Component();
 	}
 
 
 	Entity[] entities;
 	Nullable!(Entity, entityNull) queue;
-	StorageInfo[TypeInfo] storageInfoMap;
+	StorageInfo[] storageInfoMap;
 }
 
 
@@ -610,18 +614,18 @@ unittest
 	auto em = new EntityManager();
 
 	auto e = em.gen(Foo(3, 5), Bar("str"));
-	assertEquals(Foo(3, 5), *em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
-	assertEquals(Bar("str"), *em.storageInfoMap[TypeInfoComponent!Bar].get!(Bar).get(e));
+	assertEquals(Foo(3, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
+	assertEquals(Bar("str"), *em.storageInfoMap[ComponentId!Bar].get!(Bar).get(e));
 
 	e = em.gen!(int, string, size_t);
-	assertEquals(int.init, *em.storageInfoMap[TypeInfoComponent!int].get!int.get(e));
-	assertEquals(string.init, *em.storageInfoMap[TypeInfoComponent!string].get!string.get(e));
-	assertEquals(size_t.init, *em.storageInfoMap[TypeInfoComponent!size_t].get!size_t.get(e));
+	assertEquals(int.init, *em.storageInfoMap[ComponentId!int].get!int.get(e));
+	assertEquals(string.init, *em.storageInfoMap[ComponentId!string].get!string.get(e));
+	assertEquals(size_t.init, *em.storageInfoMap[ComponentId!size_t].get!size_t.get(e));
 
 	e = em.gen(3, "entity", [2, 2]);
-	assertEquals(3, *em.storageInfoMap[TypeInfoComponent!int].get!int.get(e));
-	assertEquals("entity", *em.storageInfoMap[TypeInfoComponent!string].get!string.get(e));
-	assert([2, 2] == *em.storageInfoMap[TypeInfoComponent!(int[])].get!(int[]).get(e));
+	assertEquals(3, *em.storageInfoMap[ComponentId!int].get!int.get(e));
+	assertEquals("entity", *em.storageInfoMap[ComponentId!string].get!string.get(e));
+	assert([2, 2] == *em.storageInfoMap[ComponentId!(int[])].get!(int[]).get(e));
 
 	assertFalse(__traits(compiles, em.gen!(size_t, size_t)()));
 	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
@@ -689,7 +693,7 @@ unittest
 
 	em.remove!Foo(e); // removes Foo
 	assertThrown!AssertError(em.remove!Foo(e)); // e does not contain Foo
-	assertThrown!AssertError(em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
+	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	// removes only if associated
 	em.removeAll(e); // removes int
@@ -717,8 +721,6 @@ unittest
 	assertEquals(10, em.size!Foo());
 	em.removeAll!Foo();
 	assertEquals(0, em.size!Foo());
-
-	assertThrown!AssertError(em.removeAll!int());
 }
 
 @trusted pure
@@ -731,7 +733,7 @@ unittest
 	assertTrue(em.set(e, Foo(4, 5)));
 	assertThrown!AssertError(em.set(Entity(0, 5), Foo(4, 5)));
 	assertThrown!AssertError(em.set(Entity(2), Foo(4, 5)));
-	assertEquals(Foo(4, 5), *em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
+	assertEquals(Foo(4, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	{
 		auto components = em.set(em.gen(), Foo(4, 5), Bar("str"));
@@ -764,7 +766,7 @@ unittest
 
 	auto e = em.gen!Foo;
 	assertEquals(1, em.size!Foo());
-	assertThrown!AssertError(em.size!Bar());
+	assertEquals(0, em.size!Bar());
 
 	em.remove!Foo(e);
 	assertEquals(0, em.size!Foo());
