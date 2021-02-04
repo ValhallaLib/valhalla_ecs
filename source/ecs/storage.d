@@ -22,52 +22,78 @@ enum Component;
 template isComponent(T)
 {
 	import std.meta : allSatisfy;
-	import std.traits : hasUDA, isMutable, Fields;
-	enum isComponent = is(T == struct)
-		&& hasUDA!(T, Component)
-		&& allSatisfy!(isMutable, Fields!T);
+	import std.traits : isMutable, isSomeFunction, Fields;
+
+	static if (is(T == struct))
+	{
+		enum isComponent = allSatisfy!(isMutable, Fields!T);
+	}
+	else static if (is(T == class) || is(T == union) || isSomeFunction!T)
+	{
+		enum isComponent = false;
+	}
+	else
+	{
+		enum isComponent = isMutable!T;
+	}
 }
 
-version(unittest)
-{
-	@Component struct ValidComponent {}
-	@Component struct OtherValidComponent { int a; }
-	struct InvalidComponent {}
-
-	@Component struct InvalidImmutable { immutable int x; }
-	@Component struct InvalidConst { const string x; }
-	@Component struct ValidImmutable { immutable(char)[] x; } // aka string
-}
 
 ///
 @safe pure
 @("storage: isComponent")
 unittest
 {
-	assertTrue(isComponent!ValidComponent);
-	assertTrue(isComponent!OtherValidComponent);
-	assertTrue(isComponent!ValidImmutable);
+	import std.meta : AliasSeq;
 
-	assertFalse(isComponent!InvalidComponent);
-	assertFalse(isComponent!InvalidImmutable);
-	assertFalse(isComponent!InvalidConst);
+	struct ComponentStructEmpty {}
+	struct ComponentStructInt { int a; }
+	struct ComponentStructString { immutable(char)[] x; } // aka string
+
+	class NotComponentClass() {}
+	union NotComponentUnion() {}
+	struct NotComponentStructImmutable { immutable int x; }
+	struct NotComponentStructConst { const string x; }
+	void NotComponentFuncPtr() {}
+
+	assertTrue(isComponent!ComponentStructEmpty);
+	assertTrue(isComponent!ComponentStructInt);
+	assertTrue(isComponent!ComponentStructString);
+
+	foreach (t; AliasSeq!(byte, short, int, long))
+		assertTrue(isComponent!t);
+
+	foreach (t; AliasSeq!(ubyte, ushort, uint, ulong))
+		assertTrue(isComponent!t);
+
+	foreach (t; AliasSeq!(byte*, short*, int*, long*))
+		assertTrue(isComponent!t);
+
+	foreach (t; AliasSeq!(ubyte*, ushort*, uint*, ulong*))
+		assertTrue(isComponent!t);
+
+	foreach (t; AliasSeq!(char, wchar, string, wstring))
+		assertTrue(isComponent!t);
+
+	foreach (t; AliasSeq!(char*, wchar*, string*, wstring*))
+		assertTrue(isComponent!t);
+
+	assertFalse(isComponent!NotComponentStructImmutable);
+	assertFalse(isComponent!NotComponentStructConst);
+	assertFalse(isComponent!(void function()));
+	assertFalse(isComponent!(int delegate()));
+
+	assertFalse(__traits(compiles, isComponent!NotComponentClass));
+	assertFalse(__traits(compiles, isComponent!NotComponentUnion));
+	assertFalse(__traits(compiles, isComponent!NotComponentFuncPtr));
 }
 
-
-template componentId(Component)
-	if (isComponent!Component)
-{
-	enum componentId = typeid(Component);
-}
 
 ///
-@safe pure
-@("storage: componentId")
-unittest
+template TypeInfoComponent(Component)
+	if (isComponent!Component)
 {
-	assertTrue(__traits(compiles, componentId!ValidComponent));
-	assertTrue(__traits(compiles, componentId!OtherValidComponent));
-	assertFalse(__traits(compiles, componentId!InvalidComponent));
+	enum TypeInfoComponent = typeid(Component);
 }
 
 
@@ -85,7 +111,7 @@ public:
 	this(Component)()
 	{
 		auto storage = new Storage!Component();
-		this.cid = componentId!Component;
+		this.cid = TypeInfoComponent!Component;
 
 		(() @trusted => this.storage = cast(void*) storage)();
 		this.remove = &storage.remove;
@@ -96,7 +122,7 @@ public:
 	///
 	Storage!Component getStorage(Component)()
 	{
-		return cid is componentId!Component
+		return cid is TypeInfoComponent!Component
 			? (() @trusted => cast(Storage!Component) storage)() // safe cast
 			: null;
 	}
@@ -114,11 +140,11 @@ private:
 @("storage: StorageInfo")
 unittest
 {
-	auto sinfo = StorageInfo().__ctor!(ValidComponent)();
+	auto sinfo = StorageInfo().__ctor!(int)();
 
-	assertNotNull(sinfo.getStorage!ValidComponent);
-	assertNull(sinfo.getStorage!OtherValidComponent);
-	assertFalse(__traits(compiles, sinfo.getStorage!InvalidComponent));
+	assertNotNull(sinfo.getStorage!int);
+	assertNull(sinfo.getStorage!size_t);
+	assertFalse(__traits(compiles, sinfo.getStorage!(immutable(int))()));
 }
 
 @safe pure
@@ -127,10 +153,10 @@ unittest
 {
 	import std.range : front;
 
-	auto sinfo = StorageInfo().__ctor!(ValidComponent)();
-	Storage!ValidComponent storage = sinfo.getStorage!(ValidComponent);
+	auto sinfo = StorageInfo().__ctor!(int)();
+	Storage!int storage = sinfo.getStorage!(int);
 
-	assertTrue(storage.set(Entity(0), ValidComponent()));
+	assertTrue(storage.set(Entity(0), 3));
 	assertEquals(1, storage._packedEntities.length);
 	assertEquals(Entity(0), storage._packedEntities.front);
 

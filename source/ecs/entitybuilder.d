@@ -73,12 +73,12 @@ unittest
 		.gen!(Foo)()
 		.gen()
 		.gen(Bar("str"))
-		.gen!(Foo, ValidComponent)()
+		.gen!(Foo, int)()
 		.get();
 
 	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entities);
 
 	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, Foo)()));
 	assertFalse(__traits(compiles, em.entityBuilder.gen(Foo.init, Bar.init, Foo(3, 4))));
-	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, InvalidComponent)()));
+	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, immutable(int))()));
 }

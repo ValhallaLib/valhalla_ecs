@@ -340,7 +340,7 @@ public:
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length
 			&& entities[entity.id] == entity
-			&& componentId!Component in storageInfoMap)
+			&& TypeInfoComponent!Component in storageInfoMap)
 		)
 			return false;
 
@@ -365,10 +365,10 @@ public:
 	///
 	bool removeAll(Component)()
 	{
-		if (componentId!Component !in storageInfoMap)
+		if (TypeInfoComponent!Component !in storageInfoMap)
 			return false;
 
-		storageInfoMap[componentId!Component].removeAll();
+		storageInfoMap[TypeInfoComponent!Component].removeAll();
 
 		return true;
 	}
@@ -390,11 +390,11 @@ public:
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length
 			&& entities[entity.id] == entity
-			&& componentId!Component in storageInfoMap)
+			&& TypeInfoComponent!Component in storageInfoMap)
 		)
 			return null;
 
-		return storageInfoMap[componentId!Component].getStorage!(Component).get(entity);
+		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).get(entity);
 	}
 
 
@@ -414,10 +414,10 @@ public:
 		// Invalid action if the entity is not valid
 		if (!(entity.id < entities.length && entities[entity.id] == entity))
 			return null;
-		else if (componentId!Component !in storageInfoMap)
-			storageInfoMap[componentId!Component] = StorageInfo().__ctor!(Component)();
+		else if (TypeInfoComponent!Component !in storageInfoMap)
+			storageInfoMap[TypeInfoComponent!Component] = StorageInfo().__ctor!(Component)();
 
-		return storageInfoMap[componentId!Component].getStorage!(Component).getOrSet(entity, component);
+		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).getOrSet(entity, component);
 	}
 
 
@@ -432,8 +432,8 @@ public:
 	 */
 	size_t size(Component)() const
 	{
-		return componentId!Component in storageInfoMap
-			? storageInfoMap[componentId!Component].size()
+		return TypeInfoComponent!Component in storageInfoMap
+			? storageInfoMap[TypeInfoComponent!Component].size()
 			: 0;
 	}
 
@@ -496,21 +496,21 @@ private:
 	bool _set(Component)(Entity entity, Component component = Component.init)
 		if (isComponent!Component)
 	{
-		if (componentId!Component !in storageInfoMap)
+		if (TypeInfoComponent!Component !in storageInfoMap)
 		{
 			// there isn't a Storage of this Component, create one
-			storageInfoMap[componentId!Component] = StorageInfo().__ctor!(Component)();
+			storageInfoMap[TypeInfoComponent!Component] = StorageInfo().__ctor!(Component)();
 		}
 
 		// set the component to entity
-		return storageInfoMap[componentId!Component].getStorage!(Component).set(entity, component);
+		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).set(entity, component);
 	}
 
 
 	bool _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
-		return storageInfoMap[componentId!Component].remove(entity);
+		return storageInfoMap[TypeInfoComponent!Component].remove(entity);
 	}
 
 
@@ -587,18 +587,18 @@ unittest
 	auto em = new EntityManager();
 
 	auto e = em.gen(Foo(3, 5), Bar("str"));
-	assertEquals(Foo(3, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
-	assertEquals(Bar("str"), *em.storageInfoMap[componentId!Bar].getStorage!(Bar).get(e));
+	assertEquals(Foo(3, 5), *em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
+	assertEquals(Bar("str"), *em.storageInfoMap[TypeInfoComponent!Bar].getStorage!(Bar).get(e));
 
-	e = em.gen!(ValidComponent, OtherValidComponent, ValidImmutable);
-	assertEquals(ValidComponent.init, *em.storageInfoMap[componentId!ValidComponent].getStorage!(ValidComponent).get(e));
-	assertEquals(OtherValidComponent.init, *em.storageInfoMap[componentId!OtherValidComponent].getStorage!(OtherValidComponent).get(e));
-	assertEquals(ValidImmutable.init, *em.storageInfoMap[componentId!ValidImmutable].getStorage!(ValidImmutable).get(e));
+	e = em.gen!(int, string, size_t);
+	assertEquals(int.init, *em.storageInfoMap[TypeInfoComponent!int].getStorage!int.get(e));
+	assertEquals(string.init, *em.storageInfoMap[TypeInfoComponent!string].getStorage!string.get(e));
+	assertEquals(size_t.init, *em.storageInfoMap[TypeInfoComponent!size_t].getStorage!size_t.get(e));
 
-	assertFalse(__traits(compiles, em.gen!(ValidImmutable, ValidImmutable)()));
+	assertFalse(__traits(compiles, em.gen!(size_t, size_t)()));
 	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
-	assertFalse(__traits(compiles, em.gen!(Foo, Bar, InvalidComponent)()));
-	assertFalse(__traits(compiles, em.gen!InvalidComponent()));
+	assertFalse(__traits(compiles, em.gen!(Foo, Bar, void delegate())()));
+	assertFalse(__traits(compiles, em.gen!(immutable(int))()));
 }
 
 @safe pure
@@ -611,12 +611,12 @@ unittest
 
 	assertEquals(Foo.init, *em.get!Foo(e));
 	assertEquals(Bar.init, *em.get!Bar(e));
-	assertNull(em.get!ValidComponent(e));
+	assertNull(em.get!int(e));
 
 	em.get!Foo(e).y = 10;
 	assertEquals(Foo(int.init, 10), *em.get!Foo(e));
 
-	assertFalse(__traits(compiles, em.get!InvalidComponent(em.gen())));
+	assertFalse(__traits(compiles, em.get!(immutable(int))(em.gen())));
 }
 
 @safe pure
@@ -656,26 +656,26 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen!(Foo, Bar, ValidComponent);
-	assertFalse(em.remove!ValidImmutable(e)); // not in the storageInfoMap
+	auto e = em.gen!(Foo, Bar, int);
+	assertFalse(em.remove!size_t(e)); // not in the storageInfoMap
 
 	assertTrue(em.remove!Foo(e)); // removes Foo
 	assertFalse(em.remove!Foo(e)); // e does not contain Foo
-	assertNull(em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
+	assertNull(em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
 
 	// removes only if associated
-	assertTrue(em.removeAll(e)); // removes ValidComponent
+	assertTrue(em.removeAll(e)); // removes int
 	assertTrue(em.removeAll(e)); // doesn't remove any
 
 	assertFalse(em.remove!Foo(e)); // e does not contain Foo
 	assertFalse(em.remove!Bar(e)); // e does not contain Bar
-	assertFalse(em.remove!ValidImmutable(e)); // e does not contain ValidImmutable
+	assertFalse(em.remove!int(e)); // e does not contain ValidImmutable
 
 	// removing from invalid entities returns null
 	assertFalse(em.removeAll(Entity(15)));
 
 	// cannot call with invalid components
-	assertFalse(__traits(compiles, em.remove!InvalidComponent(e)));
+	assertFalse(__traits(compiles, em.remove!(void delegate())(e)));
 }
 
 @safe pure
@@ -690,7 +690,7 @@ unittest
 	assertTrue(em.removeAll!Foo());
 	assertEquals(0, em.size!Foo());
 
-	assertFalse(em.removeAll!ValidComponent);
+	assertFalse(em.removeAll!int);
 }
 
 @safe pure
@@ -703,16 +703,16 @@ unittest
 	assertTrue(em.set(e, Foo(4, 5)));
 	assertFalse(em.set(Entity(0, 5), Foo(4, 5)));
 	assertFalse(em.set(Entity(2), Foo(4, 5)));
-	assertEquals(Foo(4, 5), *em.storageInfoMap[componentId!Foo].getStorage!(Foo).get(e));
+	assertEquals(Foo(4, 5), *em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
 
 	assertTrue(em.set(em.gen(), Foo(4, 5), Bar("str")));
-	assertTrue(em.set!(Foo, Bar, ValidComponent)(em.gen()));
+	assertTrue(em.set!(Foo, Bar, int)(em.gen()));
 
 	assertFalse(em.set!Foo(Entity(45)));
 	assertFalse(em.set!(Foo, Bar)(Entity(45)));
 	assertFalse(em.set(Entity(45), Foo.init, Bar.init));
 
-	assertFalse(__traits(compiles, em.set!(Foo, Bar, ValidComponent, Bar)(em.gen())));
+	assertFalse(__traits(compiles, em.set!(Foo, Bar, int, Bar)(em.gen())));
 	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
 	assertFalse(__traits(compiles, em.set!(Foo, Bar, InvalidComponent)(em.gen())));
 	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
