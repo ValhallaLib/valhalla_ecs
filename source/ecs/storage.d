@@ -2,7 +2,12 @@ module ecs.storage;
 
 import ecs.entity : Entity;
 
-version(unittest) import aurorafw.unit.assertion;
+version(unittest)
+{
+	import aurorafw.unit.assertion;
+	import std.exception : assertThrown;
+	import core.exception : AssertError;
+}
 
 /**
  * A component must define this as an UDA.
@@ -116,19 +121,20 @@ public:
 		(() @trusted => this.storage = cast(void*) storage)();
 		this.remove = &storage.remove;
 		this.removeAll = &storage.removeAll;
+		this.removeIfHas = &storage.removeIfHas;
 		this.size = &storage.size;
 	}
 
 	///
-	Storage!Component getStorage(Component)()
+	Storage!Component get(Component)()
+		in (cid is TypeInfoComponent!Component)
 	{
-		return cid is TypeInfoComponent!Component
-			? (() @trusted => cast(Storage!Component) storage)() // safe cast
-			: null;
+		return (() @trusted => cast(Storage!Component) storage)(); // safe cast
 	}
 
-	bool delegate(in Entity entity) @safe pure remove;
+	void delegate(in Entity e) @safe pure remove;
 	void delegate() @safe pure removeAll;
+	void delegate(in Entity e) @safe pure removeIfHas;
 	size_t delegate() @safe pure size;
 
 private:
@@ -136,32 +142,33 @@ private:
 	void* storage;
 }
 
-@safe pure
+@trusted pure
 @("storage: StorageInfo")
 unittest
 {
 	auto sinfo = StorageInfo().__ctor!(int)();
 
-	assertNotNull(sinfo.getStorage!int);
-	assertNull(sinfo.getStorage!size_t);
-	assertFalse(__traits(compiles, sinfo.getStorage!(immutable(int))()));
+	assertTrue(typeid(Storage!int) is typeid(sinfo.get!int));
+	assertThrown!AssertError(sinfo.get!size_t());
+	assertFalse(__traits(compiles, sinfo.get!(immutable(int))()));
 }
 
-@safe pure
+@trusted pure
 @("storage: StorageInfo")
 unittest
 {
 	import std.range : front;
 
 	auto sinfo = StorageInfo().__ctor!(int)();
-	Storage!int storage = sinfo.getStorage!(int);
+	Storage!int storage = sinfo.get!(int);
 
 	assertTrue(storage.set(Entity(0), 3));
 	assertEquals(1, storage._packedEntities.length);
 	assertEquals(Entity(0), storage._packedEntities.front);
 
-	assertFalse(storage.remove(Entity(0, 45)));
-	assertTrue(storage.remove(Entity(0)));
+	assertThrown!AssertError(storage.remove(Entity(0, 45)));
+
+	storage.remove(Entity(0));
 	assertEquals(0, storage._packedEntities.length);
 }
 
@@ -177,79 +184,63 @@ package class Storage(Component)
 {
 	/**
 	 * Connects a component to an entity. If the entity is already connected to
-	 *     a component of this type then it'll be replaced by the new one. A
-	 *     component cannot be connected to an invalid storage entity.
+	 *     a component of this type then it'll be replaced by the new one.
+	 *     Passing an invalid entity leads to undefined behaviour.
 	 *
 	 * Params:
 	 *     entity = an entity to set the component.
 	 *     component = a valid component.
 	 *
-	 * Returns: true if the component was set, false otherwise.
+	 * Returns: a pointer to the Component set.
 	 */
 	@safe pure
-	bool set(in Entity entity, in Component component)
+	Component* set(in Entity e, Component component)
+		in (!(e.id < _sparsedEntities.length
+			&& _sparsedEntities[e.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
+			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
+		)
 	{
-		if (entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
-			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
-		) {
-			// don't set if the entity is storage invalid
-			return false;
-		}
-		else if (entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]] == entity
-		) {
-			// the entity already has a component of this type, so replace it
-			_components[_sparsedEntities[entity.id]] = component;
-		}
-		else
-		{
-			// the entity does not exist in this Storage, add it and set it's component
-			_set(entity, component);
-		}
-
-		return true;
+		// replace if exists or add the entity with the component
+		// the entity does not exist in this Storage, add it and set it's component
+		return has(e) ? &(_components[_sparsedEntities[e.id]] = component) : _set(e, component);
 	}
 
 
 	/**
-	 * Disaasociates an entity from it's component. If the entity is storage
-	 *     invalid false is returned and the operation is halted. Both the
-	 *     component and the entity get swapped with the last elements from it's
-	 *     packed arrays and then removed. The sparse array is then mapped to
-	 *     the new location of the swapped entity.
+	 * Disassociates an entity from it's component. The entity must exist for
+	 *     the component removal. Passing an invalid entity leads to undefined
+	 *     behaviour.
 	 *
-	 * Params: entity = the entity to disassociate from it's component.
-	 *
-	 * Returns: true if successfuly removed, false otherwise;
+	 * Params: e = the entity to disassociate from it's component.
 	 */
 	@safe pure
-	bool remove(in Entity entity)
+	void remove(in Entity e)
+		in (has(e))
 	{
-		if (!(entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]] == entity)
-		)
-			return false;
-
 		import std.algorithm : swap;
 		import std.range : back, popBack;
+
 		immutable last = _packedEntities.back;
 
 		// swap with the last element of packedEntities
-		swap(_components.back, _components[_sparsedEntities[entity.id]]);
-		swap(_packedEntities.back, _packedEntities[_sparsedEntities[entity.id]]);
+		swap(_components.back, _components[_sparsedEntities[e.id]]);
+		swap(_packedEntities.back, _packedEntities[_sparsedEntities[e.id]]);
 
 		// map the sparseEntities to the new value in packedEntities
-		swap(_sparsedEntities[last.id], _sparsedEntities[entity.id]);
+		swap(_sparsedEntities[last.id], _sparsedEntities[e.id]);
 
 		// remove the last element
 		_components.popBack;
 		_packedEntities.popBack;
+	}
 
-		return true;
+
+	///
+	@safe pure
+	void removeIfHas(in Entity e)
+	{
+		if (has(e)) remove(e);
 	}
 
 
@@ -264,59 +255,40 @@ package class Storage(Component)
 
 
 	/**
-	 * Fetches the component of entity if exists. If the entity is not storage
-	 *     valid it returns null.
+	 * Fetches the component of the entity. The entity must be a valid storage
+	 * entity. Passing an invalid entity leads to undefined behaviour.
 	 *
-	 * Params: entity = the entity used to search for the component.
+	 * Params: e = the entity used to search for the component.
 	 *
-	 * Returns: a pointer to the component if search was successful, null otherwise.
+	 * Returns: a pointer to the Component.
 	 */
 	@safe pure
-	Component* get(in Entity entity)
+	Component* get(in Entity e)
+		in (has(e))
 	{
-		// return null if the entity is invalid
-		if (!(entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]] == entity)
-		)
-			return null;
-
-		return &_components[_sparsedEntities[entity.id]];
+		return &_components[_sparsedEntities[e.id]];
 	}
 
 
 	/**
 	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed in the parameters is set and returned. If the entity is
-	 *     storage invalid then null is returned.
+	 *     passed in the parameters is set and returned.
 	 *
 	 * Params:
-	 *     entity = the entity to fetch the associated component.
+	 *     e = the entity to fetch the associated component.
 	 *     component = a valid component to set if there is none associated.
 	 *
-	 * Returns: the Component* associated or created if successful, null otherwise.
+	 * Returns: a pointer to the component associated or created.
 	 */
 	@safe pure
-	Component* getOrSet(in Entity entity, in Component component)
+	Component* getOrSet(in Entity e, Component component)
+		in (!(e.id < _sparsedEntities.length
+			&& _sparsedEntities[e.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
+			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
+		)
 	{
-		if (entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
-			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
-		) {
-			// don't set if the entity is storage invalid, the entity exists but
-			// with a diferent batch
-			return null;
-		}
-		else if (!(entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]] == entity)
-		) {
-			// set if the entity is invalid
-			return _set(entity, component);
-		}
-
-		return &_components[_sparsedEntities[entity.id]];
+		return has(e) ? get(e) : _set(e, component);
 	}
 
 
@@ -326,16 +298,27 @@ package class Storage(Component)
 		return _components.length;
 	}
 
-private:
+
+	///
 	@safe pure
-	Component* _set(in Entity entity, in Component component)
+	bool has(in Entity e) const
+	{
+		return e.id < _sparsedEntities.length
+			&& _sparsedEntities[e.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[e.id]] == e;
+	}
+
+private:
+	///
+	@safe pure
+	Component* _set(in Entity entity, Component component)
 	{
 		_packedEntities ~= entity; // set entity
 		_components ~= component; // set component
 
 		// map to the correct entity from the packedEntities from sparsedEntities
 		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
-		_sparsedEntities[entity.id] = _packedEntities.length - 1; // safe pure cast
+			_sparsedEntities[entity.id] = _packedEntities.length - 1; // safe cast
 
 		return &_components[_sparsedEntities[entity.id]];
 	}
@@ -360,7 +343,7 @@ unittest
 	assertFalse(__traits(compiles, new Storage!InvalidComponent));
 }
 
-@safe pure
+@trusted pure
 @("storage: Storage: get")
 unittest
 {
@@ -368,15 +351,12 @@ unittest
 
 	storage.set(Entity(0), Foo(3, 3));
 
-	assertNotNull(storage.get(Entity(0)));
-
-	assertNull(storage.get(Entity(0, 54)));
-	assertNull(storage.get(Entity(21)));
-
+	assertThrown!AssertError(storage.get(Entity(0, 54)));
+	assertThrown!AssertError(storage.get(Entity(21)));
 	assertEquals(Foo(3, 3), *storage.get(Entity(0)));
 }
 
-@safe pure
+@trusted pure
 @("storage: Storage: getOrSet")
 unittest
 {
@@ -384,10 +364,10 @@ unittest
 
 	assertEquals(Foo.init, *storage.getOrSet(Entity(0), Foo.init));
 	assertEquals(Foo.init, *storage.getOrSet(Entity(0), Foo(2, 3)));
-	assertNull(storage.getOrSet(Entity(0, 54), Foo(2, 3)));
+	assertThrown!AssertError(storage.getOrSet(Entity(0, 54), Foo(2, 3)));
 }
 
-@safe pure
+@trusted pure
 @("storage: Storage: remove")
 unittest
 {
@@ -396,23 +376,23 @@ unittest
 	storage.set(Entity(0), Bar("bar"));
 	storage.set(Entity(1), Bar("bar"));
 
-	assertFalse(storage.remove(Entity(0, 5)));
-	assertFalse(storage.remove(Entity(42)));
-	assertTrue(storage.remove(Entity(0)));
+	assertThrown!AssertError(storage.remove(Entity(0, 5)));
+	assertThrown!AssertError(storage.remove(Entity(42)));
 
+	storage.remove(Entity(0));
 	assertEquals(1, storage._sparsedEntities[0]);
 	assertEquals(Entity(1), storage._packedEntities[storage._sparsedEntities[1]]);
 	assertEquals(Entity(1), storage._packedEntities[0]);
 }
 
-@safe pure
+@trusted pure
 @("storage: Storage: set")
 unittest
 {
 	auto storage = new Storage!Foo();
 
 	assertTrue(storage.set(Entity(0), Foo(3, 2)));
-	assertFalse(storage.set(Entity(0, 4), Foo(3, 2)));
+	assertThrown!AssertError(storage.set(Entity(0, 4), Foo(3, 2)));
 	assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
 	assertEquals(Entity(0), storage._packedEntities[0]);
 	assertEquals(Foo(3, 2), storage._components[0]);

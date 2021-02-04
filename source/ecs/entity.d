@@ -3,10 +3,17 @@ module ecs.entity;
 import ecs.storage;
 
 import std.exception : basicExceptionCtors, enforce;
+import std.format : format;
 import std.meta : AliasSeq, NoDuplicates;
-import std.typecons : Nullable;
+import std.range : iota;
+import std.typecons : Nullable, Tuple, tuple;
 
-version(unittest) import aurorafw.unit.assertion;
+version(unittest)
+{
+	import aurorafw.unit.assertion;
+	import std.exception : assertThrown;
+	import core.exception : AssertError;
+}
 
 
 class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
@@ -204,6 +211,7 @@ public:
 	 * See_Also: `gen`**`()`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
 	Entity gen(Component)(Component component = Component.init)
+		if (isComponent!Component)
 	{
 		immutable e = gen();
 		_set(e, component);
@@ -250,191 +258,195 @@ public:
 
 
 	/**
-	 * Makes a valid entity invalid. When an entity is discarded it's **swapped**
-	 *     with the current entity in the **queue** and it's **batch** is
-	 *     incremented. The operation is aborted when trying to discard an
-	 *     invalid entity.
+	 * Destroys a valid entity. When destroyed all it's components are removed.
+	 *     Passig an invalid entity leads to undefined behaviour.
 	 *
-	 * Params: entity = valid entity to discard.
-	 *
-	 * Returns: true if successful, false otherwise.
+	 * Params: e = valid entity to discard.
 	 */
 	@safe pure
-	bool discard(in Entity entity)
+	void discard(in Entity e)
+		in (has(e))
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return false;
-
-		removeAll(entity);                                        // remove all components
-		entities[entity.id] = queue.isNull ? entityNull : queue ; // move the next in queue to back
-		queue = entity;                                           // update the next in queue
+		removeAll(e);                                             // remove all components
+		entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
+		queue = e;                                                // update the next in queue
 		queue.incrementBatch();                                   // increment batch for when it's revived
-		return true;
+	}
+
+
+	///
+	void discardIfHas(in Entity e)
+	{
+		if (has(e)) discard(e);
 	}
 
 
 	/**
-	 * Associates an entity to a component. Invalid cannot be associated with
-	 *     components. If set fails false is returned and the operation is
-	 *     halted.
+	 * Associates an entity to a component. The entity must be valid. Passing an
+	 *     invalid entity leads to undefined behaviour.
 	 *
 	 * Params:
-	 *     entity = the entity to associate.
+	 *     e = the entity to associate.
 	 *     component = a valid component to set.
 	 *
-	 * Returns: true if the component is set, false otherwise.
+	 * Returns: a pointer to the component set.
 	 */
-	bool set(Component)(Entity entity, Component component = Component.init)
+	Component* set(Component)(in Entity e, Component component = Component.init)
+		in (has(e))
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return false;
-
-		return _set(entity, component);
+		return _set(e, component);
 	}
 
 
 	///
-	bool set(ComponentRange ...)(Entity entity, ComponentRange components)
+	auto set(ComponentRange ...)(in Entity e, ComponentRange components)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+		in (has(e))
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return false;
+		mixin(format!q{Tuple!(%(ComponentRange[%s]*%|, %)) ret;}(ComponentRange.length.iota));
 
-		foreach (component; components) _set(entity, component);
+		foreach (i, component; components) ret[i] = _set(e, component);
 
-		return true;
+		return ret;
 	}
 
 
 	///
-	bool set(ComponentRange ...)(Entity entity)
+	auto set(ComponentRange ...)(in Entity e)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
+		in (has(e))
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return false;
+		mixin(format!q{Tuple!(%(ComponentRange[%s]*%|, %)) ret;}(ComponentRange.length.iota));
 
-		foreach (Component; ComponentRange) _set!Component(entity);
+		foreach (i, Component; ComponentRange) ret[i] = _set!Component(e);
 
-		return true;
+		return ret;
 	}
 
 
 	/**
-	 * Disassociates an entity from a component. If the entity is invalid or the
-	 *     does not exist within the storageInfoMap, meaning that an instance of
-	 *     the component was not ever associated to an entity yet false is
-	 *     returned.
+	 * Disassociates an entity from a component. The entity must be associated
+	 *     with the Component passed. Passing and invalid entity or an
+	 *     unregistered Component leads to undefined behaviour. See
+	 *     **removeIfHas** which removes the Component only if the entity is
+	 *     associated to it.
 	 *
 	 * Params:
-	 *     entity = an entity to disassociate.
+	 *     e = an entity to disassociate.
 	 *     Component = a valid component to remove.
-	 *
-	 * Returns: true is the component is sucessfuly removed, false otherwise.
 	 */
-	bool remove(Component)(in Entity entity)
+	void remove(Component)(in Entity e)
+		in (has(e))
+		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length
-			&& entities[entity.id] == entity
-			&& TypeInfoComponent!Component in storageInfoMap)
-		)
-			return false;
-
-		return _remove!Component(entity);
-	}
-
-
-	///
-	@safe pure
-	bool removeAll(in Entity entity)
-	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return false;
-
-		foreach (storage; storageInfoMap) storage.remove(entity);
-
-		return true;
-	}
-
-
-	///
-	bool removeAll(Component)()
-	{
-		if (TypeInfoComponent!Component !in storageInfoMap)
-			return false;
-
-		storageInfoMap[TypeInfoComponent!Component].removeAll();
-
-		return true;
+		_remove!Component(e);
 	}
 
 
 	/**
-	 * Fetch a component associated to an entity. If the entity is invalid, the
-	 *     Component wasn't associated with any entity or the entity does not
-	 *     have this Component associated to it a null is returned instead.
+	 * Disassociates an entity from a component. If the entity is not associated
+	 *     with the given Component nothing happens. Passing and invalid entity
+	 *     or an unregistered Component leads to undefined behaviour.
 	 *
 	 * Params:
-	 *     entity = the entity to get the associated Component.
+	 *     e = an entity to disassociate.
+	 *     Component = a valid component to remove.
+	 */
+	void removeIfHas(Component)(in Entity e)
+		in (has(e))
+		in (TypeInfoComponent!Component in storageInfoMap)
+	{
+		storageInfoMap[TypeInfoComponent!Component].removeIfHas(e);
+	}
+
+
+	/**
+	 * Removes all components from an entity. It searches every Component
+	 *     registered and checks wether or not the entity is asociated with it,
+	 *     if it is, it removes the component, otherwise it ignores it and
+	 *     continues to the next. If an invalid entity is passed it leads to
+	 *     undefined behaviour.
+	 *
+	 * Params: e = an entity to disassociate.
+	 */
+	@safe pure
+	void removeAll(in Entity e)
+		in (has(e))
+	{
+		foreach (storage; storageInfoMap) storage.removeIfHas(e);
+	}
+
+
+	/**
+	 * Disassociates al entities from a Component, reseting the Storage for that
+	 *     Component. If an unregistered Component is passed it leads to
+	 *     undefined behaviour.
+	 *
+	 * Params: Component = a valid Component.
+	 */
+	void removeAll(Component)()
+		in (TypeInfoComponent!Component in storageInfoMap)
+	{
+		storageInfoMap[TypeInfoComponent!Component].removeAll();
+	}
+
+
+	/**
+	 * Fetch a component associated to an entity. The entity must be associated
+	 *     with the Component passed. Passing and invalid entity or an
+	 *     unregistered Component leads to undefined behaviour. See **getOrSet**
+	 *     which sets a component to an entity if the same isn't associated with
+	 *     one.
+	 *
+	 * Params:
+	 *     e= the entity to get the associated Component.
 	 *     Component = a valid component type to retrieve.
 	 *
-	 * Returns: Component* with the associated component if sucessful, null otherwise
+	 * Returns: a pointer to the Component.
 	 */
-	Component* get(Component)(in Entity entity)
+	Component* get(Component)(in Entity e)
+		in (has(e))
+		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length
-			&& entities[entity.id] == entity
-			&& TypeInfoComponent!Component in storageInfoMap)
-		)
-			return null;
-
-		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).get(entity);
+		return storageInfoMap[TypeInfoComponent!Component].get!(Component).get(e);
 	}
 
 
 	/**
 	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed in the parameters is set and returned. If the entity is
-	 *     invalid null is returned instead.
+	 *     passed in the parameters is set and returned. If no Storage for the
+	 *     passed Component exists, one is initialized. If the entity passed is
+	 *     invalid it leads to undefined behaviour.
 	 *
 	 * Params:
-	 *     entity = the entity to fetch the associated component.
+	 *     e = the entity to fetch the associated component.
 	 *     component = a valid component to set if there is none associated.
 	 *
 	 * Returns: the Component* associated or created if successful, null otherwise.
 	 */
-	Component* getOrSet(Component)(in Entity entity, in Component component = Component.init)
+	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
+		in (has(e))
 	{
-		// Invalid action if the entity is not valid
-		if (!(entity.id < entities.length && entities[entity.id] == entity))
-			return null;
-		else if (TypeInfoComponent!Component !in storageInfoMap)
-			storageInfoMap[TypeInfoComponent!Component] = StorageInfo().__ctor!(Component)();
+		if (TypeInfoComponent!Component !in storageInfoMap)
+			return _set(e, component);
 
-		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).getOrSet(entity, component);
+		return storageInfoMap[TypeInfoComponent!Component].get!(Component).getOrSet(e, component);
 	}
 
 
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
-	 *     are associated to a component type.
+	 *     are associated to a component type. If the Component passed isn't
+	 *     registered it leads to undefined behaviour.
 	 *
 	 * Params: Component = a Component type to search.
 	 *
-	 * Returns: the amount of entities/components within that Storage or 0 if it
-	 *     fails.
+	 * Returns: the amount of entities in the Component Storage.
 	 */
 	size_t size(Component)() const
+		in (TypeInfoComponent!Component in storageInfoMap)
 	{
-		return TypeInfoComponent!Component in storageInfoMap
-			? storageInfoMap[TypeInfoComponent!Component].size()
-			: 0;
+		return storageInfoMap[TypeInfoComponent!Component].size();
 	}
 
 
@@ -448,6 +460,15 @@ public:
 	{
 		import ecs.entitybuilder : EntityBuilder;
 		return EntityBuilder(this);
+	}
+
+
+	///
+	@safe pure
+	bool has(in Entity e) const
+		in (e.id < Entity.maxid)
+	{
+		return e.id < entities.length && entities[e.id] == e;
 	}
 
 private:
@@ -493,7 +514,8 @@ private:
 	}
 
 
-	bool _set(Component)(Entity entity, Component component = Component.init)
+	///
+	Component* _set(Component)(in Entity entity, Component component = Component.init)
 		if (isComponent!Component)
 	{
 		if (TypeInfoComponent!Component !in storageInfoMap)
@@ -503,14 +525,15 @@ private:
 		}
 
 		// set the component to entity
-		return storageInfoMap[TypeInfoComponent!Component].getStorage!(Component).set(entity, component);
+		return storageInfoMap[TypeInfoComponent!Component].get!(Component).set(entity, component);
 	}
 
 
-	bool _remove(Component)(in Entity entity)
+	///
+	void _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
-		return storageInfoMap[TypeInfoComponent!Component].remove(entity);
+		storageInfoMap[TypeInfoComponent!Component].remove(entity);
 	}
 
 
@@ -520,7 +543,7 @@ private:
 }
 
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: discard")
 unittest
 {
@@ -537,13 +560,13 @@ unittest
 	assertEquals(em.entityNull, em.entities[entity1.id]);
 	(() @trusted pure => assertEquals(Entity(1, 1), em.queue.get))(); // batch was incremented
 
-	assertTrue(em.discard(entity0));
+	em.discard(entity0);
 	assertEquals(Entity(1, 1), em.entities[entity0.id]);
 	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 
 	// cannot discard invalid entities
-	assertFalse(em.discard(Entity(50)));
-	assertFalse(em.discard(Entity(entity2.id, 40)));
+	assertThrown!AssertError(em.discard(Entity(50)));
+	assertThrown!AssertError(em.discard(Entity(entity2.id, 40)));
 
 	assertEquals(3, em.entities.length);
 }
@@ -587,13 +610,18 @@ unittest
 	auto em = new EntityManager();
 
 	auto e = em.gen(Foo(3, 5), Bar("str"));
-	assertEquals(Foo(3, 5), *em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
-	assertEquals(Bar("str"), *em.storageInfoMap[TypeInfoComponent!Bar].getStorage!(Bar).get(e));
+	assertEquals(Foo(3, 5), *em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
+	assertEquals(Bar("str"), *em.storageInfoMap[TypeInfoComponent!Bar].get!(Bar).get(e));
 
 	e = em.gen!(int, string, size_t);
-	assertEquals(int.init, *em.storageInfoMap[TypeInfoComponent!int].getStorage!int.get(e));
-	assertEquals(string.init, *em.storageInfoMap[TypeInfoComponent!string].getStorage!string.get(e));
-	assertEquals(size_t.init, *em.storageInfoMap[TypeInfoComponent!size_t].getStorage!size_t.get(e));
+	assertEquals(int.init, *em.storageInfoMap[TypeInfoComponent!int].get!int.get(e));
+	assertEquals(string.init, *em.storageInfoMap[TypeInfoComponent!string].get!string.get(e));
+	assertEquals(size_t.init, *em.storageInfoMap[TypeInfoComponent!size_t].get!size_t.get(e));
+
+	e = em.gen(3, "entity", [2, 2]);
+	assertEquals(3, *em.storageInfoMap[TypeInfoComponent!int].get!int.get(e));
+	assertEquals("entity", *em.storageInfoMap[TypeInfoComponent!string].get!string.get(e));
+	assert([2, 2] == *em.storageInfoMap[TypeInfoComponent!(int[])].get!(int[]).get(e));
 
 	assertFalse(__traits(compiles, em.gen!(size_t, size_t)()));
 	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
@@ -601,7 +629,7 @@ unittest
 	assertFalse(__traits(compiles, em.gen!(immutable(int))()));
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: get")
 unittest
 {
@@ -611,7 +639,7 @@ unittest
 
 	assertEquals(Foo.init, *em.get!Foo(e));
 	assertEquals(Bar.init, *em.get!Bar(e));
-	assertNull(em.get!int(e));
+	assertThrown!AssertError(em.get!int(e));
 
 	em.get!Foo(e).y = 10;
 	assertEquals(Foo(int.init, 10), *em.get!Foo(e));
@@ -619,7 +647,7 @@ unittest
 	assertFalse(__traits(compiles, em.get!(immutable(int))(em.gen())));
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: getOrSet")
 unittest
 {
@@ -630,8 +658,8 @@ unittest
 	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
 	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
 
-	assertNull(em.getOrSet!Foo(Entity(0, 12)));
-	assertNull(em.getOrSet!Foo(Entity(3)));
+	assertThrown!AssertError(em.getOrSet!Foo(Entity(0, 12)));
+	assertThrown!AssertError(em.getOrSet!Foo(Entity(3)));
 }
 
 @safe pure
@@ -650,35 +678,35 @@ unittest
 	assertEquals(Entity(0, 1), em.entities.front);
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: remove")
 unittest
 {
 	auto em = new EntityManager();
 
 	auto e = em.gen!(Foo, Bar, int);
-	assertFalse(em.remove!size_t(e)); // not in the storageInfoMap
+	assertThrown!AssertError(em.remove!size_t(e)); // not in the storageInfoMap
 
-	assertTrue(em.remove!Foo(e)); // removes Foo
-	assertFalse(em.remove!Foo(e)); // e does not contain Foo
-	assertNull(em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
+	em.remove!Foo(e); // removes Foo
+	assertThrown!AssertError(em.remove!Foo(e)); // e does not contain Foo
+	assertThrown!AssertError(em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
 
 	// removes only if associated
-	assertTrue(em.removeAll(e)); // removes int
-	assertTrue(em.removeAll(e)); // doesn't remove any
+	em.removeAll(e); // removes int
+	em.removeAll(e); // doesn't remove any
 
-	assertFalse(em.remove!Foo(e)); // e does not contain Foo
-	assertFalse(em.remove!Bar(e)); // e does not contain Bar
-	assertFalse(em.remove!int(e)); // e does not contain ValidImmutable
+	assertThrown!AssertError(em.remove!Foo(e)); // e does not contain Foo
+	assertThrown!AssertError(em.remove!Bar(e)); // e does not contain Bar
+	assertThrown!AssertError(em.remove!int(e)); // e does not contain ValidImmutable
 
-	// removing from invalid entities returns null
-	assertFalse(em.removeAll(Entity(15)));
+	// invalid entity
+	assertThrown!AssertError(em.removeAll(Entity(15)));
 
 	// cannot call with invalid components
 	assertFalse(__traits(compiles, em.remove!(void delegate())(e)));
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: removeAll")
 unittest
 {
@@ -687,13 +715,13 @@ unittest
 	foreach (i; 0..10) em.gen!(Foo, Bar);
 
 	assertEquals(10, em.size!Foo());
-	assertTrue(em.removeAll!Foo());
+	em.removeAll!Foo();
 	assertEquals(0, em.size!Foo());
 
-	assertFalse(em.removeAll!int);
+	assertThrown!AssertError(em.removeAll!int());
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: set")
 unittest
 {
@@ -701,16 +729,26 @@ unittest
 
 	auto e = em.gen();
 	assertTrue(em.set(e, Foo(4, 5)));
-	assertFalse(em.set(Entity(0, 5), Foo(4, 5)));
-	assertFalse(em.set(Entity(2), Foo(4, 5)));
-	assertEquals(Foo(4, 5), *em.storageInfoMap[TypeInfoComponent!Foo].getStorage!(Foo).get(e));
+	assertThrown!AssertError(em.set(Entity(0, 5), Foo(4, 5)));
+	assertThrown!AssertError(em.set(Entity(2), Foo(4, 5)));
+	assertEquals(Foo(4, 5), *em.storageInfoMap[TypeInfoComponent!Foo].get!(Foo).get(e));
 
-	assertTrue(em.set(em.gen(), Foo(4, 5), Bar("str")));
-	assertTrue(em.set!(Foo, Bar, int)(em.gen()));
+	{
+		auto components = em.set(em.gen(), Foo(4, 5), Bar("str"));
+		assertEquals(Foo(4,5), *components[0]);
+		assertEquals(Bar("str"), *components[1]);
+	}
 
-	assertFalse(em.set!Foo(Entity(45)));
-	assertFalse(em.set!(Foo, Bar)(Entity(45)));
-	assertFalse(em.set(Entity(45), Foo.init, Bar.init));
+	{
+		auto components = em.set!(Foo, Bar, int)(em.gen());
+		assertEquals(Foo.init, *components[0]);
+		assertEquals(Bar.init, *components[1]);
+		assertEquals(int.init, *components[2]);
+	}
+
+	assertThrown!AssertError(em.set!Foo(Entity(45)));
+	assertThrown!AssertError(em.set!(Foo, Bar)(Entity(45)));
+	assertThrown!AssertError(em.set(Entity(45), Foo.init, Bar.init));
 
 	assertFalse(__traits(compiles, em.set!(Foo, Bar, int, Bar)(em.gen())));
 	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
@@ -718,7 +756,7 @@ unittest
 	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
 }
 
-@safe pure
+@trusted pure
 @("entity: EntityManager: size")
 unittest
 {
@@ -726,7 +764,7 @@ unittest
 
 	auto e = em.gen!Foo;
 	assertEquals(1, em.size!Foo());
-	assertEquals(0, em.size!Bar());
+	assertThrown!AssertError(em.size!Bar());
 
 	em.remove!Foo(e);
 	assertEquals(0, em.size!Foo());
