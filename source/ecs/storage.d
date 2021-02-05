@@ -1,7 +1,10 @@
 module ecs.storage;
 
 import ecs.entity : Entity;
-import std.traits : isDelegate, isFunctionPointer;
+
+import std.meta : allSatisfy;
+import std.traits : isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
+import std.typecons : Tuple;
 
 version(unittest)
 {
@@ -26,17 +29,15 @@ enum Component;
  * Returns: true is is a valid component, false otherwise.
  */
 template isComponent(T)
+	if (!(is(T == class)
+		|| is(T == union)
+		|| isSomeFunction!T
+		|| isInstanceOf!(Tuple, T))
+	)
 {
-	import std.meta : allSatisfy;
-	import std.traits : isMutable, isSomeFunction, Fields;
-
 	static if (is(T == struct))
 	{
 		enum isComponent = allSatisfy!(isMutable, Fields!T);
-	}
-	else static if (is(T == class) || is(T == union) || isSomeFunction!T)
-	{
-		enum isComponent = false;
 	}
 	else
 	{
@@ -86,9 +87,9 @@ unittest
 
 	assertFalse(isComponent!NotComponentStructImmutable);
 	assertFalse(isComponent!NotComponentStructConst);
-	assertFalse(isComponent!(void function()));
-	assertFalse(isComponent!(int delegate()));
 
+	assertFalse(__traits(compiles, isComponent!(void function())));
+	assertFalse(__traits(compiles, isComponent!(int delegate())));
 	assertFalse(__traits(compiles, isComponent!NotComponentClass));
 	assertFalse(__traits(compiles, isComponent!NotComponentUnion));
 	assertFalse(__traits(compiles, isComponent!NotComponentFuncPtr));
