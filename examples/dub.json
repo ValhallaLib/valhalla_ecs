@@ -1,0 +1,10 @@
+{
+    "name": "examples",
+    "targetType": "none",
+    "dependencies": {
+        ":benchmarks": "*"
+    },
+    "subPackages": [
+        "benchamrks"
+    ]
+}

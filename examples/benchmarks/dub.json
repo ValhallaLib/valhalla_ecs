@@ -1,0 +1,10 @@
+{
+    "name": "benchmarks",
+    "targetType": "none",
+    "dependencies": {
+        ":query": "*"
+    },
+    "subPackages": [
+        "query"
+    ]
+}
