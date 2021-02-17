@@ -1,0 +1,9 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"aurorafw": "0.0.1-alpha.4",
+		"emsi_containers": "0.8.0",
+		"stdx-allocator": "2.77.5",
+		"valhala_ecs": {"path":"../../../"}
+	}
+}
