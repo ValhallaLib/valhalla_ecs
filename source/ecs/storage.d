@@ -3,7 +3,7 @@ module ecs.storage;
 import ecs.entity : Entity;
 
 import std.meta : allSatisfy;
-import std.traits : isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
+import std.traits : isSomeChar, isCopyable, isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
 import std.typecons : Tuple;
 
 version(unittest)
@@ -28,22 +28,16 @@ enum Component;
  *
  * Returns: true is is a valid component, false otherwise.
  */
-template isComponent(T)
-	if (!(is(T == class)
-		|| is(T == union)
-		|| isSomeFunction!T
-		|| isInstanceOf!(Tuple, T))
-	)
-{
-	static if (is(T == struct))
-	{
-		enum isComponent = allSatisfy!(isMutable, Fields!T);
-	}
-	else
-	{
-		enum isComponent = isMutable!T;
-	}
-}
+enum isComponent(T) = !(is(T == class)
+	|| is(T == union)
+	|| isSomeFunction!T
+	|| isInstanceOf!(Tuple, T)
+	|| !isCopyable!T
+	|| isSomeChar!T
+	|| is(Entity == T)
+	|| (is(T == struct) && !allSatisfy!(isMutable, Fields!T))
+	|| !isMutable!T
+);
 
 
 ///
@@ -79,21 +73,24 @@ unittest
 	foreach (t; AliasSeq!(ubyte*, ushort*, uint*, ulong*))
 		assertTrue(isComponent!t);
 
-	foreach (t; AliasSeq!(char, wchar, string, wstring))
-		assertTrue(isComponent!t);
-
-	foreach (t; AliasSeq!(char*, wchar*, string*, wstring*))
+	foreach (t; AliasSeq!(string, wstring, string*, wstring*))
 		assertTrue(isComponent!t);
 
 	assertFalse(isComponent!NotComponentStructImmutable);
 	assertFalse(isComponent!NotComponentStructConst);
+	assertFalse(isComponent!(void function()));
+	assertFalse(isComponent!(int delegate()));
+	assertFalse(isComponent!char);
+	assertFalse(isComponent!wchar);
 
-	assertFalse(__traits(compiles, isComponent!(void function())));
-	assertFalse(__traits(compiles, isComponent!(int delegate())));
 	assertFalse(__traits(compiles, isComponent!NotComponentClass));
 	assertFalse(__traits(compiles, isComponent!NotComponentUnion));
 	assertFalse(__traits(compiles, isComponent!NotComponentFuncPtr));
 }
+
+
+///
+enum areComponents(T ...) = allSatisfy!(isComponent, T);
 
 
 ///
@@ -165,6 +162,8 @@ public:
 		this.cid = TypeInfoComponent!Component;
 
 		(() @trusted => this.storage = cast(void*) storage)();
+		this.entities = &storage.entities;
+		this.has = &storage.has;
 		this.remove = &storage.remove;
 		this.removeAll = &storage.removeAll;
 		this.removeIfHas = &storage.removeIfHas;
@@ -178,6 +177,8 @@ public:
 		return (() @trusted => cast(Storage!Component) storage)(); // safe cast
 	}
 
+	Entity[] delegate() @safe pure @property entities;
+	bool delegate(in Entity e) @safe pure has;
 	void delegate(in Entity e) @safe pure remove;
 	void delegate() @safe pure removeAll;
 	void delegate(in Entity e) @safe pure removeIfHas;
@@ -353,6 +354,21 @@ package class Storage(Component)
 		return e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
 			&& _packedEntities[_sparsedEntities[e.id]] == e;
+	}
+
+
+	///
+	@safe pure @property
+	Entity[] entities()
+	{
+		return _packedEntities;
+	}
+
+
+	@safe pure @property
+	Component[] components()
+	{
+		return _components;
 	}
 
 private:
