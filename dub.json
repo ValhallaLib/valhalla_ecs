@@ -6,7 +6,16 @@
 	"targetPath": "bin",
 	"license": "MIT",
 	"targetType": "library",
-	"dependencies": {
-		"aurorafw:unit": "~>0.0.1-alpha.4"
-	}
+	"configurations": [
+        {
+            "name": "default"
+        },
+        {
+            "name": "unittest",
+            "targetType": "autodetect",
+            "dependencies": {
+                "aurorafw:unit": "0.0.1-alpha.4"
+			}
+        }
+    ]
 }
