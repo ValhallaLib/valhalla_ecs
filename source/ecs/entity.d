@@ -1,11 +1,15 @@
 module ecs.entity;
 
 import ecs.storage;
+import ecs.query;
+import ecs.queryfilter;
+import ecs.queryworld;
 
 import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
 import std.meta : AliasSeq, NoDuplicates;
 import std.range : iota;
+import std.traits : isInstanceOf, TemplateArgsOf;
 import std.typecons : Nullable, Tuple, tuple;
 
 version(unittest)
@@ -268,7 +272,7 @@ public:
 		in (has(e))
 	{
 		removeAll(e);                                             // remove all components
-		entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
+		_entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
 		queue = e;                                                // update the next in queue
 		queue.incrementBatch();                                   // increment batch for when it's revived
 	}
@@ -353,7 +357,7 @@ public:
 	void removeIfHas(Component)(in Entity e)
 		in (has(e))
 	{
-		_assure!Component().removeIfHas(e);
+		_assureStorage!Component().removeIfHas(e);
 	}
 
 
@@ -384,7 +388,7 @@ public:
 	 */
 	void removeAll(Component)()
 	{
-		_assure!Component().removeAll();
+		_assureStorage!Component().removeAll();
 	}
 
 
@@ -403,7 +407,7 @@ public:
 	Component* get(Component)(in Entity e)
 		in (has(e))
 	{
-		return _assure!Component().get(e);
+		return _assureStorage!Component().get(e);
 	}
 
 
@@ -422,7 +426,7 @@ public:
 	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
 		in (has(e))
 	{
-		return _assure!Component().getOrSet(e, component);
+		return _assureStorage!Component().getOrSet(e, component);
 	}
 
 
@@ -436,7 +440,7 @@ public:
 	 */
 	size_t size(Component)()
 	{
-		return _assure!Component().size();
+		return _assureStorage!Component().size();
 	}
 
 
@@ -458,7 +462,104 @@ public:
 	bool has(in Entity e) const
 		in (e.id < Entity.maxid)
 	{
-		return e.id < entities.length && entities[e.id] == e;
+		return e.id < _entities.length && _entities[e.id] == e;
+	}
+
+
+	/**
+	 * Query of `Output` args. `Output` must either be an `Entity`, a
+	 *     `Component` or a `Tuple` of these. `Component` arguments passed in `Output`
+	 *     are returned by reference by the range. `Entity` is copied. To have
+	 *     an `Entity` as an `Output` parameter, the type must **always** be in
+	 *     the first "slot".
+	 *
+	 * If using the range with a `foreach` loop, then the arguments are
+	 *     implicitly converted to the respective variables.
+	 *
+	 * Examples:
+	 * --------------------
+	 * auto em = new EntityManager();
+	 * ...
+	 *
+	 * // query valid entities
+	 * foreach (e; em.query!Entity) { ... }
+	 *
+	 * // same as above --> infers to em.query!Entity
+	 * foreach (e; em.query!(Tuple!Entity)) { ... }
+	 *
+	 * // query entities with int, string
+	 * foreach (e, i, str; em.query!(Tuple!(Entity,int,string))) { ... }
+	 *
+	 * // same as above but doesn't return the entities
+	 * foreach (i, str; em.query!(Tuple!(int,string))) { ... }
+	 * --------------------
+	 *
+	 * Parameters: Output = valid query arguments (Entity and Component)
+	 *
+	 * Returns: a `Query!Output` which iterates through the entities with
+	 *     `Output` arguments.
+	 */
+	auto query(Output)()
+	{
+		auto queryW = _queryWorld!Output();
+
+		return Query!(TemplateArgsOf!(typeof(queryW)))(queryW);
+	}
+
+
+	/**
+	 * Query of `Output` args with `Filter` args. Behaves the same as the normal
+	 *     query with the addition of filtering Components not wanted in the
+	 *     `Output` parameters. All `Filter` arguments must be `Components`.
+	 *
+	 * Examples:
+	 * --------------------
+	 * auto em = new EntityManager();
+	 * ...
+	 *
+	 * // query entities with int and string but only returns entities
+	 * foreach (e; em.query!(Entity, With!(int, string))) { ... }
+	 *
+	 * // query entities without int but only returns entities
+	 * foreach (e; em.query!(Entity, Without!int)) { ... }
+	 *
+	 * // query entities with int, string but only returns entities and int
+	 * foreach (e, i; em.query!(Tuple!(Entity,int), With!string)) { ... }
+	 *
+	 * // query entities with int, string and without bool but only returns entities and int
+	 * foreach (e, i; em.query!(Tuple!(Entity,int), Tuple!(With!string, Without!bool))) { ... }
+	 * --------------------
+	 */
+	auto query(Output, Filter)()
+	{
+		import std.meta : metaFilter = Filter, staticMap;
+		enum isWith(T) = isInstanceOf!(With, T);
+
+		static if (isInstanceOf!(Tuple, Filter))
+			alias Extra = staticMap!(TemplateArgsOf, metaFilter!(isWith, TemplateArgsOf!(Filter)));
+		else
+			alias Extra = staticMap!(TemplateArgsOf, metaFilter!(isWith, Filter));
+
+
+		auto queryW = _queryWorld!(Output, Extra)();
+		auto queryF = _queryFilter!Filter();
+
+		return Query!(TemplateArgsOf!(typeof(queryW)),TemplateArgsOf!(typeof(queryF)))(queryW, queryF);
+	}
+
+
+	///
+	@safe pure @property
+	Entity[] entities()
+	{
+		import std.array : appender;
+		auto ret = appender!(Entity[]);
+
+		foreach (i, e; _entities)
+			if (e.id == i)
+				ret ~= e;
+
+		return ret.data;
 	}
 
 private:
@@ -476,13 +577,13 @@ private:
 	{
 		import std.format : format;
 		enforce!MaximumEntitiesReachedException(
-			entities.length < Entity.maxid,
-			format!"Reached the maximum amount of entities supported: %s!"(Entity.maxid)
+			_entities.length < Entity.maxid,
+			format!"Reached the maximum amount of _entities supported: %s!"(Entity.maxid)
 		);
 
 		import std.range : back;
-		entities ~= Entity(entities.length); // safe pure cast
-		return entities.back;
+		_entities ~= Entity(_entities.length); // safe pure cast
+		return _entities.back;
 	}
 
 
@@ -498,8 +599,8 @@ private:
 		in (!queue.isNull)
 	{
 		immutable next = queue;     // get the next entity in queue
-		queue = entities[next.id];  // grab the entity which will be the next in queue
-		entities[next.id] = next;   // revive the entity
+		queue = _entities[next.id];  // grab the entity which will be the next in queue
+		_entities[next.id] = next;   // revive the entity
 		return next;
 	}
 
@@ -509,7 +610,7 @@ private:
 		if (isComponent!Component)
 	{
 		// set the component to entity
-		return _assure!Component().set(entity, component);
+		return _assureStorage!Component().set(entity, component);
 	}
 
 
@@ -517,12 +618,12 @@ private:
 	void _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
-		_assure!Component().remove(entity);
+		_assureStorage!Component().remove(entity);
 	}
 
 
 	///
-	Storage!Component _assure(Component)()
+	size_t _assure(Component)()
 		if (isComponent!Component)
 	{
 		immutable index = ComponentId!Component;
@@ -537,11 +638,150 @@ private:
 			storageInfoMap[index] = StorageInfo().__ctor!(Component)();
 		}
 
+		return index;
+	}
+
+
+	///
+	Storage!Component _assureStorage(Component)()
+		if (isComponent!Component)
+	{
+		immutable index = _assure!Component(); // to fix dmd boundscheck=off
 		return storageInfoMap[index].get!Component();
 	}
 
 
-	Entity[] entities;
+	///
+	StorageInfo _assureStorageInfo(Component)()
+		if (isComponent!Component)
+	{
+		immutable index = _assure!Component();
+		return storageInfoMap[index];
+	}
+
+
+	///
+	QueryWorld!(Entity) _queryWorld(Output : Entity, Extra ...)()
+	{
+		return QueryWorld!Entity(_queryEntities!(Extra).idup);
+	}
+
+
+	///
+	QueryWorld!(Entity) _queryWorld(Output : Tuple!Entity, Extra ...)()
+	{
+		return _queryWorld!(Entity, Extra)();
+	}
+
+
+	///
+	QueryWorld!(Component) _queryWorld(Component, Extra ...)()
+		if (isComponent!Component)
+	{
+		auto storage = _assureStorage!Component();
+		auto entities = _queryEntities!(Component, Extra);
+		return QueryWorld!Component(entities.idup, storage.components());
+	}
+
+
+	///
+	QueryWorld!(Component) _queryWorld(Output : Tuple!(Component), Component, Extra ...)()
+		if (isComponent!Component && Output.length == 1)
+	{
+		return _queryWorld!(Component, Extra)();
+	}
+
+
+	///
+	QueryWorld!(OutputTuple) _queryWorld(OutputTuple, Extra ...)()
+		if (isInstanceOf!(Tuple, OutputTuple))
+	{
+		alias Out = NoDuplicates!(TemplateArgsOf!OutputTuple);
+		static if (is(Out[0] == Entity))
+			alias Components = Out[1..$];
+		else
+			alias Components = Out;
+
+		enum components = format!q{[%(_assureStorageInfo!(Components[%s])%|,%)]}(Components.length.iota);
+
+		auto entities = _queryEntities!(Components, Extra);
+		enum queryworld = format!q{QueryWorld!(OutputTuple)(entities.idup,%s)}(components);
+
+		return mixin(queryworld);
+	}
+
+
+	///
+	QueryFilter!(Filter) _queryFilter(Filter)()
+		if (!isInstanceOf!(Tuple, Filter))
+	{
+		alias F = TemplateArgsOf!Filter;
+		enum queryFilter = format!q{QueryFilter!Filter(Filter([%(_assureStorageInfo!(F[%s])%|,%)]))}(F.length.iota);
+
+		return mixin(queryFilter);
+	}
+
+
+	///
+	QueryFilter!(FilterTuple) _queryFilter(FilterTuple)()
+		if (isInstanceOf!(Tuple, FilterTuple))
+	{
+		alias Filters = TemplateArgsOf!FilterTuple;
+
+		string filterfy()
+		{
+			import std.array : appender;
+			import std.meta : staticMap;
+			auto str = appender!string;
+
+			// iterate every unique component from all filters
+			// alias Filters = AliasSeq!(With!(Foo,Bar,Foo))
+			// NoDuplicates!(staticMap!(TemplateArgsOf,Filters)) == AliasSeq!(Foo,Bar)
+			foreach (F; Filters)
+			{
+				alias Components = NoDuplicates!(TemplateArgsOf!F);
+				str ~= F.stringof~"([";
+				foreach (C; Components)
+				{
+					str ~= "_assureStorageInfo!("~C.stringof~"),";
+				}
+				str ~= "]),";
+			}
+
+			return str.data;
+		}
+
+		enum filters = "QueryFilter!(FilterTuple)(tuple(" ~ filterfy() ~ "))";
+
+		return mixin(filters);
+	}
+
+
+	/**
+	 * Finds the Storage with the lowest size of all ComponentRange storages. If
+	 *     ComponentRange.length is 0 then all valid entities are chosen.
+	 *
+	 * Paramters: ComponentRange = components to search.
+	 *
+	 * Returns: the lowest Entity[] in size of all Storages if
+	 * ComponentRange.len > 0, otherwise all valid entities.
+	 */
+	Entity[] _queryEntities(ComponentRange ...)()
+	{
+		static if (ComponentRange.length == 0)
+			return entities();
+		else
+		{
+			import std.algorithm : minElement;
+			alias Comp = NoDuplicates!(ComponentRange);
+			enum comp = format!q{[%(_assureStorageInfo!(Comp[%s])%|,%)]}(Comp.length.iota);
+			enum entts = format!q{%s.minElement!"a.size()".entities();}(comp);
+			mixin("return " ~ entts);
+		}
+	}
+
+
+	Entity[] _entities;
 	Nullable!(Entity, entityNull) queue;
 	StorageInfo[] storageInfoMap;
 }
@@ -561,18 +801,18 @@ unittest
 
 	em.discard(entity1);
 	assertFalse(em.queue.isNull);
-	assertEquals(em.entityNull, em.entities[entity1.id]);
+	assertEquals(em.entityNull, em._entities[entity1.id]);
 	(() @trusted pure => assertEquals(Entity(1, 1), em.queue.get))(); // batch was incremented
 
 	em.discard(entity0);
-	assertEquals(Entity(1, 1), em.entities[entity0.id]);
+	assertEquals(Entity(1, 1), em._entities[entity0.id]);
 	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 
 	// cannot discard invalid entities
 	assertThrown!AssertError(em.discard(Entity(50)));
 	assertThrown!AssertError(em.discard(Entity(entity2.id, 40)));
 
-	assertEquals(3, em.entities.length);
+	assertEquals(3, em._entities.length);
 }
 
 @safe pure
@@ -588,8 +828,8 @@ unittest
 	assertTrue(em.queue.isNull);
 
 	assertEquals(Entity(1), em.gen()); // calls fabricate again
-	assertEquals(2, em.entities.length);
-	assertEquals(Entity(1), em.entities.back);
+	assertEquals(2, em._entities.length);
+	assertEquals(Entity(1), em._entities.back);
 
 	// FIXME: add MaximumEntitiesReachedException
 }
@@ -602,8 +842,8 @@ unittest
 	auto em = new EntityManager();
 
 	assertEquals(Entity(0), em.gen());
-	assertEquals(1, em.entities.length);
-	assertEquals(Entity(0), em.entities.front);
+	assertEquals(1, em._entities.length);
+	assertEquals(Entity(0), em._entities.front);
 }
 
 @safe pure
@@ -679,7 +919,7 @@ unittest
 	assertFalse(Entity(0, 1) == entity0); // entity's batch is not updated
 
 	entity0 = em.gen(); // recycles
-	assertEquals(Entity(0, 1), em.entities.front);
+	assertEquals(Entity(0, 1), em._entities.front);
 }
 
 @trusted pure
