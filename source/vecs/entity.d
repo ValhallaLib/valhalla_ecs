@@ -1,9 +1,9 @@
-module ecs.entity;
+module vecs.entity;
 
-import ecs.storage;
-import ecs.query;
-import ecs.queryfilter;
-import ecs.queryworld;
+import vecs.storage;
+import vecs.query;
+import vecs.queryfilter;
+import vecs.queryworld;
 
 import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
@@ -452,7 +452,7 @@ public:
 	@safe pure
 	auto entityBuilder()
 	{
-		import ecs.entitybuilder : EntityBuilder;
+		import vecs.entitybuilder : EntityBuilder;
 		return EntityBuilder(this);
 	}
 

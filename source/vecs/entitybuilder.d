@@ -1,6 +1,6 @@
-module ecs.entitybuilder;
+module vecs.entitybuilder;
 
-import ecs.entity;
+import vecs.entity;
 
 version(unittest) import aurorafw.unit.assertion;
 
@@ -59,7 +59,7 @@ private:
 @("entitybuilder: entityBuilder")
 unittest
 {
-	import ecs.storage;
+	import vecs.storage;
 	EntityManager em = new EntityManager();
 	auto entities = em.entityBuilder
 		.gen()

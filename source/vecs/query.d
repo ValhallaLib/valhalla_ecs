@@ -1,9 +1,9 @@
-module ecs.query;
+module vecs.query;
 
-import ecs.entity;
-import ecs.storage;
-import ecs.queryfilter;
-import ecs.queryworld;
+import vecs.entity;
+import vecs.storage;
+import vecs.queryfilter;
+import vecs.queryworld;
 
 import std.format : format;
 import std.meta : AliasSeq, allSatisfy, anySatisfy, Filter, NoDuplicates;

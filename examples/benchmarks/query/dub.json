@@ -5,7 +5,7 @@
     "sourcePaths": ["source"],
     "importPaths": ["source"],
     "dependencies": {
-        "valhala_ecs": {"path": "../../../"}
+        "valhalla_ecs": {"path": "../../../"}
     },
     "dflags": ["-release", "-O", "-inline", "-boundscheck=off"]
 }
