@@ -19,7 +19,7 @@ their user-friendly approach.
 
 ## Code Example
 ```d
-import ecs;
+import vecs;
 
 struct Position
 {
@@ -80,7 +80,7 @@ void main()
 
 ## Almost anything can be a component
 ```d
-import ecs;
+import vecs;
 
 struct Foo {}
 
