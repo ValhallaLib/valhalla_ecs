@@ -1,7 +1,7 @@
-module ecs.queryfilter;
+module vecs.queryfilter;
 
-import ecs.entity : Entity;
-import ecs.storage : areComponents, ComponentId, StorageInfo;
+import vecs.entity : Entity;
+import vecs.storage : areComponents, ComponentId, StorageInfo;
 
 import std.meta : allSatisfy, NoDuplicates, staticMap;
 import std.traits : isInstanceOf, TemplateArgsOf;

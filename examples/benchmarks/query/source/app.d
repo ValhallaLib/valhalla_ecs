@@ -1,9 +1,9 @@
 module app;
 
-import ecs.entity;
-import ecs.storage;
-import ecs.query;
-import ecs.queryfilter;
+import vecs.entity;
+import vecs.storage;
+import vecs.query;
+import vecs.queryfilter;
 
 import std.algorithm : each;
 import std.datetime.stopwatch : benchmark;
@@ -13,8 +13,8 @@ import std.typecons : Tuple;
 
 struct PositionComponent
 {
-	loat x = 0.0f;
-	loat y = 0.0f;
+	float x = 0.0f;
+	float y = 0.0f;
 }
 
 struct DirectionComponent

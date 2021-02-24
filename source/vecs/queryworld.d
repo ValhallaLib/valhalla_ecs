@@ -1,7 +1,7 @@
-module ecs.queryworld;
+module vecs.queryworld;
 
-import ecs.entity;
-import ecs.storage;
+import vecs.entity;
+import vecs.storage;
 
 import std.format : format;
 import std.range : iota;

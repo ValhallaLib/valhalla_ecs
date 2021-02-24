@@ -1,6 +1,6 @@
-module ecs.storage;
+module vecs.storage;
 
-import ecs.entity : Entity;
+import vecs.entity : Entity;
 
 import std.meta : allSatisfy;
 import std.traits : isSomeChar, isCopyable, isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
