@@ -1,4 +1,4 @@
-# Valahala ECS - VECS
+# Valhalla ECS - VECS
 An Entity Component System library written in D.
 
 ## Brief
