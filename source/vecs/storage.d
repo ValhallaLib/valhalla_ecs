@@ -248,9 +248,18 @@ package class Storage(Component)
 			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
 		)
 	{
+		// FIXME: remove pure and declare as @trusted --> breaking change
+		// reason: any Component having a non templated opAssign without
+		// declaring it as pure and @safe fails here when assign the new value
+		// into the array
+
 		// replace if exists or add the entity with the component
-		// the entity does not exist in this Storage, add it and set it's component
-		return has(e) ? &(_components[_sparsedEntities[e.id]] = component) : _set(e, component);
+		if (has(e))
+		{
+			_components[_sparsedEntities[e.id]] = component;
+			return &_components[_sparsedEntities[e.id]];
+		}
+		else return _set(e, component);
 	}
 
 
@@ -393,8 +402,19 @@ private:
 
 version(unittest)
 {
-	@Component struct Foo { int x, y; }
-	@Component struct Bar { string str; }
+	struct Foo { int x, y; }
+	struct Bar { string str; }
+
+	// problem: can not return &(_components[_sparsedEntities[e.id]] = component
+	// directly if Component contains has an opAssign template overload,
+	// accepting it's type as a value
+	// solution: split action in 2 sections, assingn then return the reference
+private:
+	struct Assign
+	{
+		// accepts Assign, we're doomed to failure
+		void opAssign(T : Assign)(T other) {}
+	}
 }
 
 @safe pure
@@ -452,17 +472,23 @@ unittest
 @("storage: Storage: set")
 unittest
 {
-	auto storage = new Storage!Foo();
+	{
+		scope storage = new Storage!Foo();
 
-	assertTrue(storage.set(Entity(0), Foo(3, 2)));
-	assertThrown!AssertError(storage.set(Entity(0, 4), Foo(3, 2)));
-	assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
-	assertEquals(Entity(0), storage._packedEntities[0]);
-	assertEquals(Foo(3, 2), storage._components[0]);
+		assertTrue(storage.set(Entity(0), Foo(3, 2)));
+		assertThrown!AssertError(storage.set(Entity(0, 4), Foo(3, 2)));
+		assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
+		assertEquals(Entity(0), storage._packedEntities[0]);
+		assertEquals(Foo(3, 2), storage._components[0]);
 
+		assertTrue(storage.set(Entity(0), Foo(5, 5)));
+		assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
+		assertEquals(Entity(0), storage._packedEntities[0]);
+		assertEquals(Foo(5, 5), storage._components[0]);
+	}
 
-	assertTrue(storage.set(Entity(0), Foo(5, 5)));
-	assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
-	assertEquals(Entity(0), storage._packedEntities[0]);
-	assertEquals(Foo(5, 5), storage._components[0]);
+	{
+		scope storage = new Storage!Assign();
+		storage.set(Entity(0), Assign());
+	}
 }
