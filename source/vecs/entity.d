@@ -12,7 +12,7 @@ import std.range : iota;
 import std.traits : isInstanceOf, TemplateArgsOf;
 import std.typecons : Nullable, Tuple, tuple;
 
-version(unittest)
+version(vecs_unittest)
 {
 	import aurorafw.unit.assertion;
 	import std.exception : assertThrown;
