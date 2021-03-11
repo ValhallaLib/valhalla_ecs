@@ -2,7 +2,7 @@ module vecs.entitybuilder;
 
 import vecs.entity;
 
-version(unittest) import aurorafw.unit.assertion;
+version(vecs_unittest) import aurorafw.unit.assertion;
 
 
 /**

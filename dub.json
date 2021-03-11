@@ -7,15 +7,16 @@
 	"license": "MIT",
 	"targetType": "library",
 	"configurations": [
-        {
-            "name": "default"
-        },
-        {
-            "name": "unittest",
-            "targetType": "autodetect",
-            "dependencies": {
-                "aurorafw:unit": "0.0.1-alpha.4"
-			}
-        }
-    ]
+		{
+			"name": "default"
+		},
+		{
+			"name": "unittest",
+			"targetType": "autodetect",
+			"dependencies": {
+				"aurorafw:unit": "0.0.1-alpha.4"
+			},
+			"versions": ["vecs_unittest"]
+		}
+	]
 }

@@ -6,7 +6,7 @@ import std.meta : allSatisfy;
 import std.traits : isSomeChar, isCopyable, isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
 import std.typecons : Tuple;
 
-version(unittest)
+version(vecs_unittest)
 {
 	import aurorafw.unit.assertion;
 	import std.exception : assertThrown;
@@ -400,7 +400,7 @@ private:
 	Component[] _components;
 }
 
-version(unittest)
+version(vecs_unittest)
 {
 	struct Foo { int x, y; }
 	struct Bar { string str; }
