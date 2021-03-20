@@ -62,6 +62,7 @@ unittest
 
 	assertRangeEquals([Entity(0),Entity(1),Entity(4),Entity(8)], em.query!Entity);
 	assertRangeEquals(em.query!(Tuple!Entity), em.query!Entity);
+	assertEquals(Entity(0), em.queryOne!Entity);
 }
 
 @safe pure
@@ -86,6 +87,7 @@ unittest
 	assertEquals(5, em.query!int.range.entities.length);
 	assertRangeEquals([4,0,0,0,0], em.query!int.map!"*a");
 	assertRangeEquals(em.query!(Tuple!int), em.query!int);
+	assertEquals(4, *em.queryOne!int);
 }
 
 @safe pure
@@ -117,6 +119,10 @@ unittest
 
 	assertEquals(5, em.query!(Tuple!(int, Bar)).range.entities.length);
 	assertRangeEquals(range, em.query!(Tuple!(int, Bar)).map!"tuple(*a[0], *a[1])");
+
+	int* i; Bar* bar;
+	AliasSeq!(i, bar) = em.queryOne!(Tuple!(int, Bar));
+	assertEquals(tuple(4, Bar.init), tuple(*i, *bar));
 
 	assertFalse(__traits(compiles, em.query!(Tuple!(Entity,Entity))));
 	assertFalse(__traits(compiles, em.query!(Tuple!(int,Entity))));
@@ -192,10 +198,12 @@ unittest
 	auto range = [Entity(0),Entity(6),Entity(7),Entity(8),Entity(9)];
 	assertEquals(5, em.query!(Entity, With!int).range.entities.length);
 	assertRangeEquals(range, em.query!(Entity, With!int)());
+	assertEquals(Entity(0), em.queryOne!(Entity, With!int)());
 
 	range = [Entity(0),Entity(8),Entity(9)];
 	assertEquals(5, em.query!(Entity, With!(int,Foo,Bar)).range.entities.length);
 	assertRangeEquals(range, em.query!(Entity, With!(int,Foo,Bar)));
+	assertEquals(Entity(0), em.queryOne!(Entity, With!(int,Foo,Bar))());
 }
 
 @safe pure
