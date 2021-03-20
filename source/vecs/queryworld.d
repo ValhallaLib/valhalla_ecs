@@ -113,10 +113,10 @@ package struct QueryWorld(OutputTuple)
 	@property
 	auto front()
 	{
-		auto e = entities[0];
-		enum components = format!q{%(sinfos[%s].get!(Components[%s]).get(entities[0])%|,%)}(Components.length.iota);
+		immutable e = entities[0];
+		enum components = format!q{%(sinfos[%s].get!(Components[%s]).get(e)%|,%)}(Components.length.iota);
 		static if (is(Out[0] == Entity))
-			return mixin(format!q{tuple(entities[0], %s)}(components));
+			return mixin(format!q{tuple(e, %s)}(components));
 		else
 			return mixin(format!q{tuple(%s)}(components));
 	}
