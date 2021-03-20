@@ -549,6 +549,14 @@ public:
 
 
 	///
+	auto queryOne(Output)() { return query!Output.front; }
+
+
+	///
+	auto queryOne(Output, Filter)() { return query!(Output, Filter).front; }
+
+
+	///
 	@safe pure @property
 	Entity[] entities()
 	{
