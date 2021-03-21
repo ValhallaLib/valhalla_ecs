@@ -55,7 +55,7 @@ private:
 }
 
 
-@safe pure
+@system
 @("entitybuilder: entityBuilder")
 unittest
 {

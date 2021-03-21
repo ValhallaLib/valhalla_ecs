@@ -182,6 +182,11 @@ public:
 	 *     **MaximumEntitiesReachedException** if the amount of entities alive
 	 *     allowed reaches it's maximum value.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
+	 *
 	 * Returns: a newly generated Entity.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
@@ -205,6 +210,11 @@ public:
 	 * auto em = new EntityManager;
 	 * em.gen!Foo(); // generates a new entity with Foo.init values
 	 * --------------------
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
 	 *
 	 * Params: component = a valid component.
 	 *
@@ -233,6 +243,11 @@ public:
 	 * auto em = new EntityManager;
 	 * em.gen(Foo(3), Bar(6));
 	 * --------------------
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
 	 *
 	 * Params: component = a valid component.
 	 *
@@ -267,7 +282,7 @@ public:
 	 *
 	 * Params: e = valid entity to discard.
 	 */
-	@safe pure
+	@system
 	void discard(in Entity e)
 		in (has(e))
 	{
@@ -286,12 +301,52 @@ public:
 
 
 	/**
+	 * This signal occurs every time a Component is set. The onSet signal is
+	 *     emitted **after** the Component is set. A Component is set when
+	 *     assigning a new one to an entity or when updating an existing one.
+	 *
+	 * Params: Component = a valid component type
+	 *
+	 * Returns: Signal!(Entity,Component*)
+	 */
+	@property
+	ref auto onSet(Component)()
+	{
+		return _assureStorage!Component.onSet;
+	}
+
+
+	/**
+	 * This signal occurs every time a Component is disassociated from an
+	 *     entity. The onRemove signal is emitted **after** the Component is
+	 *     set. A Component is removed when removing a one from an entity or
+	 *     when discarding an entity.
+	 *
+	 * Params: Component = a valid component type
+	 *
+	 * Returns: Signal!(Entity,Component*)
+	 */
+	@property
+	ref auto onRemove(Component)()
+	{
+		return _assureStorage!Component.onRemove;
+	}
+
+
+	/**
 	 * Associates an entity to a component. The entity must be valid. Passing an
-	 *     invalid entity leads to undefined behaviour.
+	 *     invalid entity leads to undefined behaviour. Emits onSet after
+	 *     associating the component to the entity, either by creation or by
+	 *     replacement.
 	 *
 	 * Params:
 	 *     e = the entity to associate.
 	 *     component = a valid component to set.
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
 	 *
 	 * Returns: a pointer to the component set.
 	 */
@@ -334,6 +389,11 @@ public:
 	 *     undefined behaviour. See **removeIfHas** which removes the Component
 	 *     only if the entity is associated to it.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onRemove.
+	 *
 	 * Params:
 	 *     e = an entity to disassociate.
 	 *     Component = a valid component to remove.
@@ -350,6 +410,11 @@ public:
 	 *     with the given Component nothing happens. Passing and invalid entity
 	 *     leads to undefined behaviour.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onRemove.
+	 *
 	 * Params:
 	 *     e = an entity to disassociate.
 	 *     Component = a valid component to remove.
@@ -362,15 +427,17 @@ public:
 
 
 	/**
-	 * Removes all components from an entity. It searches every Component
-	 *     registered and checks wether or not the entity is asociated with it,
-	 *     if it is, it removes the component, otherwise it ignores it and
-	 *     continues to the next. If an invalid entity is passed it leads to
-	 *     undefined behaviour.
+	 * Removes all components associated to an entity. If the entity passed is
+	 *     invalid it leads to undefined behaviour.
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onRemove.
 	 *
 	 * Params: e = an entity to disassociate.
 	 */
-	@safe pure
+	@system
 	void removeAll(in Entity e)
 		in (has(e))
 	{
@@ -388,6 +455,7 @@ public:
 	 */
 	void removeAll(Component)()
 	{
+		// FIXME: emit onRemove
 		_assureStorage!Component().removeAll();
 	}
 
@@ -416,6 +484,11 @@ public:
 	 *     passed in the parameters is set and returned. If no Storage for the
 	 *     passed Component exists, one is initialized. If the entity passed is
 	 *     invalid it leads to undefined behaviour.
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Might emit onSet.
 	 *
 	 * Params:
 	 *     e = the entity to fetch the associated component.
@@ -795,7 +868,7 @@ private:
 }
 
 
-@trusted pure
+@system
 @("entity: EntityManager: discard")
 unittest
 {
@@ -823,7 +896,7 @@ unittest
 	assertEquals(3, em._entities.length);
 }
 
-@safe pure
+@system
 @("entity: EntityManager: fabricate")
 unittest
 {
@@ -854,7 +927,7 @@ unittest
 	assertEquals(Entity(0), em._entities.front);
 }
 
-@safe pure
+@system
 @("entity: EntityManager: gen with components")
 unittest
 {
@@ -881,7 +954,7 @@ unittest
 	assertFalse(__traits(compiles, em.gen!(immutable(int))()));
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: get")
 unittest
 {
@@ -899,7 +972,7 @@ unittest
 	assertFalse(__traits(compiles, em.get!(immutable(int))(em.gen())));
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: getOrSet")
 unittest
 {
@@ -914,7 +987,27 @@ unittest
 	assertThrown!AssertError(em.getOrSet!Foo(Entity(3)));
 }
 
-@safe pure
+@system
+@("entity: EntityManager: onRemove")
+unittest
+{
+	auto em = new EntityManager();
+	em.onRemove!Foo.connect((Entity,Foo* foo) { assertEquals(Foo(7, 8), *foo); });
+	em.remove!Foo(em.gen(Foo(7, 8)));
+}
+
+@system
+@("entity: EntityManager: onSet")
+unittest
+{
+	auto em = new EntityManager();
+	em.onSet!Foo.connect((Entity,Foo* foo) { *foo = Foo(12, 3); });
+
+	em.gen!Foo;
+	assertEquals(Foo(12,3), *em.get!Foo(Entity(0)));
+}
+
+@system
 @("entity: EntityManager: recycle")
 unittest
 {
@@ -930,7 +1023,7 @@ unittest
 	assertEquals(Entity(0, 1), em._entities.front);
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: remove")
 unittest
 {
@@ -958,7 +1051,7 @@ unittest
 	assertFalse(__traits(compiles, em.remove!(void delegate())(e)));
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: removeAll")
 unittest
 {
@@ -971,7 +1064,7 @@ unittest
 	assertEquals(0, em.size!Foo());
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: set")
 unittest
 {
@@ -1006,7 +1099,7 @@ unittest
 	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
 }
 
-@trusted pure
+@system
 @("entity: EntityManager: size")
 unittest
 {
