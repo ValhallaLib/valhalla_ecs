@@ -43,7 +43,7 @@ private:
 	QueryWorld!Output range;
 }
 
-@safe pure
+@system
 @("query: Entity")
 unittest
 {
@@ -65,7 +65,7 @@ unittest
 	assertEquals(Entity(0), em.queryOne!Entity);
 }
 
-@safe pure
+@system
 @("query: Component")
 unittest
 {
@@ -90,7 +90,7 @@ unittest
 	assertEquals(4, *em.queryOne!int);
 }
 
-@safe pure
+@system
 @("query: OutputTuple")
 unittest
 {
@@ -178,7 +178,7 @@ private:
 	QueryFilter!Filter filter;
 }
 
-@safe pure
+@system
 @("query: Entity + Filter")
 unittest
 {
@@ -206,7 +206,7 @@ unittest
 	assertEquals(Entity(0), em.queryOne!(Entity, With!(int,Foo,Bar))());
 }
 
-@safe pure
+@system
 @("query: Component + Filter")
 unittest
 {
@@ -246,7 +246,7 @@ unittest
 	assertRangeEquals(range, em.query!(Tuple!(Entity, int), With!(Foo,Bar)).map!"tuple(a[0],*a[1])");
 }
 
-@safe pure
+@system
 @("query: OutputTuple + Filter")
 unittest
 {
@@ -274,7 +274,7 @@ unittest
 	assertRangeEquals(range, em.query!(int, With!(Foo,Bar)).map!"*a");
 }
 
-@safe pure
+@system
 @("query: OutputTuple + FilterTuple")
 unittest
 {

@@ -179,9 +179,9 @@ public:
 
 	Entity[] delegate() @safe pure @property entities;
 	bool delegate(in Entity e) @safe pure has;
-	void delegate(in Entity e) @safe pure remove;
-	void delegate() @safe pure removeAll;
-	void delegate(in Entity e) @safe pure removeIfHas;
+	void delegate(in Entity e) @system remove;
+	void delegate() @trusted pure removeAll;
+	void delegate(in Entity e) @system removeIfHas;
 	size_t delegate() @safe pure size;
 
 package:
@@ -200,7 +200,7 @@ unittest
 	assertFalse(__traits(compiles, sinfo.get!(immutable(int))()));
 }
 
-@trusted pure
+@system
 @("storage: StorageInfo")
 unittest
 {
@@ -232,15 +232,22 @@ package class Storage(Component)
 	/**
 	 * Connects a component to an entity. If the entity is already connected to
 	 *     a component of this type then it'll be replaced by the new one.
-	 *     Passing an invalid entity leads to undefined behaviour.
+	 *     Passing an invalid entity leads to undefined behaviour. Emits onSet
+	 *     after associating the component to the entity, either by creation or
+	 *     by replacement.
 	 *
 	 * Params:
 	 *     entity = an entity to set the component.
 	 *     component = a valid component.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
+	 *
 	 * Returns: a pointer to the Component set.
 	 */
-	@safe pure
+	@system
 	Component* set(in Entity e, Component component)
 		in (!(e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
@@ -248,15 +255,11 @@ package class Storage(Component)
 			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
 		)
 	{
-		// FIXME: remove pure and declare as @trusted --> breaking change
-		// reason: any Component having a non templated opAssign without
-		// declaring it as pure and @safe fails here when assign the new value
-		// into the array
-
 		// replace if exists or add the entity with the component
 		if (has(e))
 		{
 			_components[_sparsedEntities[e.id]] = component;
+			onSet.emit(e, &_components[_sparsedEntities[e.id]]);
 			return &_components[_sparsedEntities[e.id]];
 		}
 		else return _set(e, component);
@@ -268,14 +271,22 @@ package class Storage(Component)
 	 *     the component removal. Passing an invalid entity leads to undefined
 	 *     behaviour.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onRemove.
+	 *
 	 * Params: e = the entity to disassociate from it's component.
 	 */
-	@safe pure
+	@system
 	void remove(in Entity e)
 		in (has(e))
 	{
 		import std.algorithm : swap;
 		import std.range : back, popBack;
+
+		// emit onRemove
+		onRemove.emit(e, &_components[_sparsedEntities[e.id]]);
 
 		immutable last = _packedEntities.back;
 
@@ -293,7 +304,7 @@ package class Storage(Component)
 
 
 	///
-	@safe pure
+	@system
 	void removeIfHas(in Entity e)
 	{
 		if (has(e)) remove(e);
@@ -301,9 +312,10 @@ package class Storage(Component)
 
 
 	///
-	@safe pure
+	@trusted pure
 	void removeAll()
 	{
+		// FIXME: emit onRemove
 		_sparsedEntities = [];
 		_packedEntities = [];
 		_components = [];
@@ -328,15 +340,21 @@ package class Storage(Component)
 
 	/**
 	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed in the parameters is set and returned.
+	 *     passed in the parameters is set and returned. Emits onSet if the
+	 *     component is set.
 	 *
 	 * Params:
 	 *     e = the entity to fetch the associated component.
 	 *     component = a valid component to set if there is none associated.
 	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
+	 *
 	 * Returns: a pointer to the component associated or created.
 	 */
-	@safe pure
+	@system
 	Component* getOrSet(in Entity e, Component component)
 		in (!(e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
@@ -380,9 +398,22 @@ package class Storage(Component)
 		return _components;
 	}
 
+
+	import vecs.signal;
+	Signal!(Entity,Component*) onSet;
+	Signal!(Entity,Component*) onRemove;
+
 private:
-	///
-	@safe pure
+	/**
+	 * Associates a component to an entity. Emits onSet after associating the
+	 *     component to the entity.
+	 *
+	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 *     dependency, the method must be @system.
+	 *
+	 * Signal: Emits onSet.
+	 */
+	@system
 	Component* _set(in Entity entity, Component component)
 	{
 		_packedEntities ~= entity; // set entity
@@ -391,6 +422,10 @@ private:
 		// map to the correct entity from the packedEntities from sparsedEntities
 		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
 			_sparsedEntities[entity.id] = _packedEntities.length - 1; // safe cast
+
+		// enforces @system
+		// emit onSet after associating the component
+		onSet.emit(entity, &_components[_sparsedEntities[entity.id]]);
 
 		return &_components[_sparsedEntities[entity.id]];
 	}
@@ -426,7 +461,7 @@ unittest
 	assertFalse(__traits(compiles, new Storage!InvalidComponent));
 }
 
-@trusted pure
+@system
 @("storage: Storage: get")
 unittest
 {
@@ -439,7 +474,7 @@ unittest
 	assertEquals(Foo(3, 3), *storage.get(Entity(0)));
 }
 
-@trusted pure
+@system
 @("storage: Storage: getOrSet")
 unittest
 {
@@ -450,7 +485,34 @@ unittest
 	assertThrown!AssertError(storage.getOrSet(Entity(0, 54), Foo(2, 3)));
 }
 
-@trusted pure
+@system
+@("storage: Storage: onRemove")
+unittest
+{
+	scope storage = new Storage!Foo();
+	int i;
+	storage.onRemove.connect((Entity, Foo*) { i++; });
+	assertEquals(0, i);
+
+	storage.set(Entity(0), Foo.init);
+	storage.remove(Entity(0));
+	assertEquals(1, i);
+}
+
+@system
+@("storage: Storage: onSet")
+unittest
+{
+	scope storage = new Storage!Foo();
+	int i;
+	storage.onSet.connect((Entity, Foo*) { i++; });
+	assertEquals(0, i);
+
+	storage.set(Entity(0), Foo.init);
+	assertEquals(1, i);
+}
+
+@system
 @("storage: Storage: remove")
 unittest
 {
@@ -468,7 +530,7 @@ unittest
 	assertEquals(Entity(1), storage._packedEntities[0]);
 }
 
-@trusted pure
+@system
 @("storage: Storage: set")
 unittest
 {
