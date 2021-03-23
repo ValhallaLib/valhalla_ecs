@@ -161,7 +161,7 @@ public:
 		auto storage = new Storage!Component();
 		this.cid = TypeInfoComponent!Component;
 
-		(() @trusted => this.storage = cast(void*) storage)();
+		(() @trusted pure nothrow @nogc => this.storage = cast(void*) storage)();
 		this.entities = &storage.entities;
 		this.has = &storage.has;
 		this.remove = &storage.remove;
@@ -174,15 +174,15 @@ public:
 	Storage!Component get(Component)()
 		in (cid is TypeInfoComponent!Component)
 	{
-		return (() @trusted => cast(Storage!Component) storage)(); // safe cast
+		return (() @trusted pure nothrow @nogc => cast(Storage!Component) storage)(); // safe cast
 	}
 
-	Entity[] delegate() @safe pure @property entities;
-	bool delegate(in Entity e) @safe pure has;
+	Entity[] delegate() @safe pure nothrow @property @nogc entities;
+	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
 	void delegate(in Entity e) @system remove;
 	void delegate() @trusted pure removeAll;
 	void delegate(in Entity e) @system removeIfHas;
-	size_t delegate() @safe pure size;
+	size_t delegate() @safe pure nothrow @nogc @property const size;
 
 package:
 	TypeInfo cid;
@@ -330,7 +330,7 @@ package class Storage(Component)
 	 *
 	 * Returns: a pointer to the Component.
 	 */
-	@safe pure
+	@safe pure nothrow @nogc
 	Component* get(in Entity e)
 		in (has(e))
 	{
@@ -367,7 +367,7 @@ package class Storage(Component)
 
 
 	///
-	@safe pure
+	@safe pure nothrow @nogc @property
 	size_t size() const
 	{
 		return _components.length;
@@ -375,7 +375,7 @@ package class Storage(Component)
 
 
 	///
-	@safe pure
+	@safe pure nothrow @nogc
 	bool has(in Entity e) const
 	{
 		return e.id < _sparsedEntities.length
@@ -385,14 +385,14 @@ package class Storage(Component)
 
 
 	///
-	@safe pure @property
+	@safe pure nothrow @nogc @property
 	Entity[] entities()
 	{
 		return _packedEntities;
 	}
 
 
-	@safe pure @property
+	@safe pure nothrow @nogc @property
 	Component[] components()
 	{
 		return _components;

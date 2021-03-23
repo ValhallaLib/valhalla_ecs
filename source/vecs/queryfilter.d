@@ -20,11 +20,13 @@ struct With(T ...)
 	if (areFilterArgs!T)
 {
 package:
+	@safe pure nothrow @nogc
 	this(StorageInfo[] sinfos)
 	{
 		this.sinfos = sinfos;
 	}
 
+	@safe pure nothrow @nogc
 	bool opCall(in Entity e)
 	{
 		foreach (sinfo; sinfos)
@@ -45,11 +47,13 @@ struct Without(T ...)
 	if (areFilterArgs!T)
 {
 package:
+	@safe pure nothrow @nogc
 	this(StorageInfo[] sinfos)
 	{
 		this.sinfos = sinfos;
 	}
 
+	@safe pure nothrow @nogc
 	bool opCall(in Entity e)
 	{
 		foreach (sinfo; sinfos)
@@ -67,11 +71,13 @@ package:
 package struct QueryFilter(Filter)
 	if (isFilter!Filter)
 {
+	@safe pure nothrow @nogc
 	this(Filter filter)
 	{
 		this.filter = filter;
 	}
 
+	@safe pure nothrow @nogc
 	bool validate(in Entity e) {
 		return filter(e);
 	}
@@ -84,11 +90,13 @@ package struct QueryFilter(Filter)
 package struct QueryFilter(FilterTuple)
 	if (isInstanceOf!(Tuple, FilterTuple) && allSatisfy!(isFilter, TemplateArgsOf!(FilterTuple)))
 {
+	@safe pure nothrow @nogc
 	this(FilterTuple filters)
 	{
 		this.filters = filters;
 	}
 
+	@safe pure nothrow @nogc
 	bool validate(in Entity e) {
 		foreach (filter; filters)
 			if (!filter(e))
