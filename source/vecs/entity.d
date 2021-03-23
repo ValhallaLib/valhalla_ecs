@@ -125,8 +125,6 @@ public:
 	enum size_t idmask = maxid; // first 20 bits (sizeof==4), 32 bits (sizeof==8)
 	enum size_t batchmask = maxbatch << idshift; // last 12 bits (sizeof==4), 32 bits (sizeof==8)
 
-	alias signature this;
-
 private:
 	@safe pure nothrow @nogc
 	auto incrementBatch()
