@@ -62,13 +62,15 @@ class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
 struct Entity
 {
 public:
-	@safe pure this(in size_t id)
+	@safe pure nothrow @nogc
+	this(in size_t id)
 		in (id <= maxid)
 	{
 		_id = id;
 	}
 
-	@safe pure this(in size_t id, in size_t batch)
+	@safe pure nothrow @nogc
+	this(in size_t id, in size_t batch)
 		in (id <= maxid)
 		in (batch <= maxbatch)
 	{
@@ -77,22 +79,28 @@ public:
 	}
 
 
-	@safe pure
+	@safe pure nothrow @nogc
 	bool opEquals(in Entity other) const
 	{
 		return other.signature == signature;
 	}
 
 
-	@property @safe pure
-	size_t id() const { return _id; }
+	@safe pure nothrow @nogc @property
+	size_t id() const
+	{
+		return _id;
+	}
 
 
-	@property @safe pure
-	size_t batch() const { return _batch; }
+	@safe pure nothrow @nogc @property
+	size_t batch() const
+	{
+		return _batch;
+	}
 
 
-	@safe pure
+	@safe pure nothrow @nogc
 	auto incrementBatch()
 	{
 		_batch = _batch >= maxbatch ? 0 : _batch + 1;
@@ -100,7 +108,7 @@ public:
 		return this;
 	}
 
-	@safe pure
+	@safe pure nothrow @nogc
 	size_t signature() const
 	{
 		return (_id | (_batch << idshift));
@@ -171,9 +179,11 @@ unittest
 class EntityManager
 {
 public:
-	enum Entity entityNull = Entity(Entity.maxid);
-
-	@safe pure this() { queue = entityNull; }
+	@safe pure nothrow @nogc
+	this()
+	{
+		queue = entityNull;
+	}
 
 
 	/**
@@ -309,7 +319,6 @@ public:
 	 *
 	 * Returns: Signal!(Entity,Component*)
 	 */
-	@property
 	ref auto onSet(Component)()
 	{
 		return _assureStorage!Component.onSet;
@@ -326,7 +335,6 @@ public:
 	 *
 	 * Returns: Signal!(Entity,Component*)
 	 */
-	@property
 	ref auto onRemove(Component)()
 	{
 		return _assureStorage!Component.onRemove;
@@ -522,7 +530,7 @@ public:
 	 *
 	 * Returns: an EntityBuilder.
 	 */
-	@safe pure
+	@safe pure nothrow @nogc
 	auto entityBuilder()
 	{
 		import vecs.entitybuilder : EntityBuilder;
@@ -531,7 +539,7 @@ public:
 
 
 	///
-	@safe pure
+	@safe pure nothrow @nogc
 	bool has(in Entity e) const
 		in (e.id < Entity.maxid)
 	{
@@ -630,8 +638,8 @@ public:
 
 
 	///
-	@safe pure @property
-	Entity[] entities()
+	@safe pure nothrow @property
+	Entity[] entities() const
 	{
 		import std.array : appender;
 		auto ret = appender!(Entity[]);
@@ -675,7 +683,7 @@ private:
 	 *
 	 * Returns: an Entity previously fabricated with a new batch.
 	 */
-	@safe pure
+	@safe pure nothrow @nogc
 	Entity recycle()
 		in (!queue.isNull)
 	{
@@ -733,7 +741,7 @@ private:
 
 
 	///
-	StorageInfo _assureStorageInfo(Component)()
+	auto ref StorageInfo _assureStorageInfo(Component)()
 		if (isComponent!Component)
 	{
 		immutable index = _assure!Component();
@@ -865,6 +873,9 @@ private:
 	Entity[] _entities;
 	Nullable!(Entity, entityNull) queue;
 	StorageInfo[] storageInfoMap;
+
+public:
+	enum Entity entityNull = Entity(Entity.maxid);
 }
 
 

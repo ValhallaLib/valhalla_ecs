@@ -13,7 +13,7 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 struct EntityBuilder
 {
 public:
-	@safe pure
+	@safe pure nothrow @nogc
 	this(EntityManager em)
 	{
 		this.em = em;
@@ -42,7 +42,7 @@ public:
 	}
 
 
-	@safe pure
+	@safe pure nothrow @nogc
 	auto get()
 	{
 		return entities;

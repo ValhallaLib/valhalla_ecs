@@ -8,26 +8,28 @@ import std.range : iota;
 import std.traits : isInstanceOf, TemplateArgsOf;
 import std.typecons : Tuple, tuple;
 
-@safe
+
 package struct QueryWorld(Output : Entity)
 {
+	@safe pure nothrow @nogc
 	this(immutable Entity[] entities)
 	{
 		this.entities = entities;
 	}
 
+	@safe pure nothrow @nogc
 	void popFront()
 	{
 		entities = entities[1..$];
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	bool empty()
 	{
 		return entities.length == 0;
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	Entity front()
 	{
 		return entities[0];
@@ -36,31 +38,34 @@ package struct QueryWorld(Output : Entity)
 	immutable(Entity)[] entities;
 }
 
+
 alias QueryWorld(T : Tuple!Entity) = QueryWorld!Entity;
 
 
 package struct QueryWorld(Output)
 	if (isComponent!Output)
 {
+	@safe pure nothrow @nogc
 	this(immutable Entity[] entities, Output[] components)
 	{
 		this.entities = entities;
 		this.components = components;
 	}
 
+	@safe pure nothrow @nogc
 	void popFront()
 	{
 		entities = entities[1..$];
 		components = components[1..$];
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	bool empty()
 	{
 		return entities.length == 0;
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	Output* front()
 	{
 		return &components[0];
@@ -71,10 +76,10 @@ package struct QueryWorld(Output)
 }
 
 
-@safe
 package struct QueryWorld(OutputTuple)
 	if (isInstanceOf!(Tuple, OutputTuple))
 {
+	@safe pure nothrow @nogc
 	this(immutable Entity[] entities, StorageInfo[] sinfos)
 	{
 		this.entities = entities;
@@ -82,12 +87,14 @@ package struct QueryWorld(OutputTuple)
 		_prime();
 	}
 
+	@safe pure nothrow @nogc
 	void _prime()
 	{
 		while (!empty && !_validate())
 			popFront();
 	}
 
+	@safe pure nothrow @nogc
 	bool _validate()
 	{
 		foreach (sinfo; sinfos)
@@ -97,6 +104,7 @@ package struct QueryWorld(OutputTuple)
 		return true;
 	}
 
+	@safe pure nothrow @nogc
 	void popFront()
 	{
 		do {
@@ -104,13 +112,13 @@ package struct QueryWorld(OutputTuple)
 		} while (!empty && !_validate());
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	bool empty()
 	{
 		return entities.length == 0;
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	auto front()
 	{
 		immutable e = entities[0];

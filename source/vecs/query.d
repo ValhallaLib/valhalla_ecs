@@ -16,24 +16,26 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 struct Query(Output)
 {
 package:
+	@safe pure nothrow @nogc
 	this(QueryWorld!Output range)
 	{
 		this.range = range;
 	}
 
 public:
+	@safe pure nothrow @nogc
 	void popFront()
 	{
 		range.popFront();
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	bool empty()
 	{
 		return range.empty;
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	auto front()
 	{
 		return range.front;
@@ -135,6 +137,7 @@ unittest
 struct Query(Output, Filter)
 {
 package:
+	@safe pure nothrow @nogc
 	this(QueryWorld!Output range, QueryFilter!Filter filter)
 	{
 		this.range = range;
@@ -143,6 +146,7 @@ package:
 	}
 
 public:
+	@safe pure nothrow @nogc
 	void popFront()
 	{
 		do {
@@ -150,25 +154,27 @@ public:
 		} while (!empty && !_validate());
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	bool empty()
 	{
 		return range.empty;
 	}
 
-	@property
+	@safe pure nothrow @nogc @property
 	auto front()
 	{
 		return range.front;
 	}
 
 private:
+	@safe pure nothrow @nogc
 	void _prime()
 	{
 		while (!empty && !_validate())
 			popFront();
 	}
 
+	@safe pure nothrow @nogc
 	bool _validate()
 	{
 		return filter.validate(range.entities[0]);
