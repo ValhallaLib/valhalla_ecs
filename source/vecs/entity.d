@@ -101,18 +101,11 @@ public:
 
 
 	@safe pure nothrow @nogc
-	auto incrementBatch()
-	{
-		_batch = _batch >= maxbatch ? 0 : _batch + 1;
-
-		return this;
-	}
-
-	@safe pure nothrow @nogc
 	size_t signature() const
 	{
 		return (_id | (_batch << idshift));
 	}
+
 
 	static if (typeof(int.sizeof).sizeof == 4)
 	{
@@ -135,6 +128,14 @@ public:
 	alias signature this;
 
 private:
+	@safe pure nothrow @nogc
+	auto incrementBatch()
+	{
+		_batch = _batch >= maxbatch ? 0 : _batch + 1;
+
+		return this;
+	}
+
 	size_t _id;
 	size_t _batch;
 }
