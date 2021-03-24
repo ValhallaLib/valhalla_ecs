@@ -1,0 +1,10 @@
+{
+	"name": "basic",
+	"targetType": "executable",
+	"targetPath": "../../.out/bin",
+	"sourcePaths": ["source"],
+	"importPaths": ["source"],
+	"dependencies": {
+		"valhalla_ecs": {"path": "../../../"}
+	}
+}
