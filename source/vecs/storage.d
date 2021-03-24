@@ -1,6 +1,7 @@
 module vecs.storage;
 
 import vecs.entity : Entity;
+import vecs.signal;
 
 import std.meta : allSatisfy;
 import std.traits : isSomeChar, isCopyable, isDelegate, isFunctionPointer, isInstanceOf, isMutable, isSomeFunction, Fields;
@@ -177,14 +178,16 @@ public:
 		return (() @trusted pure nothrow @nogc => cast(Storage!Component) storage)(); // safe cast
 	}
 
-	Entity[] delegate() @safe pure nothrow @property @nogc entities;
 	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
 	void delegate(in Entity e) @system remove;
 	void delegate() @trusted pure removeAll;
 	void delegate(in Entity e) @system removeIfHas;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
 
+
 package:
+	Entity[] delegate() @safe pure nothrow @property @nogc entities;
+
 	TypeInfo cid;
 	void* storage;
 }
@@ -402,6 +405,7 @@ package class Storage(Component)
 	}
 
 
+package:
 	/**
 	 * Gets the entities stored.
 	 *
@@ -425,10 +429,6 @@ package class Storage(Component)
 		return _components;
 	}
 
-
-	import vecs.signal;
-	Signal!(Entity,Component*) onSet;
-	Signal!(Entity,Component*) onRemove;
 
 private:
 	/**
@@ -462,6 +462,10 @@ private:
 	size_t[] _sparsedEntities;
 	Entity[] _packedEntities;
 	Component[] _components;
+
+public:
+	Signal!(Entity,Component*) onSet;
+	Signal!(Entity,Component*) onRemove;
 }
 
 version(vecs_unittest)
