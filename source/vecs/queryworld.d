@@ -47,6 +47,7 @@ package struct QueryWorld(Output)
 {
 	@safe pure nothrow @nogc
 	this(immutable Entity[] entities, Output[] components)
+		in (entities.length == components.length)
 	{
 		this.entities = entities;
 		this.components = components;
