@@ -6,9 +6,7 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 
 
 /**
- * Helper struct to perform multiple actions sequences.
- *
- * Params: em = an entity manager to update.
+ * Helper struct to perform multiple action sequences.
  */
 struct EntityBuilder
 {
@@ -20,6 +18,7 @@ public:
 	}
 
 
+	/// Uses EntityManager's gen method
 	@safe pure
 	auto gen()
 	{
@@ -28,6 +27,7 @@ public:
 	}
 
 
+	/// Ditto
 	auto gen(ComponentRange ...)()
 	{
 		entities ~= em.gen!(ComponentRange)();
@@ -35,6 +35,7 @@ public:
 	}
 
 
+	/// Ditto
 	auto gen(ComponentRange ...)(ComponentRange components)
 	{
 		entities ~= em.gen(components);
@@ -42,8 +43,13 @@ public:
 	}
 
 
+	/**
+	 * Gets all entities generated with an instance of EntityBuilder.
+	 *
+	 * Returns: `Entity[]` with the generated entities.
+	 */
 	@safe pure nothrow @nogc
-	auto get()
+	Entity[] get()
 	{
 		return entities;
 	}
