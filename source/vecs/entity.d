@@ -945,7 +945,7 @@ private:
 		if (isComponent!Component)
 	{
 		auto storage = _assureStorage!Component();
-		auto entities = _queryEntities!(Component, Extra);
+		auto entities = _queryEntities!(Component);
 		return QueryWorld!Component(entities.idup, storage.components());
 	}
 

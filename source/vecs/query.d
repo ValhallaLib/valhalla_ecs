@@ -170,7 +170,7 @@ private:
 	@safe pure nothrow @nogc
 	void _prime()
 	{
-		while (!empty && !_validate())
+		if (!empty && !_validate())
 			popFront();
 	}
 
@@ -257,27 +257,44 @@ unittest
 unittest
 {
 	import std.algorithm : map;
+	import std.range : take;
 
-	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	{
+		auto em = new EntityManager();
+		em.entityBuilder()
+			.gen(Foo(2, 4), Bar.init, 4)
+			.gen!(Foo)
+			.gen!(Foo)
+			.gen!(Foo, Bar)
+			.gen!(Foo, Bar)
+			.gen!(Foo, Bar)
+			.gen!(Bar, int)
+			.gen!(Bar, int)
+			.gen!(Foo, Bar, int)
+			.gen!(Foo, Bar, int);
 
-	auto range = [4,0,0,0,0];
-	assertEquals(5, em.query!(int, With!Bar).range.entities.length);
-	assertRangeEquals(range, em.query!(int, With!Bar).map!"*a");
+		auto range = [4,0,0,0,0];
+		assertEquals(5, em.query!(int, With!Bar).range.entities.length);
+		assertRangeEquals(range, em.query!(int, With!Bar).map!"*a");
 
-	range = [4,0,0];
-	assertEquals(5, em.query!(int, With!(Foo,Bar)).range.entities.length);
-	assertRangeEquals(range, em.query!(int, With!(Foo,Bar)).map!"*a");
+		range = [4,0,0];
+		assertEquals(5, em.query!(int, With!(Foo,Bar)).range.entities.length);
+		assertRangeEquals(range, em.query!(int, With!(Foo,Bar)).map!"*a");
+	}
+
+	{
+		auto em = new EntityManager();
+		em.entityBuilder()
+			.gen("Foo", 1f)
+			.gen("Bar", 1f)
+			.gen("Foobar", 1f, 5);
+
+		assertEquals(*em.query!(Tuple!(string, int)).front[0], *em.query!(string, With!int).front);
+		assertEquals(*em.query!(Tuple!(string, float, int)).front[0], *em.query!(Tuple!(string, float), With!int).front[0]);
+		assertEquals(*em.query!(Tuple!(string, float, int)).front[0], *em.query!(string, With!(int, float)).front);
+
+		assertRangeEquals(["Foo", "Bar"], em.query!(string, Without!int).map!"*a");
+	}
 }
 
 @system
