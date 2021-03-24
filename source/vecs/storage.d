@@ -230,22 +230,23 @@ package class Storage(Component)
 	if (isComponent!Component)
 {
 	/**
-	 * Connects a component to an entity. If the entity is already connected to
-	 *     a component of this type then it'll be replaced by the new one.
+	 * Associates a component to an entity. If the entity is already connected to
+	 *     a component of this type then it's component will be updated.
 	 *     Passing an invalid entity leads to undefined behaviour. Emits onSet
 	 *     after associating the component to the entity, either by creation or
 	 *     by replacement.
 	 *
-	 * Params:
-	 *     entity = an entity to set the component.
-	 *     component = a valid component.
-	 *
 	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onSet.
+	 * Signal: Emits onSet **after** associating the component.
 	 *
-	 * Returns: a pointer to the Component set.
+	 * Params:
+	 *     e = entity to associate.
+	 *     component = a valid component.
+	 *
+	 * Returns: `Component*` pointing to the component set either by creation or
+	 *     replacement.
 	 */
 	@system
 	Component* set(in Entity e, Component component)
@@ -267,14 +268,13 @@ package class Storage(Component)
 
 
 	/**
-	 * Disassociates an entity from it's component. The entity must exist for
-	 *     the component removal. Passing an invalid entity leads to undefined
-	 *     behaviour.
+	 * Disassociates an entity from it's component. Passing an invalid entity
+	 *     leads to undefined behaviour.
 	 *
 	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onRemove.
+	 * Signal: Emits onRemove **before** disassociating the component.
 	 *
 	 * Params: e = the entity to disassociate from it's component.
 	 */
@@ -303,7 +303,12 @@ package class Storage(Component)
 	}
 
 
-	///
+	/**
+	 * Disassociates a component from an entity if existent in Storage.
+	 *
+	 * Params:
+	 *     e = entity to disassociate.
+	 */
 	@system
 	void removeIfHas(in Entity e)
 	{
@@ -311,7 +316,9 @@ package class Storage(Component)
 	}
 
 
-	///
+	/**
+	 * Clears all components and entities.
+	 */
 	@trusted pure
 	void removeAll()
 	{
@@ -323,12 +330,13 @@ package class Storage(Component)
 
 
 	/**
-	 * Fetches the component of the entity. The entity must be a valid storage
-	 * entity. Passing an invalid entity leads to undefined behaviour.
+	 * Fetches the component associated to an entity. Passing an invalid entity
+	 *     leads to undefined behaviour.
 	 *
-	 * Params: e = the entity used to search for the component.
+	 * Params:
+	 *     e = entity to search.
 	 *
-	 * Returns: a pointer to the Component.
+	 * Returns: `Component*` pointing to the entity's component.
 	 */
 	@safe pure nothrow @nogc
 	Component* get(in Entity e)
@@ -340,19 +348,18 @@ package class Storage(Component)
 
 	/**
 	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed in the parameters is set and returned. Emits onSet if the
-	 *     component is set.
-	 *
-	 * Params:
-	 *     e = the entity to fetch the associated component.
-	 *     component = a valid component to set if there is none associated.
+	 *     passed set then returned. Emits onSet if the component is set.
 	 *
 	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onSet.
+	 * Signal: Emits onSet **after** the component is set **if** set.
 	 *
-	 * Returns: a pointer to the component associated or created.
+	 * Params:
+	 *     e = entity to search.
+	 *     component = component to set if there is none associated.
+	 *
+	 * Returns: `Component*` pointing to the component associated.
 	 */
 	@system
 	Component* getOrSet(in Entity e, Component component)
@@ -366,7 +373,11 @@ package class Storage(Component)
 	}
 
 
-	///
+	/**
+	 * Gets the amount of components/entities stored.
+	 *
+	 * Returns: `size_t` with the amount of components/entities.
+	 */
 	@safe pure nothrow @nogc @property
 	size_t size() const
 	{
@@ -374,7 +385,14 @@ package class Storage(Component)
 	}
 
 
-	///
+	/**
+	 * Checks if an entity exists in the Storage.
+	 *
+	 * Params:
+	 *     e = entity to check.
+	 *
+	 * Returns:`true` if exists, `false` otherwise.
+	 */
 	@safe pure nothrow @nogc
 	bool has(in Entity e) const
 	{
@@ -384,7 +402,11 @@ package class Storage(Component)
 	}
 
 
-	///
+	/**
+	 * Gets the entities stored.
+	 *
+	 * Returns: `Entity[]` of stored entities.
+	 */
 	@safe pure nothrow @nogc @property
 	Entity[] entities()
 	{
@@ -392,6 +414,11 @@ package class Storage(Component)
 	}
 
 
+	/**
+	 * Gets the components stored.
+	 *
+	 * Returns: `Component[]` of components stored.
+	 */
 	@safe pure nothrow @nogc @property
 	Component[] components()
 	{
@@ -411,7 +438,9 @@ private:
 	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onSet.
+	 * Signal: Emits onSet **after** the component is set.
+	 *
+	 * Returns: `Component*` pointing to the component set.
 	 */
 	@system
 	Component* _set(in Entity entity, Component component)
@@ -440,7 +469,7 @@ version(vecs_unittest)
 	struct Foo { int x, y; }
 	struct Bar { string str; }
 
-	// problem: can not return &(_components[_sparsedEntities[e.id]] = component
+	// problem: cannot return &(_components[_sparsedEntities[e.id]] = component
 	// directly if Component contains has an opAssign template overload,
 	// accepting it's type as a value
 	// solution: split action in 2 sections, assingn then return the reference

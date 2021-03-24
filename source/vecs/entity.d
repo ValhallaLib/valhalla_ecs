@@ -1,5 +1,6 @@
 module vecs.entity;
 
+import vecs.entitybuilder : EntityBuilder;
 import vecs.storage;
 import vecs.query;
 import vecs.queryfilter;
@@ -46,16 +47,16 @@ class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
  *     `maxbatch` = the maximum number of batches allowed
  *
  * Values:
- * | void* size (bits) | idshift | idmask      | batchmask         |
- * | :-----------------| :-----: | :---------- | :---------------- |
- * | 4                 | 20      | 0xFFFF_F    | 0xFFF << 20       |
- * | 8                 | 32      | 0xFFFF_FFFF | 0xFFFF_FFFF << 32 |
+ * | `void* size (bits)` | `idshift` | `idmask`    | `batchmask`       |
+ * | :-----------------  | :----  -- | :---------- | :---------------- |
+ * | 4                   | 20        | 0xFFFF_F    | 0xFFF << 20       |
+ * | 8                   | 32        | 0xFFFF_FFFF | 0xFFFF_FFFF << 32 |
  *
  * Sizes:
- * | void* size (bits) | id (bits) | batch (bits) | maxid         | maxbatch      |
- * | :---------------- | :-------: | :----------: | :-----------: | :-----------: |
- * | 4                 | 20        | 12           | 1_048_574     | 4_095         |
- * | 8                 | 32        | 32           | 4_294_967_295 | 4_294_967_295 |
+ * | `void* size (bits)` | `id (bits)` | `batch (bits)` | `maxid`       | `maxbatch`    |
+ * | :----------------   | :--------   | :-----------   | :------------ | :------------ |
+ * | 4                   | 20          | 12             | 1_048_574     | 4_095         |
+ * | 8                   | 32          | 32             | 4_294_967_295 | 4_294_967_295 |
  *
  * See_Also: [skypjack - entt](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/)
  */
@@ -186,21 +187,47 @@ public:
 
 
 	/**
-	 * Generates a new entity either by fabricating a new one or by recycling an
-	 *     previously fabricated if the queue is not null. Throws a
+	 * Generates a new entity either by fabricating a new one or recycling a
+	 *     previously fabricated if available in the queue. Throws
 	 *     **MaximumEntitiesReachedException** if the amount of entities alive
-	 *     allowed reaches it's maximum value.
+	 *     reaches it's maximum value. \
+	 * \
+	 * If used with components, the entity is generated with the assigned
+	 *     components. When passing the type of the component with no initializer,
+	 *     then the default initializer is used.
 	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Params:
+	 *     component = component to set.
+	 *     components = components to set.
+	 *
+	 * Safety: When passing components the method is @system. It uses `set`
+	 *     internally. The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onSet.
+	 * Signal: Emits **onSet** when used with components.
 	 *
-	 * Returns: a newly generated Entity.
+	 * Examples:
+	 * ---
+	 * auto em = new EntityManager();
+	 *
+	 * // generates a new entity
+	 * em.gen();
+	 * ---
+	 * ---
+	 * struct Foo { int x; }
+	 * struct Bar { string x; }
+	 * auto em = new EntityManager();
+	 *
+	 * // generates a new entity and assigns Foo.init
+	 * em.gen!Foo();
+	 *
+	 * // generates a new entity and assigns Foo(3) and Bar("str")
+	 * em.gen(Foo(3), Bar("str"));
+	 * ---
+	 *
+	 * Returns: the newly generated Entity.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
-	 *
-	 * See_Also: `gen`**`(Component)(Component component)`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
 	 */
 	@safe pure
 	Entity gen()
@@ -209,30 +236,7 @@ public:
 	}
 
 
-	/**
-	 * Generates a new entity and assigns the component to it. If the component
-	 *     has no ctor or a default ctor then only it's type can be passed.
-	 *
-	 * Examples:
-	 * --------------------
-	 * @Component struct Foo { int x; } // x gets default initialized to int.init
-	 * auto em = new EntityManager;
-	 * em.gen!Foo(); // generates a new entity with Foo.init values
-	 * --------------------
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet.
-	 *
-	 * Params: component = a valid component.
-	 *
-	 * Returns: a newly generated Entity.
-	 *
-	 * Throws: `MaximumEntitiesReachedException`.
-	 *
-	 * See_Also: `gen`**`()`**, `gen`**`(ComponentRange ...)(ComponentRange components)`**
-	 */
+	/// Ditto
 	Entity gen(Component)(Component component = Component.init)
 		if (isComponent!Component)
 	{
@@ -242,30 +246,7 @@ public:
 	}
 
 
-	/**
-	 * Generates a new entity and assigns the components to it.
-	 *
-	 * Examples:
-	 * --------------------
-	 * @Component struct Foo { int x; }
-	 * @Component struct Bar { int x; }
-	 * auto em = new EntityManager;
-	 * em.gen(Foo(3), Bar(6));
-	 * --------------------
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet.
-	 *
-	 * Params: component = a valid component.
-	 *
-	 * Returns: a newly generated Entity.
-	 *
-	 * Throws: `MaximumEntitiesReachedException`.
-	 *
-	 * See_Also: `gen`**`()`**, `gen`**`(Component)(Component component)`**
-	 */
+	/// Ditto
 	Entity gen(ComponentRange ...)(ComponentRange components)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
@@ -275,7 +256,7 @@ public:
 	}
 
 
-	///
+	/// Ditto
 	Entity gen(ComponentRange ...)()
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 	{
@@ -286,23 +267,48 @@ public:
 
 
 	/**
-	 * Destroys a valid entity. When destroyed all it's components are removed.
-	 *     Passig an invalid entity leads to undefined behaviour.
+	 * Destroys a valid entity. When destroyed all the associated components are
+	 *     removed. Passig an invalid entity leads to undefined behaviour.
 	 *
-	 * Params: e = valid entity to discard.
+	 * Params:
+	 *     e = entity to discard.
+	 *
+	 * Examples:
+	 * ---
+	 * auto em = new EntityManager();
+	 *
+	 * // discards the newly generated entity
+	 * em.discard(em.gen());
+	 * ---
 	 */
 	@system
 	void discard(in Entity e)
 		in (has(e))
 	{
-		removeAll(e);                                             // remove all components
+		removeAll(e);                                              // remove all components
 		_entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
-		queue = e;                                                // update the next in queue
-		queue.incrementBatch();                                   // increment batch for when it's revived
+		queue = e;                                                 // update the next in queue
+		queue.incrementBatch();                                    // increment batch for when it's revived
 	}
 
 
-	///
+	/**
+	 * Safely tries to discard an entity. If invalid does nothing.
+	 *
+	 * Params:
+	 *     e = entity to discard.
+	 *
+	 * Examples:
+	 * ---
+	 * auto em = new EntityManager();
+	 *
+	 * // might lead to undefined behavior
+	 * em.discard(em.entityNull);
+	 *
+	 * // safely tries to discard an entity
+	 * em.discardIfHas(em.entityNull);
+	 * ---
+	 */
 	void discardIfHas(in Entity e)
 	{
 		if (has(e)) discard(e);
@@ -314,9 +320,34 @@ public:
 	 *     emitted **after** the Component is set. A Component is set when
 	 *     assigning a new one to an entity or when updating an existing one.
 	 *
-	 * Params: Component = a valid component type
+	 * Params:
+	 *     Component = a valid component type
 	 *
-	 * Returns: Signal!(Entity,Component*)
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 * int i;
+	 *
+	 * // callback **MUST be a delegate** and return **void**
+	 * auto fun = (Entity,Foo*) { i++; };
+	 *
+	 * // bind a callback
+	 * em.onSet!Foo().connect(fun);
+	 *
+	 * // this emits onSet
+	 * em.gen!Foo();
+	 *
+	 * assert(1 == i);
+	 *
+	 * // unbind a callback
+	 * em.onSet!Foo().disconnect(fun);
+	 *
+	 * em.gen!Foo();
+	 * assert(1 == i);
+	 * ---
+	 *
+	 * Returns: `Signal!(Entity,Component*)`
 	 */
 	ref auto onSet(Component)()
 	{
@@ -326,13 +357,38 @@ public:
 
 	/**
 	 * This signal occurs every time a Component is disassociated from an
-	 *     entity. The onRemove signal is emitted **after** the Component is
-	 *     set. A Component is removed when removing a one from an entity or
+	 *     entity. The onRemove signal is emitted **before** the Component is
+	 *     removed. A Component is removed when removing a one from an entity or
 	 *     when discarding an entity.
 	 *
-	 * Params: Component = a valid component type
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 * int i;
 	 *
-	 * Returns: Signal!(Entity,Component*)
+	 * // callback **MUST be a delegate** and return **void**
+	 * auto fun = (Entity,Foo*) { i++; };
+	 *
+	 * // bind a callback
+	 * em.onSet!Foo().connect(fun);
+	 *
+	 * // this emits onRemove
+	 * em.discard(em.gen!Foo());
+	 *
+	 * assert(1 == i);
+	 *
+	 * // unbind a callback
+	 * em.onSet!Foo().disconnect(fun);
+	 *
+	 * em.discard(em.gen!Foo());
+	 * assert(1 == i);
+	 * ---
+	 *
+	 * Params:
+	 *     Component = a valid component type
+	 *
+	 * Returns: `Signal!(Entity,Component*)`
 	 */
 	ref auto onRemove(Component)()
 	{
@@ -341,21 +397,34 @@ public:
 
 
 	/**
-	 * Associates an entity to a component. The entity must be valid. Passing an
-	 *     invalid entity leads to undefined behaviour. Emits onSet after
-	 *     associating the component to the entity, either by creation or by
-	 *     replacement.
+	 * Associates an entity to a component. Passing an invalid entity leads to
+	 *     undefined behaviour. Emits onSet after associating the component to
+	 *     the entity, either by creation or by replacement.
 	 *
-	 * Params:
-	 *     e = the entity to associate.
-	 *     component = a valid component to set.
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Safety: The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onSet.
+	 * Signal: Emits onSet **after** setting the component.
 	 *
-	 * Returns: a pointer to the component set.
+	 * Params:
+	 *     e = entity to associate.
+	 *     component = component to set.
+	 *     components = components to set.
+	 *
+	 * Examples:
+	 * ---
+	 * struct Foo { int i; }
+	 * auto em = new EntityManager();
+	 *
+	 * // associates the newly generated entity with Foo.init
+	 * em.set!Foo(em.gen());
+	 *
+	 * // associates the newly generated entity with Foo(3)
+	 * em.set(em.gen(), Foo(3));
+	 * ---
+	 *
+	 * Returns: `Component*` pointing to the component set either by creation or
+	 *     replacement.
 	 */
 	Component* set(Component)(in Entity e, Component component = Component.init)
 		in (has(e))
@@ -364,7 +433,7 @@ public:
 	}
 
 
-	///
+	/// Ditto
 	auto set(ComponentRange ...)(in Entity e, ComponentRange components)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 		in (has(e))
@@ -377,7 +446,7 @@ public:
 	}
 
 
-	///
+	/// Ditto
 	auto set(ComponentRange ...)(in Entity e)
 		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
 		in (has(e))
@@ -391,19 +460,27 @@ public:
 
 
 	/**
-	 * Disassociates an entity from a component. The entity must be associated
-	 *     with the Component passed. Passing and invalid entity leads to
-	 *     undefined behaviour. See **removeIfHas** which removes the Component
-	 *     only if the entity is associated to it.
+	 * Disassociates an entity from a component. Passing and invalid entity or
+	 *     an entity which isn't associated with Component leads to undefined
+	 *     behaviour.
 	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Safety: The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onRemove.
+	 * Signal: Emits onRemove **before** disassociating the component.
+	 *
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 *
+	 * // disassociates Foo from the newly generated entity
+	 * em.remove!Foo(em.gen!Foo());
+	 * ---
 	 *
 	 * Params:
-	 *     e = an entity to disassociate.
-	 *     Component = a valid component to remove.
+	 *     e = entity to disassociate.
+	 *     Component = component to remove.
 	 */
 	void remove(Component)(in Entity e)
 		in (has(e))
@@ -413,18 +490,30 @@ public:
 
 
 	/**
-	 * Disassociates an entity from a component. If the entity is not associated
-	 *     with the given Component nothing happens. Passing and invalid entity
-	 *     leads to undefined behaviour.
+	 * Safely tries to disassociate an entity from a component. If invalid does
+	 *     nothing.
 	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Safety: The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onRemove.
+	 * Signal: Emits onRemove **before** disassociating the component.
+	 *
+	 * Examples:
+	 * ---
+	 * auto em = new EntityManager();
+	 *
+	 * // might lead to undefined behavior
+	 * em.remove!Foo(em.entityNull);
+	 * em.remove!Foo(em.gen());
+	 *
+	 * // safely tries to remove Foo from an entity
+	 * em.removeIfHas!Foo(em.entityNull);
+	 * em.removeIfHas!Foo(em.gen());
+	 * ---
 	 *
 	 * Params:
-	 *     e = an entity to disassociate.
-	 *     Component = a valid component to remove.
+	 *     e = entity to disassociate.
+	 *     Component = component to remove.
 	 */
 	void removeIfHas(Component)(in Entity e)
 	{
@@ -433,15 +522,33 @@ public:
 
 
 	/**
-	 * Removes all components associated to an entity. If the entity passed is
-	 *     invalid it leads to undefined behaviour.
+	 * Removes all components associated to an entity. Passing an invalid entity
+	 *     leads to undefined behaviour. If a component is passed instead, it
+	 *     clears the storage of the same disassociating every entity in it.
 	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Safety: The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Emits onRemove.
+	 * Signal: Emits onRemove **before** disassociating the component.
 	 *
-	 * Params: e = an entity to disassociate.
+	 * Params:
+	 *     e = entity to disassociate.
+	 *     Component = component storage to clear.
+	 *
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 *
+	 * // safely removes every component associated with the newly generated entity
+	 * em.removeAll(em.gen());
+	 *
+	 * // safely clears Foo's storage
+	 * em.removeAll!Foo();
+	 * ---
+	 *
+	 * Params:
+	 *     e = entity to disassociate.
 	 */
 	@system
 	void removeAll(in Entity e)
@@ -453,12 +560,10 @@ public:
 	}
 
 
-	/**
-	 * Disassociates al entities from a Component, reseting the Storage for that
-	 *     Component.
-	 *
-	 * Params: Component = a valid Component.
-	 */
+	// TODO: removeAllIfHas to safely try to remove from an entity
+
+
+	/// Ditto
 	void removeAll(Component)()
 	{
 		// FIXME: emit onRemove
@@ -468,15 +573,23 @@ public:
 
 	/**
 	 * Fetch a component associated to an entity. The entity must be associated
-	 *     with the Component passed. Passing and invalid entity. See **getOrSet**
-	 *     which sets a component to an entity if the same isn't associated with
-	 *     one.
+	 *     with the Component passed. Passing an invalid entity leads to
+	 *     undefined behaviour.
 	 *
 	 * Params:
-	 *     e= the entity to get the associated Component.
-	 *     Component = a valid component type to retrieve.
+	 *     e = entity to get the associated Component.
+	 *     Component = component type to retrieve.
 	 *
-	 * Returns: a pointer to the Component.
+	 * Examples:
+	 * ---
+	 * struct Foo { int i; }
+	 * auto em = new EntityManager();
+	 *
+	 * // gets Foo from the newly generated entity
+	 * em.get!Foo(em.gen!Foo());
+	 * ---
+	 *
+	 * Returns: `Component*` pointing to the component fetched.
 	 */
 	Component* get(Component)(in Entity e)
 		in (has(e))
@@ -485,22 +598,38 @@ public:
 	}
 
 
+	// TODO: getIfHas to safely try to get a component from an entity
+
+
 	/**
-	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed in the parameters is set and returned. If no Storage for the
-	 *     passed Component exists, one is initialized. If the entity passed is
-	 *     invalid it leads to undefined behaviour.
+	 * Fetch the component associated to an entity. If the entity is already
+	 *     associated with a component of that type then the same is immediatly
+	 *     returned, otherwise the component is set and returned. Passing an
+	 *     invalid entity leads to undefined behaviour.
 	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
+	 * Safety: The **internal code** is @safe, however, because of **Signal**
 	 *     dependency, the method must be @system.
 	 *
-	 * Signal: Might emit onSet.
+	 * Signal: Emits onSet **after** the component is set **if** set.
 	 *
 	 * Params:
-	 *     e = the entity to fetch the associated component.
-	 *     component = a valid component to set if there is none associated.
+	 *     e = entity to fetch the associated component.
+	 *     component = component to set if there is none associated.
 	 *
-	 * Returns: a pointer to the Component.
+	 * Examples:
+	 * ---
+	 * struct Foo { int i; }
+	 * auto em = new EntityManager();
+	 * auto e = em.gen();
+	 *
+	 * // asociates Foo.init with e returning a pointer to it
+	 * assert(Foo.init == *em.getOrSet!Foo(e));
+	 *
+	 * // returns a pointer to the already associated Foo
+	 * assert(Foo.init == *em.getOrSet(e, Foo(5)));
+	 * ---
+	 *
+	 * Returns: `Component*` pointing to the component associated.
 	 */
 	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
 		in (has(e))
@@ -509,34 +638,65 @@ public:
 	}
 
 
+	// TODO: getOrSetIfHas to safely try to get or set a component
+
+
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
-	 *     are associated to a component type.
+	 *     and components are stored in the Component's storage.
 	 *
-	 * Params: Component = a Component type to search.
+	 * Params:
+	 *     Component = a Component type to search.
 	 *
-	 * Returns: the amount of entities in the Component Storage.
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 *
+	 * // gets Foo's storage size
+	 * assert(0 == em.size!Foo);
+	 * ---
+	 *
+	 * Returns: the amount of entities/components in the Component Storage.
 	 */
 	size_t size(Component)()
 	{
-		return _assureStorage!Component().size();
+		return _assureStorage!Component().size;
 	}
 
 
 	/**
-	 * Helper struct to perform multiple actions sequences.
+	 * Returns a new builder used for chaining entity generation sequences and
+	 *     binds it to EntityManager.
 	 *
-	 * Returns: an EntityBuilder.
+	 * Examples:
+	 * ---
+	 * struct Foo {}
+	 * auto em = new EntityManager();
+	 *
+	 * // gets an EntityBuilder and generates 2 entities
+	 * em.entityBuilder()
+	 *     .gen()
+	 *     .gen!Foo();
+	 * ---
+	 *
+	 * Returns: `EntityBuilder`.
 	 */
 	@safe pure nothrow @nogc
-	auto entityBuilder()
+	EntityBuilder entityBuilder()
 	{
-		import vecs.entitybuilder : EntityBuilder;
 		return EntityBuilder(this);
 	}
 
 
-	///
+	/**
+	 * Checks if an entity is valid within EntityManager.
+	 *
+	 * Params:
+	 *     e = entity to check.
+	 *
+	 * Returns: `true` if the entity exists, `false` otherwise.
+	 */
 	@safe pure nothrow @nogc
 	bool has(in Entity e) const
 		in (e.id < Entity.maxid)
@@ -546,37 +706,72 @@ public:
 
 
 	/**
-	 * Query of `Output` args. `Output` must either be an `Entity`, a
-	 *     `Component` or a `Tuple` of these. `Component` arguments passed in `Output`
-	 *     are returned by reference by the range. `Entity` is copied. To have
-	 *     an `Entity` as an `Output` parameter, the type must **always** be in
-	 *     the first "slot".
+	 * Searches entities with the components passed. The first argument is the
+	 *     output signature and is used to fetch all components from entities
+	 *     which are associated with all of them, basically it does an
+	 *     intersection of all entities containing the set of components passed.
+	 *     The second argument filters the those components fetched to further
+	 *     customize the search. All components are returned as pointers,
+	 *     meaning they can be instantly updated with new data. To iterate
+	 *     through entities, the Entity type **must** be specified as the first
+	 *     type in the first argument. The Query's output returns a Tuple if it
+	 *     contains more than one type, otherwise it returns the type as is. \
+	 * Using the `queryOne` variant, instead of range, the first result is
+	 *         returned.
 	 *
-	 * If using the range with a `foreach` loop, then the arguments are
-	 *     implicitly converted to the respective variables.
+	 * Params:
+	 *     Output = Tuple of the signature being searched. It searches every
+	 *         entity with all the components passed in common. If the first
+	 *         argument is Entity then it also includes the entity of such
+	 *         components as the first argument in the output tuple.
+	 *     Filter = Tuple of filters to further customize the query search.
+	 *         Currently the filters available are: `With`, `Without`
+	 *
+	 * Filters:
+	 * * With - acts the same as the types in the Output argument but it doesn't
+	 *       return them to the Output.
+	 * * Without - the inverse of With and types in Output, leaves out entities
+	 *       with a certaint type.
 	 *
 	 * Examples:
 	 * --------------------
 	 * auto em = new EntityManager();
-	 * ...
 	 *
-	 * // query valid entities
+	 * // Query: all entities alive/existent
+	 * // Outputs: `Entity`
 	 * foreach (e; em.query!Entity) { ... }
-	 *
-	 * // same as above --> infers to em.query!Entity
 	 * foreach (e; em.query!(Tuple!Entity)) { ... }
 	 *
-	 * // query entities with int, string
+	 * // Tuple is discarded when of length 1
+	 * assert(is(typeof(em.query!Entity.front) == typeof(em.query!(Tuple!Entity).front)));
+	 *
+	 * // Query: entities with `int` and `string`
+	 * // Outputs: `ìnt*`, `string*`
+	 * foreach (i, str; em.query!(Tuple!(int,string))) { ... }
+	 *
+	 * // Query: entities with `int`, `string`
+	 * // Outputs: `Entity`, `int*`, `string*`
 	 * foreach (e, i, str; em.query!(Tuple!(Entity,int,string))) { ... }
 	 *
-	 * // same as above but doesn't return the entities
-	 * foreach (i, str; em.query!(Tuple!(int,string))) { ... }
+	 * // Query: entities with `int`, `string`
+	 * // Outputs: `int*`
+	 * foreach (i; em.query!(int, With!string)) { ... }
+	 *
+	 * // Query: entities with `int` and without `string`
+	 * // Outputs: `int*`
+	 * foreach (i; em.query!(int, Without!string)) { ... }
+	 *
+	 * // Query: entities with `int`, `string`, `float`, `ubyte`, and without `double`
+	 * // Outputs: `Entity`, `int*`, `string`
+	 * foreach (i;
+	 * em.query!(Tuple!(Entity,int,string),Tuple!(With!(Tuple(float,ubyte)),Without!string))) { ... }
+	 *
+	 * // gets the first result of the range
+	 * assert(is(Tuple!(Entity, int*) == typeof(queryOne!(Tuple!(Entity,int)))));
 	 * --------------------
 	 *
-	 * Parameters: Output = valid query arguments (Entity and Component)
-	 *
-	 * Returns: a `Query!Output` which iterates through the entities with
-	 *     `Output` arguments.
+	 * Returns: `Query` range which iterates through components of entities with
+	 *     the same set of components in common passed in both Query's parameters.
 	 */
 	auto query(Output)()
 	{
@@ -586,29 +781,7 @@ public:
 	}
 
 
-	/**
-	 * Query of `Output` args with `Filter` args. Behaves the same as the normal
-	 *     query with the addition of filtering Components not wanted in the
-	 *     `Output` parameters. All `Filter` arguments must be `Components`.
-	 *
-	 * Examples:
-	 * --------------------
-	 * auto em = new EntityManager();
-	 * ...
-	 *
-	 * // query entities with int and string but only returns entities
-	 * foreach (e; em.query!(Entity, With!(int, string))) { ... }
-	 *
-	 * // query entities without int but only returns entities
-	 * foreach (e; em.query!(Entity, Without!int)) { ... }
-	 *
-	 * // query entities with int, string but only returns entities and int
-	 * foreach (e, i; em.query!(Tuple!(Entity,int), With!string)) { ... }
-	 *
-	 * // query entities with int, string and without bool but only returns entities and int
-	 * foreach (e, i; em.query!(Tuple!(Entity,int), Tuple!(With!string, Without!bool))) { ... }
-	 * --------------------
-	 */
+	/// Ditto
 	auto query(Output, Filter)()
 	{
 		import std.meta : metaFilter = Filter, staticMap;
@@ -627,15 +800,19 @@ public:
 	}
 
 
-	///
+	/// Ditto
 	auto queryOne(Output)() { return query!Output.front; }
 
 
-	///
+	/// Ditto
 	auto queryOne(Output, Filter)() { return query!(Output, Filter).front; }
 
 
-	///
+	/**
+	 * Gets every entity currently alive/existent within EntityManager.
+	 *
+	 * Returns: `Entity[]` of alive/existent entities.
+	 */
 	@safe pure nothrow @property
 	Entity[] entities() const
 	{
@@ -652,47 +829,46 @@ public:
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
-	 *     value of entities created. Throws a **MaximumEntitiesReachedException**
-	 *     if the maximum amount of entities allowed is reached.
-	 *
-	 * Returns: an Entity with a new id.
+	 *     value of entities created. Throws **MaximumEntitiesReachedException**
+	 *     if the maximum amount of entities is reached.
 	 *
 	 * Throws: `MaximumEntitiesReachedException`.
+	 *
+	 * Returns: `Entity` newly created.
 	 */
 	@safe pure
 	Entity fabricate()
 	{
-		import std.format : format;
 		enforce!MaximumEntitiesReachedException(
 			_entities.length < Entity.maxid,
 			format!"Reached the maximum amount of _entities supported: %s!"(Entity.maxid)
 		);
 
 		import std.range : back;
-		_entities ~= Entity(_entities.length); // safe pure cast
+		_entities ~= Entity(_entities.length);
 		return _entities.back;
 	}
 
 
 	/**
-	 * Creates a new entity reusing a **previously discarded entity** with a new
-	 *     **batch**. Swaps the current discarded entity stored the queue's entity
-	 *     place with it.
+	 * Creates a new entity reusing the id of a **previously discarded entity**
+	 *     with a new batch. Swaps the current discarded entity stored the
+	 *     queue's entity place with it.
 	 *
-	 * Returns: an Entity previously fabricated with a new batch.
+	 * Returns: `Entity` newly created.
 	 */
 	@safe pure nothrow @nogc
 	Entity recycle()
 		in (!queue.isNull)
 	{
 		immutable next = queue;     // get the next entity in queue
-		queue = _entities[next.id];  // grab the entity which will be the next in queue
-		_entities[next.id] = next;   // revive the entity
+		queue = _entities[next.id]; // grab the entity which will be the next in queue
+		_entities[next.id] = next;  // revive the entity
 		return next;
 	}
 
 
-	///
+	/// Common logic for set dependencies
 	Component* _set(Component)(in Entity entity, Component component = Component.init)
 		if (isComponent!Component)
 	{
@@ -701,7 +877,7 @@ private:
 	}
 
 
-	///
+	/// Common logic for remove dependencies
 	void _remove(Component)(in Entity entity)
 		if (isComponent!Component)
 	{
@@ -709,17 +885,20 @@ private:
 	}
 
 
-	///
+	/// Assures the Component's storage availability
 	size_t _assure(Component)()
 		if (isComponent!Component)
 	{
+		// Component's generated id
 		immutable index = ComponentId!Component;
 
+		// allocates enough space for the new Component
 		if (index >= storageInfoMap.length)
 		{
 			storageInfoMap.length = index + 1;
 		}
 
+		// creates a storage if there is none of Component
 		if (storageInfoMap[index].storage is null)
 		{
 			storageInfoMap[index] = StorageInfo().__ctor!(Component)();
@@ -729,7 +908,7 @@ private:
 	}
 
 
-	///
+	/// Assures the Component's storage availability and returns the Storage
 	Storage!Component _assureStorage(Component)()
 		if (isComponent!Component)
 	{
@@ -738,7 +917,7 @@ private:
 	}
 
 
-	///
+	/// Assures the Component's storage availability and returns the StorageInfo
 	auto ref StorageInfo _assureStorageInfo(Component)()
 		if (isComponent!Component)
 	{
@@ -747,21 +926,21 @@ private:
 	}
 
 
-	///
+	/// Query helper
 	QueryWorld!(Entity) _queryWorld(Output : Entity, Extra ...)()
 	{
 		return QueryWorld!Entity(_queryEntities!(Extra).idup);
 	}
 
 
-	///
+	/// Ditto
 	QueryWorld!(Entity) _queryWorld(Output : Tuple!Entity, Extra ...)()
 	{
 		return _queryWorld!(Entity, Extra)();
 	}
 
 
-	///
+	/// Ditto
 	QueryWorld!(Component) _queryWorld(Component, Extra ...)()
 		if (isComponent!Component)
 	{
@@ -771,7 +950,7 @@ private:
 	}
 
 
-	///
+	/// Ditto
 	QueryWorld!(Component) _queryWorld(Output : Tuple!(Component), Component, Extra ...)()
 		if (isComponent!Component && Output.length == 1)
 	{
@@ -779,7 +958,7 @@ private:
 	}
 
 
-	///
+	/// Ditto
 	QueryWorld!(OutputTuple) _queryWorld(OutputTuple, Extra ...)()
 		if (isInstanceOf!(Tuple, OutputTuple))
 	{
@@ -789,8 +968,10 @@ private:
 		else
 			alias Components = Out;
 
+		// gets all StoragesInfo
 		enum components = format!q{[%(_assureStorageInfo!(Components[%s])%|,%)]}(Components.length.iota);
 
+		// get entities and build the Query
 		auto entities = _queryEntities!(Components, Extra);
 		enum queryworld = format!q{QueryWorld!(OutputTuple)(entities.idup,%s)}(components);
 
@@ -798,7 +979,7 @@ private:
 	}
 
 
-	///
+	/// Ditto
 	QueryFilter!(Filter) _queryFilter(Filter)()
 		if (!isInstanceOf!(Tuple, Filter))
 	{
@@ -809,7 +990,7 @@ private:
 	}
 
 
-	///
+	/// Ditto
 	QueryFilter!(FilterTuple) _queryFilter(FilterTuple)()
 		if (isInstanceOf!(Tuple, FilterTuple))
 	{
@@ -845,13 +1026,15 @@ private:
 
 
 	/**
-	 * Finds the Storage with the lowest size of all ComponentRange storages. If
-	 *     ComponentRange.length is 0 then all valid entities are chosen.
+	 * Finds the Storage with the lowest size of all ComponentRange storages and
+	 *     returns all entities in it. If ComponentRange.length is 0 then all
+	 *     valid entities are returned.
 	 *
-	 * Paramters: ComponentRange = components to search.
+	 * Params:
+	 *     ComponentRange = components to search.
 	 *
-	 * Returns: the lowest Entity[] in size of all Storages if
-	 * ComponentRange.len > 0, otherwise all valid entities.
+	 * Returns: `Entity[]` of the lowest Storage's size if ComponentRange.len > 0,
+	 *     otherwise all valid entities.
 	 */
 	Entity[] _queryEntities(ComponentRange ...)()
 	{
