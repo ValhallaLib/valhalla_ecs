@@ -4,7 +4,7 @@ An Entity Component System library written in D.
 ## Brief
 An entity component system is a pattern used mostly in gamedev. The objective is
 to classify everything in a game as an `Entity`. `Components` are just data
-structures used to give so sort of meaning to the generated entities. Some
+structures used to give some sort of meaning to the generated entities. Some
 common examples are: `Position`, `Velocity`, `Sprite`. All these components can
 be associated to an entity. An entity can be rendered if has `Position` and
 `Sprite`, etc. Components can be almost anything! A `System` gives functionality
@@ -65,6 +65,17 @@ void systemC(Query!(Tuple!(Position,Velocity), Tuple!(With!Grounder, Without!Cra
 void main()
 {
 	auto em = new EntityManager();
+
+	// listen to signals
+	em.onSet!Grounder((Entity,Grounder*) {
+		import std.stdio : writeln;
+		"A Grounder has born".writeln;
+	});
+
+	em.onRemove!Grounder((Entity,Grounder*) {
+		import std.stdio : writeln;
+		"A Grounder has died".writeln;
+	})
 
 	em.entityBuilder()
 		.gen!Position
