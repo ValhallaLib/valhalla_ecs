@@ -27,13 +27,13 @@ void combatSystem(Body* enemy, Query!(Body, Without!Enemy) query)
  // Game State system
 // =================
 
-void gameSystem(Query!Body query, State* state)
+void gameSystem(Query!Body query, ref State state)
 {
 	import std.algorithm : filter, each;
 	import std.typecons : No;
 
 	query.filter!"a.hp <= 0".each!((q) {
-		*state = State.over;
+		state = State.over;
 		return No.each;
 	});
 }
@@ -80,6 +80,13 @@ void main()
 	});
 
 
+	  // ================
+	 // Create resources
+	// ================
+
+	em.addResource(State.running);
+
+
 	  // ===============
 	 // Create entities
 	// ===============
@@ -87,18 +94,18 @@ void main()
 	em.entityBuilder()
 		.gen(Body(10, 3, "Foo"))
 		.gen(Body(10, 3, "Bar"))
-		.gen(Body(13, 1, "Enemy"), Enemy())
-		.gen(State.running);
+		.gen(Body(13, 1, "Enemy"), Enemy());
+
 
 
 	  // =========
 	 // Main loop
 	// =========
 
-	while (*em.queryOne!State() == State.running)
+	while (em.resource!State() == State.running)
 	{
 		combatSystem(em.queryOne!(Body, With!Enemy), em.query!(Body, Without!Enemy));
-		gameSystem(em.query!Body, em.queryOne!State);
+		gameSystem(em.query!Body, em.resource!State);
 	}
 
 	"Over!".writeln;
