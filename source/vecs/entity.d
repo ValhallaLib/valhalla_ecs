@@ -5,6 +5,7 @@ import vecs.storage;
 import vecs.query;
 import vecs.queryfilter;
 import vecs.queryworld;
+import vecs.resource;
 
 import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
@@ -826,6 +827,60 @@ public:
 		return ret.data;
 	}
 
+
+	/**
+	 * Inserts a new resource. If there's already the same type stored, then
+	 *     it's content will be replaced be the new one. If no value is passed,
+	 *     then the resource is stored with it's default initializer.
+	 *
+	 * Examples:
+	 * ---
+	 * class Foo {}
+	 * auto em = new EntityManager();
+	 *
+	 * // will be stored as null!
+	 * em.addResource!Foo;
+	 *
+	 * // update Foo instance
+	 * em.addResource(new Foo());
+	 * ---
+	 *
+	 * Params:
+	 *     res = resource to add.
+	 */
+	void addResource(R)(R res = R.init)
+		if (isResource!R)
+	{
+		auto resource = &_assureResource!R();
+		resource.data[] = (() @trusted pure nothrow @nogc => (cast(void*)(&res))[0 .. R.sizeof])();
+	}
+
+
+	/**
+	 * Gets the resource stored of type R. If none was added then a new resource
+	 *     of the same type is stored.
+	 *
+	 * Examples:
+	 * ---
+	 * struct Foo { int i; }
+	 * auto em = new EntityManager();
+	 *
+	 * assert(Foo() == em.resource!Foo);
+	 * em.resource!Foo = Foo(3);
+	 * assert(Foo(3) == em.resource!Foo);
+	 * ---
+	 *
+	 * Params:
+	 *     R = type to add as a resource.
+	 *
+	 */
+	auto ref R resource(R)()
+		if (isResource!R)
+	{
+		auto resource = &_assureResource!R();
+		return *(() @trusted pure nothrow @nogc => cast(R*)resource.data)();
+	}
+
 private:
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the total
@@ -923,6 +978,15 @@ private:
 	{
 		immutable index = _assure!Component();
 		return storageInfoMap[index];
+	}
+
+
+	ref Resource _assureResource(Res)()
+	{
+		immutable id = ResourceId!Res();
+		if (resources.length <= id) resources.length = id + 1;
+		if (resources[id].data.ptr is null) resources[id].data.length = Res.sizeof;
+		return resources[id];
 	}
 
 
@@ -1054,6 +1118,7 @@ private:
 	Entity[] _entities;
 	Nullable!(Entity, entityNull) queue;
 	StorageInfo[] storageInfoMap;
+	Resource[] resources;
 
 public:
 	enum Entity entityNull = Entity(Entity.maxid);
