@@ -8,3 +8,4 @@ public:
 	import vecs.queryworld;
 	import vecs.signal;
 	import vecs.storage;
+	import vecs.resource;
