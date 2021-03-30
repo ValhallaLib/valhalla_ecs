@@ -11,8 +11,10 @@ version(vecs_unittest)
 @safe nothrow @nogc
 private static size_t nextId()
 {
-	static size_t value;
-	return value++;
+	shared static size_t value;
+
+	import core.atomic : atomicOp;
+	return value.atomicOp!"+="(1);
 }
 
 
@@ -23,13 +25,14 @@ template ResourceId(Res)
 	{
 		auto ResourceIdImpl = ()
 		{
-			static bool initialized;
-			static size_t id;
+			shared static bool initialized;
+			shared static size_t id;
 
 			if (!initialized)
 			{
-				id = nextId();
-				initialized = true;
+				import core.atomic : atomicStore;
+				id.atomicStore(nextId());
+				initialized.atomicStore(true);
 			}
 
 			return id;
@@ -41,6 +44,7 @@ template ResourceId(Res)
 }
 
 
+///
 enum isResource(R) = is(R == class)
 	|| is(R == struct)
 	|| is(R == enum);
@@ -98,4 +102,27 @@ unittest
 	assertFalse(__traits(compiles, em.addResource!(int)()));
 	assertFalse(__traits(compiles, em.addResource!(int[])()));
 	assertFalse(__traits(compiles, em.addResource!(State*)()));
+}
+
+
+@("resource: Resource multithreaded")
+@system
+unittest
+{
+	import std.algorithm : each;
+	import core.thread.osthread;
+	Thread[2] threads;
+	size_t[2] ids;
+
+	threads[0] = new Thread(() {
+		ids[0] = ResourceId!State;
+	}).start();
+
+	threads[1] = new Thread(() {
+		ids[1] = ResourceId!CState;
+	}).start();
+
+	threads.each!"a.join()";
+
+	assertFalse(ids[0] == ids[1]);
 }
