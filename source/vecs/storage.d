@@ -113,11 +113,13 @@ if (isFunctionPointer!T || isDelegate!T)
 
 
 ///
-@safe
+@safe nothrow @nogc
 private static size_t nextId()
 {
-	static size_t value;
-	return value++;
+	import core.atomic : atomicOp;
+
+	shared static size_t value;
+	return value.atomicOp!"+="(1);
 }
 
 
@@ -129,20 +131,48 @@ template ComponentId(Component)
 	{
 		auto ComponentIdImpl = ()
 		{
-			static bool initialized;
-			static size_t id;
+			shared static bool initialized;
+			shared static size_t id;
 
 			if (!initialized)
 			{
-				id = nextId();
-				initialized = true;
+				import core.atomic : atomicStore;
+				id.atomicStore(nextId());
+				initialized.atomicStore(true);
 			}
 
 			return id;
 		};
 
-		return (() @trusted => assumePure(ComponentIdImpl)())();
+		return (() @trusted pure nothrow @nogc => assumePure(ComponentIdImpl)())();
 	}
+}
+
+
+@("storage: ComponentId multithreaded")
+@system
+unittest
+{
+	import std.algorithm : each;
+	import core.thread.osthread;
+	import vecs.entity;
+
+	Thread[2] threads;
+	size_t[2] ids;
+
+	auto em = new EntityManager();
+
+	threads[0] = new Thread(() {
+		ids[0] = ComponentId!Foo;
+	}).start();
+
+	threads[1] = new Thread(() {
+		ids[1] = ComponentId!Bar;
+	}).start();
+
+	threads.each!"a.join()";
+
+	assertFalse(ids[0] == ids[1]);
 }
 
 
