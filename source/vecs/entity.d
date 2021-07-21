@@ -71,7 +71,7 @@ public:
 	this(in size_t id)
 		in (id <= maxid)
 	{
-		_id = id;
+		_signature = id;
 	}
 
 	@safe pure nothrow @nogc
@@ -79,36 +79,34 @@ public:
 		in (id <= maxid)
 		in (batch <= maxbatch)
 	{
-		_id = id;
-		_batch = batch;
+		_signature = (id | (batch << idshift));
 	}
 
 
 	@safe pure nothrow @nogc
 	bool opEquals(in Entity other) const
 	{
-		return other.signature == signature;
+		return other._signature == _signature;
 	}
 
 
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
-		return _id;
+		return _signature & maxid;
 	}
 
 
 	@safe pure nothrow @nogc @property
 	size_t batch() const
 	{
-		return _batch;
+		return _signature >> idshift;
 	}
 
-
-	@safe pure nothrow @nogc
+	@safe pure nothrow @nogc @property
 	size_t signature() const
 	{
-		return (_id | (_batch << idshift));
+		return _signature;
 	}
 
 
@@ -134,13 +132,11 @@ private:
 	@safe pure nothrow @nogc
 	auto incrementBatch()
 	{
-		_batch = _batch >= maxbatch ? 0 : _batch + 1;
-
+		_signature = (id | ((batch + 1) << idshift));
 		return this;
 	}
 
-	size_t _id;
-	size_t _batch;
+	size_t _signature;
 }
 
 @safe pure
