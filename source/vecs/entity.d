@@ -26,41 +26,44 @@ class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
 
 
 /**
- * An entity is defined by an **id** and a  **batch**. It's signature is the
- *     combination of both values. The first N bits belong to the **id** and the
- *     last M ending bits to the `batch`. \
- * \
- * An entity in it's raw form is simply an integral value formed by the junction
- *     of the id with the batch.
- * \
- * An entity is then defined by: **id | (batch << idshift)**. \
- * \
- * Let's imagine an entity of 8 bites. By default it's **id** and **batch**
- *     occupy **4 bits** each. \
- * \
- * `Entity` = **0000 0000** = ***(batch << 4) | id***.
- *
- * Constants:
- *     `idshift` = division point between the entity's **id** and **batch**. \
- *     `idmask` = bit mask related to the entity's **id** portion. \
- *     `batchmask` = bit mask related to the entity's **batch** portion. \
- *     `maxid` = the maximum number of ids allowed
- *     `maxbatch` = the maximum number of batches allowed
- *
- * Values:
- * | `void* size (bits)` | `idshift` | `idmask`    | `batchmask`       |
- * | :-----------------  | :----  -- | :---------- | :---------------- |
- * | 4                   | 20        | 0xFFFF_F    | 0xFFF << 20       |
- * | 8                   | 32        | 0xFFFF_FFFF | 0xFFFF_FFFF << 32 |
- *
- * Sizes:
- * | `void* size (bits)` | `id (bits)` | `batch (bits)` | `maxid`       | `maxbatch`    |
- * | :----------------   | :--------   | :-----------   | :------------ | :------------ |
- * | 4                   | 20          | 12             | 1_048_574     | 4_095         |
- * | 8                   | 32          | 32             | 4_294_967_295 | 4_294_967_295 |
- *
- * See_Also: [skypjack - entt](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/)
- */
+An entity is defined by an `id` and `batch`. It's signature is the combination
+of both values. The **first N bits** define the `id` and the **last M bits**
+the `batch`. The signature is an integral value of 32 bits or 64 bits depending
+on the architecture. The type of this variable is `size_t` and its composition
+is divided in two parts, id and batch.
+
+Supposing an entity is an integral type of **8 bits**.
+First half defines the batch.
+Second half defines the id.
+
+Composition:
+| batch | id   |
+| :---- | :--- |
+| 0000  | 0000 |
+
+Fields:
+| name        | description                                               |
+| :---------- | :-------------------------------------------------------- |
+| `idshift`   | division point between the entity's **id** and **batch**. |
+| `idmask`    | bit mask related to the entity's **id** portion.          |
+| `batchmask` | bit mask related to the entity's **batch** portion.       |
+| `maxid`     | the maximum number of ids allowed                         |
+| `maxbatch`  | the maximum number of batches allowed                     |
+
+Values:
+| `void* size (bytes)` | `idshift (bits)` | `idmask`    | `batchmask`       |
+| :------------------- | :--------------- | :---------- | :---------------- |
+| 4                    | 20               | 0xFFFF_F    | 0xFFF << 20       |
+| 8                    | 32               | 0xFFFF_FFFF | 0xFFFF_FFFF << 32 |
+
+Sizes:
+| `void* size (bytes)` | `id (bits)` | `batch (bits)` | `maxid`       | `maxbatch`    |
+| :------------------- | :---------- | :------------- | :------------ | :------------ |
+| 4                    | 20          | 12             | 1_048_574     | 4_095         |
+| 8                    | 32          | 32             | 4_294_967_295 | 4_294_967_295 |
+
+See_Also: [skypjack - entt](https://skypjack.github.io/2019-05-06-ecs-baf-part-3/)
+*/
 struct Entity
 {
 public:
@@ -111,21 +114,21 @@ public:
 
 	static if (typeof(int.sizeof).sizeof == 4)
 	{
-		enum size_t idshift = 20UL;   // 20 bits for ids
-		enum size_t maxid = 0xFFFF_F; // 1_048_575 unique ids
-		enum size_t maxbatch = 0xFFF; // 4_095 unique batches
+		enum size_t idshift = 20UL;   /// 20 bits   or 32 bits
+		enum size_t maxid = 0xFFFF_F; /// 1_048_575 or 4_294_967_295
+		enum size_t maxbatch = 0xFFF; /// 4_095     or 4_294_967_295
 	}
 	else static if (typeof(int.sizeof).sizeof == 8)
 	{
-		enum size_t idshift = 32UL;      // 32 bits for ids
-		enum size_t maxid = 0xFFFF_FFFF; // 4_294_967_295 unique ids
-		enum size_t maxbatch = maxid;    // 4_294_967_295 unique batches
+		enum size_t idshift = 32UL;      /// ditto
+		enum size_t maxid = 0xFFFF_FFFF; /// ditto
+		enum size_t maxbatch = maxid;    /// ditto
 	}
 	else
 		static assert(false, "unsuported target");
 
-	enum size_t idmask = maxid; // first 20 bits (sizeof==4), 32 bits (sizeof==8)
-	enum size_t batchmask = maxbatch << idshift; // last 12 bits (sizeof==4), 32 bits (sizeof==8)
+	enum size_t idmask = maxid;                  /// first 20 bits or 32 bits
+	enum size_t batchmask = maxbatch << idshift; /// last  12 bits or 32 bits
 
 private:
 	@safe pure nothrow @nogc
