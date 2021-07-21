@@ -117,20 +117,19 @@ public:
 	}
 
 
-	static if (typeof(int.sizeof).sizeof == 4)
+	// if size_t is 32 or 64 bits
+	version(VECS_32)
 	{
 		enum size_t idshift = 20UL;   /// 20 bits   or 32 bits
 		enum size_t maxid = 0xFFFF_F; /// 1_048_575 or 4_294_967_295
 		enum size_t maxbatch = 0xFFF; /// 4_095     or 4_294_967_295
 	}
-	else static if (typeof(int.sizeof).sizeof == 8)
+	else
 	{
 		enum size_t idshift = 32UL;      /// ditto
 		enum size_t maxid = 0xFFFF_FFFF; /// ditto
 		enum size_t maxbatch = maxid;    /// ditto
 	}
-	else
-		static assert(false, "unsuported target");
 
 	enum size_t idmask = maxid;                  /// first 20 bits or 32 bits
 	enum size_t batchmask = maxbatch << idshift; /// last  12 bits or 32 bits
