@@ -1,5 +1,12 @@
 module vecs.entity;
 
+private enum VECS_32 = typeof(int.sizeof).sizeof == 4;
+private enum VECS_64 = typeof(int.sizeof).sizeof == 8;
+static assert(VECS_32 || VECS_64, "Unsuported target!");
+
+static if (VECS_32) version = VECS_32;
+else version = VECS_64;
+
 import vecs.entitybuilder : EntityBuilder;
 import vecs.storage;
 import vecs.query;
