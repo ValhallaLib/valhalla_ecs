@@ -149,32 +149,25 @@ private:
 @("entity: Entity")
 unittest
 {
-	auto entity0 = Entity(0);
+	assertEquals(Entity.init, Entity(0));
+	assertEquals(Entity.init, Entity(0, 0));
 
-	assertEquals(0, entity0.id);
-	assertEquals(0, entity0.batch);
-	assertEquals(0, entity0.signature);
-	assertEquals(Entity(0, 0), entity0);
+	{
+		immutable e = Entity.init;
+		assertEquals(e.id, 0);
+		assertEquals(e.batch, 0);
+		assertEquals(e.signature, 0);
+	}
 
-	entity0.incrementBatch();
-	assertEquals(0, entity0.id);
-	assertEquals(1, entity0.batch);
+	{
+		immutable e = Entity.init.incrementBatch();
+		assertEquals(e.id, 0);
+		assertEquals(e.batch, 1);
+		assertEquals(e.signature, Entity.maxid + 1);
+		assertEquals(e, Entity(0, 1));
+	}
 
-	static if (typeof(int.sizeof).sizeof == 4)
-		assertEquals(1_048_576, entity0.signature);
-	else
-		assertEquals(4_294_967_296, entity0.signature);
-
-	assertEquals(Entity(0, 1), entity0);
-
-	entity0 = Entity(0, Entity.maxbatch);
-	entity0.incrementBatch();
-	assertEquals(0, entity0.batch); // batch reseted
-
-	static if (typeof(int.sizeof).sizeof == 4)
-		assertEquals(0xFFF, Entity.maxbatch);
-	else
-		assertEquals(0xFFFF_FFFF, Entity.maxbatch);
+	assertEquals(Entity(0, Entity.maxbatch).incrementBatch().batch, 0);
 }
 
 
