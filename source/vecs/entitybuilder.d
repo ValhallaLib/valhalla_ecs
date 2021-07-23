@@ -11,55 +11,19 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 struct EntityBuilder
 {
 public:
-	@safe pure nothrow @nogc
-	this(EntityManager em)
+	EntityBuilder set(Component)(Component component = Component.init)
 	{
-		this.em = em;
-	}
-
-
-	/// Uses EntityManager's gen method
-	@safe pure
-	auto gen()
-	{
-		entities ~= em.gen();
+		em.set!Component(entity, component);
 		return this;
 	}
 
 
-	/// Ditto
-	auto gen(ComponentRange ...)()
-	{
-		entities ~= em.gen!(ComponentRange)();
-		return this;
-	}
+	immutable Entity entity = EntityManager.entityNull;
+	alias entity this;
 
-
-	/// Ditto
-	auto gen(ComponentRange ...)(ComponentRange components)
-	{
-		entities ~= em.gen(components);
-		return this;
-	}
-
-
-	/**
-	 * Gets all entities generated with an instance of EntityBuilder.
-	 *
-	 * Returns: `Entity[]` with the generated entities.
-	 */
-	@safe pure nothrow @nogc
-	Entity[] get()
-	{
-		return entities;
-	}
-
-
-private:
-	Entity[] entities;
+package:
 	EntityManager em;
 }
-
 
 @system
 @("entitybuilder: entityBuilder")
@@ -67,24 +31,22 @@ unittest
 {
 	import vecs.storage;
 	EntityManager em = new EntityManager();
-	auto entities = em.entityBuilder
-		.gen()
-		.gen()
-		.gen()
-		.get();
 
-	assertEquals([Entity(0), Entity(1), Entity(2)], entities);
+	Entity[] entts;
+	with(em) entts = [
+		entityBuilder(),
+		entityBuilder(),
+		entityBuilder(),
+	];
 
-	entities = em.entityBuilder
-		.gen!(Foo)()
-		.gen()
-		.gen(Bar("str"))
-		.gen!(Foo, int)()
-		.get();
+	assertEquals([Entity(0), Entity(1), Entity(2)], entts);
 
-	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entities);
+	with(em) entts = [
+		entityBuilder().set!Foo,
+		entityBuilder(),
+		entityBuilder().set(Bar("str")),
+		entityBuilder().set!Foo.set!int,
+	];
 
-	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, Foo)()));
-	assertFalse(__traits(compiles, em.entityBuilder.gen(Foo.init, Bar.init, Foo(3, 4))));
-	assertFalse(__traits(compiles, em.entityBuilder.gen!(Foo, Bar, immutable(int))()));
+	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entts);
 }

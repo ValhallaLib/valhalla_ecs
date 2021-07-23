@@ -681,10 +681,14 @@ public:
 	 *
 	 * Returns: `EntityBuilder`.
 	 */
-	@safe pure nothrow @nogc
+	@safe pure
 	EntityBuilder entityBuilder()
 	{
-		return EntityBuilder(this);
+		EntityBuilder builder = {
+			entity: gen(),
+			em: this
+		};
+		return builder;
 	}
 
 
