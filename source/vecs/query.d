@@ -74,17 +74,18 @@ unittest
 	import std.algorithm : map;
 
 	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	with(em) {
+		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+	}
 
 	assertEquals(5, em.query!int.range.entities.length);
 	assertRangeEquals([4,0,0,0,0], em.query!int.map!"*a");
@@ -99,17 +100,18 @@ unittest
 	import std.algorithm : map;
 
 	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	with(em) {
+		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+	}
 
 	auto range = [
 		tuple(4,Bar.init),
@@ -189,17 +191,18 @@ private:
 unittest
 {
 	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	with(em) {
+		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+	}
 
 	auto range = [Entity(0),Entity(6),Entity(7),Entity(8),Entity(9)];
 	assertEquals(5, em.query!(Entity, With!int).range.entities.length);
@@ -219,17 +222,18 @@ unittest
 	import std.algorithm : map;
 
 	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	with(em) {
+		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+	}
 
 	auto range = [
 		tuple(Entity(0), 4),
@@ -261,17 +265,18 @@ unittest
 
 	{
 		auto em = new EntityManager();
-		em.entityBuilder()
-			.gen(Foo(2, 4), Bar.init, 4)
-			.gen!(Foo)
-			.gen!(Foo)
-			.gen!(Foo, Bar)
-			.gen!(Foo, Bar)
-			.gen!(Foo, Bar)
-			.gen!(Bar, int)
-			.gen!(Bar, int)
-			.gen!(Foo, Bar, int)
-			.gen!(Foo, Bar, int);
+		with(em) {
+			entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+			entityBuilder().set!Foo;
+			entityBuilder().set!Foo;
+			entityBuilder().set!Foo.set!Bar;
+			entityBuilder().set!Foo.set!Bar;
+			entityBuilder().set!Foo.set!Bar;
+			entityBuilder().set!Bar.set!int;
+			entityBuilder().set!Bar.set!int;
+			entityBuilder().set!Foo.set!Bar.set!int;
+			entityBuilder().set!Foo.set!Bar.set!int;
+		}
 
 		auto range = [4,0,0,0,0];
 		assertEquals(5, em.query!(int, With!Bar).range.entities.length);
@@ -284,10 +289,11 @@ unittest
 
 	{
 		auto em = new EntityManager();
-		em.entityBuilder()
-			.gen("Foo", 1f)
-			.gen("Bar", 1f)
-			.gen("Foobar", 1f, 5);
+		with(em) {
+			entityBuilder().set("Foo").set(1f);
+			entityBuilder().set("Bar").set(1f);
+			entityBuilder().set("Foobar").set(1f).set(5);
+		}
 
 		assertEquals(*em.query!(Tuple!(string, int)).front[0], *em.query!(string, With!int).front);
 		assertEquals(*em.query!(Tuple!(string, float, int)).front[0], *em.query!(Tuple!(string, float), With!int).front[0]);
@@ -304,17 +310,18 @@ unittest
 	import std.algorithm : map;
 
 	auto em = new EntityManager();
-	em.entityBuilder()
-		.gen(Foo(2, 4), Bar.init, 4)
-		.gen!(Foo)
-		.gen!(Foo)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Foo, Bar)
-		.gen!(Bar, int)
-		.gen!(Bar, int)
-		.gen!(Foo, Bar, int)
-		.gen!(Foo, Bar, int);
+	with(em) {
+		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Foo.set!Bar;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+		entityBuilder().set!Foo.set!Bar.set!int;
+	}
 
 	auto range = [0,0];
 
