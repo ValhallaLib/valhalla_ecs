@@ -75,16 +75,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).set!Bar.set(4);
+		entity.set!Foo;
+		entity.set!Foo;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Bar.set!int;
+		entity.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
 	}
 
 	assertEquals(5, em.query!int.range.entities.length);
@@ -101,16 +101,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).set!Bar.set(4);
+		entity.set!Foo;
+		entity.set!Foo;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Bar.set!int;
+		entity.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
 	}
 
 	auto range = [
@@ -192,16 +192,16 @@ unittest
 {
 	auto em = new EntityManager();
 	with(em) {
-		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).set!Bar.set(4);
+		entity.set!Foo;
+		entity.set!Foo;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Bar.set!int;
+		entity.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
 	}
 
 	auto range = [Entity(0),Entity(6),Entity(7),Entity(8),Entity(9)];
@@ -223,16 +223,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).set!Bar.set(4);
+		entity.set!Foo;
+		entity.set!Foo;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Bar.set!int;
+		entity.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
 	}
 
 	auto range = [
@@ -266,16 +266,16 @@ unittest
 	{
 		auto em = new EntityManager();
 		with(em) {
-			entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-			entityBuilder().set!Foo;
-			entityBuilder().set!Foo;
-			entityBuilder().set!Foo.set!Bar;
-			entityBuilder().set!Foo.set!Bar;
-			entityBuilder().set!Foo.set!Bar;
-			entityBuilder().set!Bar.set!int;
-			entityBuilder().set!Bar.set!int;
-			entityBuilder().set!Foo.set!Bar.set!int;
-			entityBuilder().set!Foo.set!Bar.set!int;
+			entity.set(Foo(2, 4)).set!Bar.set(4);
+			entity.set!Foo;
+			entity.set!Foo;
+			entity.set!Foo.set!Bar;
+			entity.set!Foo.set!Bar;
+			entity.set!Foo.set!Bar;
+			entity.set!Bar.set!int;
+			entity.set!Bar.set!int;
+			entity.set!Foo.set!Bar.set!int;
+			entity.set!Foo.set!Bar.set!int;
 		}
 
 		auto range = [4,0,0,0,0];
@@ -290,9 +290,9 @@ unittest
 	{
 		auto em = new EntityManager();
 		with(em) {
-			entityBuilder().set("Foo").set(1f);
-			entityBuilder().set("Bar").set(1f);
-			entityBuilder().set("Foobar").set(1f).set(5);
+			entity.set("Foo").set(1f);
+			entity.set("Bar").set(1f);
+			entity.set("Foobar").set(1f).set(5);
 		}
 
 		assertEquals(*em.query!(Tuple!(string, int)).front[0], *em.query!(string, With!int).front);
@@ -311,16 +311,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entityBuilder().set(Foo(2, 4)).set!Bar.set(4);
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Foo.set!Bar;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
-		entityBuilder().set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).set!Bar.set(4);
+		entity.set!Foo;
+		entity.set!Foo;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Foo.set!Bar;
+		entity.set!Bar.set!int;
+		entity.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
+		entity.set!Foo.set!Bar.set!int;
 	}
 
 	auto range = [0,0];

@@ -34,18 +34,18 @@ unittest
 
 	Entity[] entts;
 	with(em) entts = [
-		entityBuilder(),
-		entityBuilder(),
-		entityBuilder(),
+		entity,
+		entity,
+		entity,
 	];
 
 	assertEquals([Entity(0), Entity(1), Entity(2)], entts);
 
 	with(em) entts = [
-		entityBuilder().set!Foo,
-		entityBuilder(),
-		entityBuilder().set(Bar("str")),
-		entityBuilder().set!Foo.set!int,
+		entity.set!Foo,
+		entity,
+		entity.set(Bar("str")),
+		entity.set!Foo.set!int,
 	];
 
 	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entts);

@@ -665,24 +665,21 @@ public:
 
 
 	/**
-	 * Returns a new builder used for chaining entity generation sequences and
-	 *     binds it to EntityManager.
+	 * Returns a new builder used for chaining entity calls.
 	 *
 	 * Examples:
 	 * ---
 	 * struct Foo {}
 	 * auto em = new EntityManager();
 	 *
-	 * // gets an EntityBuilder and generates 2 entities
-	 * em.entityBuilder()
-	 *     .gen()
-	 *     .gen!Foo();
+	 * // gets an EntityBuilder with a new entity and binds Foo to it
+	 * em.entity.set!Foo;
 	 * ---
 	 *
 	 * Returns: `EntityBuilder`.
 	 */
-	@safe pure
-	EntityBuilder entityBuilder()
+	@safe pure @property
+	EntityBuilder entity()
 	{
 		EntityBuilder builder = {
 			entity: gen(),
