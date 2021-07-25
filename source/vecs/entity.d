@@ -29,9 +29,6 @@ version(vecs_unittest)
 }
 
 
-class MaximumEntitiesReachedException : Exception { mixin basicExceptionCtors; }
-
-
 /**
 An entity is defined by an `id` and `batch`. It's signature is the combination
 of both values. The **first N bits** define the `id` and the **last M bits**
