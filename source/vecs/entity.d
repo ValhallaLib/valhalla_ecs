@@ -882,21 +882,16 @@ public:
 
 private:
 	/**
-	 * Creates a new entity with a new id. The entity's id follows the total
-	 *     value of entities created. Throws **MaximumEntitiesReachedException**
-	 *     if the maximum amount of entities is reached.
+	 * Creates a new entity with a new id. The entity's id follows the number
+	 *     of entities created.
 	 *
-	 * Throws: `MaximumEntitiesReachedException`.
-	 *
-	 * Returns: `Entity` newly created.
+	 * Returns: `Entity` newly created or asserts is maximum is reached.
 	 */
-	@safe pure
+	@safe pure nothrow
 	Entity fabricate()
 	{
-		enforce!MaximumEntitiesReachedException(
-			_entities.length < Entity.maxid,
-			format!"Reached the maximum amount of _entities supported: %s!"(Entity.maxid)
-		);
+		enum err = "Maximum entities (" ~ Entity.maxid.stringof ~ ") reached!";
+		if (_entities.length >= Entity.maxid) assert(false, err);
 
 		import std.range : back;
 		_entities ~= Entity(_entities.length);
