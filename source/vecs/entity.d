@@ -1159,9 +1159,9 @@ unittest
 	assertEquals(Entity(1), em.gen()); // calls fabricate again
 	assertEquals(2, em._entities.length);
 	assertEquals(Entity(1), em._entities.back);
-
-	// FIXME: add MaximumEntitiesReachedException
 }
+
+// TODO: add fabricate assert thrown unit tests
 
 @safe pure
 @("entity: EntityManager: gen")
