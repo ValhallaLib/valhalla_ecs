@@ -183,86 +183,6 @@ public:
 
 
 	/**
-	 * Generates a new entity either by fabricating a new one or recycling a
-	 *     previously fabricated if available in the queue. Throws
-	 *     **MaximumEntitiesReachedException** if the amount of entities alive
-	 *     reaches it's maximum value. \
-	 * \
-	 * If used with components, the entity is generated with the assigned
-	 *     components. When passing the type of the component with no initializer,
-	 *     then the default initializer is used.
-	 *
-	 * Params:
-	 *     component = component to set.
-	 *     components = components to set.
-	 *
-	 * Safety: When passing components the method is @system. It uses `set`
-	 *     internally. The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits **onSet** when used with components.
-	 *
-	 * Examples:
-	 * ---
-	 * auto em = new EntityManager();
-	 *
-	 * // generates a new entity
-	 * em.gen();
-	 * ---
-	 * ---
-	 * struct Foo { int x; }
-	 * struct Bar { string x; }
-	 * auto em = new EntityManager();
-	 *
-	 * // generates a new entity and assigns Foo.init
-	 * em.gen!Foo();
-	 *
-	 * // generates a new entity and assigns Foo(3) and Bar("str")
-	 * em.gen(Foo(3), Bar("str"));
-	 * ---
-	 *
-	 * Returns: the newly generated Entity.
-	 *
-	 * Throws: `MaximumEntitiesReachedException`.
-	 */
-	@safe pure
-	Entity gen()
-	{
-		return queue.isNull ? fabricate() : recycle();
-	}
-
-
-	/// Ditto
-	Entity gen(Component)(Component component = Component.init)
-		if (isComponent!Component)
-	{
-		immutable e = gen();
-		_set(e, component);
-		return e;
-	}
-
-
-	/// Ditto
-	Entity gen(ComponentRange ...)(ComponentRange components)
-		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
-	{
-		immutable e = gen();
-		foreach (component; components) _set(e, component);
-		return e;
-	}
-
-
-	/// Ditto
-	Entity gen(ComponentRange ...)()
-		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
-	{
-		immutable e = gen();
-		foreach (Component; ComponentRange) _set!Component(e);
-		return e;
-	}
-
-
-	/**
 	 * Destroys a valid entity. When destroyed all the associated components are
 	 *     removed. Passig an invalid entity leads to undefined behaviour.
 	 *
@@ -1123,9 +1043,9 @@ unittest
 	auto em = new EntityManager();
 	assertTrue(em.queue.isNull);
 
-	auto entity0 = em.gen();
-	auto entity1 = em.gen();
-	auto entity2 = em.gen();
+	auto entity0 = em.entity();
+	auto entity1 = em.entity();
+	auto entity2 = em.entity();
 
 
 	em.discard(entity1);
@@ -1151,12 +1071,12 @@ unittest
 	import std.range : back;
 	auto em = new EntityManager();
 
-	auto entity0 = em.gen(); // calls fabricate
+	auto entity0 = em.entity(); // calls fabricate
 	em.discard(entity0); // discards
-	em.gen(); // recycles
+	em.entity(); // recycles
 	assertTrue(em.queue.isNull);
 
-	assertEquals(Entity(1), em.gen()); // calls fabricate again
+	assertEquals(Entity(1), em.entity()); // calls fabricate again
 	assertEquals(2, em._entities.length);
 	assertEquals(Entity(1), em._entities.back);
 }
@@ -1164,42 +1084,15 @@ unittest
 // TODO: add fabricate assert thrown unit tests
 
 @safe pure
-@("entity: EntityManager: gen")
+@("entity: EntityManager: entity")
 unittest
 {
 	import std.range : front;
 	auto em = new EntityManager();
 
-	assertEquals(Entity(0), em.gen());
-	assertEquals(1, em._entities.length);
-	assertEquals(Entity(0), em._entities.front);
-}
-
-@system
-@("entity: EntityManager: gen with components")
-unittest
-{
-	import std.range : front;
-	auto em = new EntityManager();
-
-	auto e = em.gen(Foo(3, 5), Bar("str"));
-	assertEquals(Foo(3, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
-	assertEquals(Bar("str"), *em.storageInfoMap[ComponentId!Bar].get!(Bar).get(e));
-
-	e = em.gen!(int, string, size_t);
-	assertEquals(int.init, *em.storageInfoMap[ComponentId!int].get!int.get(e));
-	assertEquals(string.init, *em.storageInfoMap[ComponentId!string].get!string.get(e));
-	assertEquals(size_t.init, *em.storageInfoMap[ComponentId!size_t].get!size_t.get(e));
-
-	e = em.gen(3, "entity", [2, 2]);
-	assertEquals(3, *em.storageInfoMap[ComponentId!int].get!int.get(e));
-	assertEquals("entity", *em.storageInfoMap[ComponentId!string].get!string.get(e));
-	assert([2, 2] == *em.storageInfoMap[ComponentId!(int[])].get!(int[]).get(e));
-
-	assertFalse(__traits(compiles, em.gen!(size_t, size_t)()));
-	assertFalse(__traits(compiles, em.gen(Foo(3,3), Bar(5,3), Foo.init)));
-	assertFalse(__traits(compiles, em.gen!(Foo, Bar, void delegate())()));
-	assertFalse(__traits(compiles, em.gen!(immutable(int))()));
+	assert(Entity(0) == em.entity());
+	assert(1 == em._entities.length);
+	assert(Entity(0) == em._entities.front);
 }
 
 @system
@@ -1208,7 +1101,9 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen!(Foo, Bar);
+	auto e = em.entity()
+		.set!Foo
+		.set!Bar;
 
 	assertEquals(Foo.init, *em.get!Foo(e));
 	assertEquals(Bar.init, *em.get!Bar(e));
@@ -1217,7 +1112,7 @@ unittest
 	em.get!Foo(e).y = 10;
 	assertEquals(Foo(int.init, 10), *em.get!Foo(e));
 
-	assertFalse(__traits(compiles, em.get!(immutable(int))(em.gen())));
+	assertFalse(__traits(compiles, em.get!(immutable(int))(em.entity())));
 }
 
 @system
@@ -1226,7 +1121,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen!(Foo)();
+	auto e = em.entity().set!Foo;
 	assertEquals(Foo.init, *em.getOrSet!Foo(e));
 	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
 	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
@@ -1241,7 +1136,7 @@ unittest
 {
 	auto em = new EntityManager();
 	em.onRemove!Foo.connect((Entity,Foo* foo) { assertEquals(Foo(7, 8), *foo); });
-	em.remove!Foo(em.gen(Foo(7, 8)));
+	em.remove!Foo(em.entity().set(Foo(7, 8)));
 }
 
 @system
@@ -1251,7 +1146,7 @@ unittest
 	auto em = new EntityManager();
 	em.onSet!Foo.connect((Entity,Foo* foo) { *foo = Foo(12, 3); });
 
-	em.gen!Foo;
+	em.entity().set!Foo;
 	assertEquals(Foo(12,3), *em.get!Foo(Entity(0)));
 }
 
@@ -1262,12 +1157,12 @@ unittest
 	import std.range : front;
 	auto em = new EntityManager();
 
-	auto entity0 = em.gen(); // calls fabricate
+	auto entity0 = em.entity(); // calls fabricate
 	em.discard(entity0); // discards
 	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 	assertFalse(Entity(0, 1) == entity0); // entity's batch is not updated
 
-	entity0 = em.gen(); // recycles
+	em.entity(); // recycles
 	assertEquals(Entity(0, 1), em._entities.front);
 }
 
@@ -1277,7 +1172,10 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen!(Foo, Bar, int);
+	auto e = em.entity()
+		.set!Foo
+		.set!Bar
+		.set!int;
 	assertThrown!AssertError(em.remove!size_t(e)); // not in the storageInfoMap
 
 	em.remove!Foo(e); // removes Foo
@@ -1305,7 +1203,9 @@ unittest
 {
 	auto em = new EntityManager();
 
-	foreach (i; 0..10) em.gen!(Foo, Bar);
+	foreach (i; 0..10) em.entity()
+		.set!Foo
+		.set!Bar;
 
 	assertEquals(10, em.size!Foo());
 	em.removeAll!Foo();
@@ -1318,20 +1218,20 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen();
+	auto e = em.entity();
 	assertTrue(em.set(e, Foo(4, 5)));
 	assertThrown!AssertError(em.set(Entity(0, 5), Foo(4, 5)));
 	assertThrown!AssertError(em.set(Entity(2), Foo(4, 5)));
 	assertEquals(Foo(4, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	{
-		auto components = em.set(em.gen(), Foo(4, 5), Bar("str"));
+		auto components = em.set(em.entity(), Foo(4, 5), Bar("str"));
 		assertEquals(Foo(4,5), *components[0]);
 		assertEquals(Bar("str"), *components[1]);
 	}
 
 	{
-		auto components = em.set!(Foo, Bar, int)(em.gen());
+		auto components = em.set!(Foo, Bar, int)(em.entity());
 		assertEquals(Foo.init, *components[0]);
 		assertEquals(Bar.init, *components[1]);
 		assertEquals(int.init, *components[2]);
@@ -1340,11 +1240,6 @@ unittest
 	assertThrown!AssertError(em.set!Foo(Entity(45)));
 	assertThrown!AssertError(em.set!(Foo, Bar)(Entity(45)));
 	assertThrown!AssertError(em.set(Entity(45), Foo.init, Bar.init));
-
-	assertFalse(__traits(compiles, em.set!(Foo, Bar, int, Bar)(em.gen())));
-	assertFalse(__traits(compiles, em.set(em.gen(), Foo(4, 5), Bar("str"), Foo.init)));
-	assertFalse(__traits(compiles, em.set!(Foo, Bar, InvalidComponent)(em.gen())));
-	assertFalse(__traits(compiles, em.set!(InvalidComponent)(em.gen())));
 }
 
 @system
@@ -1353,7 +1248,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.gen!Foo;
+	auto e = em.entity().set!Foo;
 	assertEquals(1, em.size!Foo());
 	assertEquals(0, em.size!Bar());
 
