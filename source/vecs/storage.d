@@ -436,6 +436,7 @@ package class Storage(Component)
 
 
 package:
+
 	/**
 	 * Gets the entities stored.
 	 *
@@ -461,6 +462,29 @@ package:
 
 
 private:
+	// FIXME: documentation
+	Component* _add(in Entity e)
+		in (!(e.id < _sparsedEntities.length
+			&& _sparsedEntities[e.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
+			&& _packedEntities[_sparsedEntities[e.id]].batch != e.batch
+		))
+	{
+		if (!has(e))
+		{
+			_packedEntities ~= e; // set entity
+			_components.length++;
+
+			// map to the correct entity from the packedEntities from sparsedEntities
+			if (e.id >= _sparsedEntities.length)
+				_sparsedEntities.length = e.id + 1;
+
+			_sparsedEntities[e.id] = _packedEntities.length - 1;
+		}
+
+		return &_components[_sparsedEntities[e.id]];
+	}
+
 	/**
 	 * Associates a component to an entity. Emits onSet after associating the
 	 *     component to the entity.
