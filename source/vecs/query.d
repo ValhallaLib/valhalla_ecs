@@ -52,7 +52,7 @@ unittest
 	import std.algorithm : each;
 
 	auto em = new EntityManager();
-	11.iota.each!(i => em.gen());
+	11.iota.each!(i => em.entity());
 
 	em.discard(Entity(2));
 	em.discard(Entity(3));
