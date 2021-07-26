@@ -679,7 +679,7 @@ public:
 	EntityBuilder entity()
 	{
 		EntityBuilder builder = {
-			entity: gen(),
+			entity: queue.isNull ? fabricate() : recycle(),
 			em: this
 		};
 		return builder;
