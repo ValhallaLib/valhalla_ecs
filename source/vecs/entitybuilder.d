@@ -11,6 +11,13 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 struct EntityBuilder
 {
 public:
+	// FIXME: documentation
+	EntityBuilder add(Components...)()
+	{
+		em.addComponent!Components(entity);
+		return this;
+	}
+
 	EntityBuilder set(Component)(Component component = Component.init)
 	{
 		em.set!Component(entity, component);
