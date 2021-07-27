@@ -1106,9 +1106,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.entity()
-		.set!Foo
-		.set!Bar;
+	auto e = em.entity().add!(Foo, Bar);
 
 	assertEquals(Foo.init, *em.get!Foo(e));
 	assertEquals(Bar.init, *em.get!Bar(e));
@@ -1126,7 +1124,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.entity().set!Foo;
+	auto e = em.entity().add!Foo;
 	assertEquals(Foo.init, *em.getOrSet!Foo(e));
 	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
 	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
@@ -1151,7 +1149,7 @@ unittest
 	auto em = new EntityManager();
 	em.onSet!Foo.connect((Entity,Foo* foo) { *foo = Foo(12, 3); });
 
-	em.entity().set!Foo;
+	em.entity().add!Foo;
 	assertEquals(Foo(12,3), *em.get!Foo(Entity(0)));
 }
 
@@ -1177,10 +1175,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.entity()
-		.set!Foo
-		.set!Bar
-		.set!int;
+	auto e = em.entity().add!(Foo, Bar, int);
 	assertThrown!AssertError(em.remove!size_t(e)); // not in the storageInfoMap
 
 	em.remove!Foo(e); // removes Foo
@@ -1208,9 +1203,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	foreach (i; 0..10) em.entity()
-		.set!Foo
-		.set!Bar;
+	foreach (i; 0..10) em.entity().add!(Foo, Bar);
 
 	assertEquals(10, em.size!Foo());
 	em.removeAll!Foo();
@@ -1253,7 +1246,7 @@ unittest
 {
 	auto em = new EntityManager();
 
-	auto e = em.entity().set!Foo;
+	auto e = em.entity().add!Foo;
 	assertEquals(1, em.size!Foo());
 	assertEquals(0, em.size!Bar());
 

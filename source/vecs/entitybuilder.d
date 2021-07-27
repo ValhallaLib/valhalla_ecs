@@ -18,7 +18,8 @@ public:
 		return this;
 	}
 
-	EntityBuilder set(Component)(Component component = Component.init)
+	// FIXME: documentation
+	EntityBuilder set(Component)(Component component)
 	{
 		em.set!Component(entity, component);
 		return this;
@@ -49,10 +50,10 @@ unittest
 	assertEquals([Entity(0), Entity(1), Entity(2)], entts);
 
 	with(em) entts = [
-		entity.set!Foo,
+		entity.add!Foo,
 		entity,
 		entity.set(Bar("str")),
-		entity.set!Foo.set!int,
+		entity.add!(Foo, int),
 	];
 
 	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entts);
