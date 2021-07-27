@@ -393,7 +393,7 @@ package class Storage(Component)
 			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
 		)
 	{
-		return has(e) ? get(e) : _set(e, component);
+		return has(e) ? get(e) : set(e, component);
 	}
 
 
@@ -476,33 +476,6 @@ private:
 		return &_components[_sparsedEntities[e.id]];
 	}
 
-	/**
-	 * Associates a component to an entity. Emits onSet after associating the
-	 *     component to the entity.
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet **after** the component is set.
-	 *
-	 * Returns: `Component*` pointing to the component set.
-	 */
-	@system
-	Component* _set(in Entity entity, Component component)
-	{
-		_packedEntities ~= entity; // set entity
-		_components ~= component; // set component
-
-		// map to the correct entity from the packedEntities from sparsedEntities
-		if (entity.id >= _sparsedEntities.length) _sparsedEntities.length = entity.id + 1;
-			_sparsedEntities[entity.id] = _packedEntities.length - 1; // safe cast
-
-		// enforces @system
-		// emit onSet after associating the component
-		onSet.emit(entity, &_components[_sparsedEntities[entity.id]]);
-
-		return &_components[_sparsedEntities[entity.id]];
-	}
 
 	size_t[] _sparsedEntities;
 	Entity[] _packedEntities;
