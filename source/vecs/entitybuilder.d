@@ -33,6 +33,14 @@ public:
 	}
 
 
+	// FIXME: documentation
+	EntityBuilder destroy()()
+	{
+		em.destroyEntity(entity);
+		return this;
+	}
+
+
 	immutable Entity entity = EntityManager.entityNull;
 	alias entity this;
 
