@@ -208,6 +208,7 @@ public:
 	}
 
 
+	// FIXME: documentation
 	/**
 	 * Destroys a valid entity. When destroyed all the associated components are
 	 *     removed. Passig an invalid entity leads to undefined behaviour.
@@ -220,11 +221,11 @@ public:
 	 * auto em = new EntityManager();
 	 *
 	 * // discards the newly generated entity
-	 * em.discard(em.gen());
+	 * em.destroyEntity(em.gen());
 	 * ---
 	 */
 	@system
-	void discard(in Entity e)
+	void destroyEntity(in Entity e)
 		in (has(e))
 	{
 		removeAll(e);                                              // remove all components
@@ -245,15 +246,15 @@ public:
 	 * auto em = new EntityManager();
 	 *
 	 * // might lead to undefined behavior
-	 * em.discard(em.entityNull);
+	 * em.destroyEntity(em.entityNull);
 	 *
 	 * // safely tries to discard an entity
-	 * em.discardIfHas(em.entityNull);
+	 * em.destroyEntity(em.entityNull);
 	 * ---
 	 */
 	void discardIfHas(in Entity e)
 	{
-		if (has(e)) discard(e);
+		if (has(e)) destroyEntity(e);
 	}
 
 
@@ -316,14 +317,14 @@ public:
 	 * em.onSet!Foo().connect(fun);
 	 *
 	 * // this emits onRemove
-	 * em.discard(em.gen!Foo());
+	 * em.destroyEntity(em.gen!Foo());
 	 *
 	 * assert(1 == i);
 	 *
 	 * // unbind a callback
 	 * em.onSet!Foo().disconnect(fun);
 	 *
-	 * em.discard(em.gen!Foo());
+	 * em.destroyEntity(em.gen!Foo());
 	 * assert(1 == i);
 	 * ---
 	 *
@@ -1059,18 +1060,18 @@ unittest
 	auto entity2 = em.entity();
 
 
-	em.discard(entity1);
+	em.destroyEntity(entity1);
 	assertFalse(em.queue.isNull);
 	assertEquals(em.entityNull, em._entities[entity1.id]);
 	(() @trusted pure => assertEquals(Entity(1, 1), em.queue.get))(); // batch was incremented
 
-	em.discard(entity0);
+	em.destroyEntity(entity0);
 	assertEquals(Entity(1, 1), em._entities[entity0.id]);
 	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 
 	// cannot discard invalid entities
-	assertThrown!AssertError(em.discard(Entity(50)));
-	assertThrown!AssertError(em.discard(Entity(entity2.id, 40)));
+	assertThrown!AssertError(em.destroyEntity(Entity(50)));
+	assertThrown!AssertError(em.destroyEntity(Entity(entity2.id, 40)));
 
 	assertEquals(3, em._entities.length);
 }
@@ -1083,7 +1084,7 @@ unittest
 	auto em = new EntityManager();
 
 	auto entity0 = em.entity(); // calls fabricate
-	em.discard(entity0); // discards
+	em.destroyEntity(entity0); // discards
 	em.entity(); // recycles
 	assertTrue(em.queue.isNull);
 
@@ -1167,7 +1168,7 @@ unittest
 	auto em = new EntityManager();
 
 	auto entity0 = em.entity(); // calls fabricate
-	em.discard(entity0); // discards
+	em.destroyEntity(entity0); // discards
 	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
 	assertFalse(Entity(0, 1) == entity0); // entity's batch is not updated
 
