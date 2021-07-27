@@ -182,6 +182,24 @@ public:
 	}
 
 
+	// FIXME: documentation
+	auto addComponent(Components...)(in Entity e)
+		if (Components.length)
+		in (has(e))
+	{
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.add(e);
+
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
+	}
+
+
 	/**
 	 * Destroys a valid entity. When destroyed all the associated components are
 	 *     removed. Passig an invalid entity leads to undefined behaviour.
