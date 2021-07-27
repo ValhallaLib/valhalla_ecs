@@ -471,11 +471,14 @@ public:
 	// TODO: removeAllIfHas to safely try to remove from an entity
 
 
-	/// Ditto
-	void removeAll(Component)()
+	// FIXME: documentation
+	void removeAll(Components...)()
 	{
-		// FIXME: emit onRemove
-		_assureStorage!Component().clear();
+		static if (Components.length)
+			static foreach (Component; Components) _assureStorageInfo!Component().clear();
+
+		else
+			foreach (sinfo; storageInfoMap) if (sinfo.storage) sinfo.clear();
 	}
 
 
