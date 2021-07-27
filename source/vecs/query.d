@@ -54,13 +54,13 @@ unittest
 	auto em = new EntityManager();
 	11.iota.each!(i => em.entity());
 
-	em.discard(Entity(2));
-	em.discard(Entity(3));
-	em.discard(Entity(5));
-	em.discard(Entity(6));
-	em.discard(Entity(7));
-	em.discard(Entity(9));
-	em.discard(Entity(10));
+	em.destroyEntity(Entity(2));
+	em.destroyEntity(Entity(3));
+	em.destroyEntity(Entity(5));
+	em.destroyEntity(Entity(6));
+	em.destroyEntity(Entity(7));
+	em.destroyEntity(Entity(9));
+	em.destroyEntity(Entity(10));
 
 	assertRangeEquals([Entity(0),Entity(1),Entity(4),Entity(8)], em.query!Entity);
 	assertRangeEquals(em.query!(Tuple!Entity), em.query!Entity);
