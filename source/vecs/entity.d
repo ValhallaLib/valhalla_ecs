@@ -338,6 +338,7 @@ public:
 	}
 
 
+	// FIXME: documentation
 	/**
 	 * Associates an entity to a component. Passing an invalid entity leads to
 	 *     undefined behaviour. Emits onSet after associating the component to
@@ -368,23 +369,20 @@ public:
 	 * Returns: `Component*` pointing to the component set either by creation or
 	 *     replacement.
 	 */
-	Component* set(Component)(in Entity e, Component component)
+	auto set(Components...)(in Entity e, Components components)
+		if (Components.length)
 		in (has(e))
 	{
-		return _set(e, component);
-	}
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
 
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.set(e, components[i]);
 
-	/// Ditto
-	auto set(ComponentRange ...)(in Entity e, ComponentRange components)
-		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
-		in (has(e))
-	{
-		mixin(format!q{Tuple!(%(ComponentRange[%s]*%|, %)) ret;}(ComponentRange.length.iota));
-
-		foreach (i, component; components) ret[i] = _set(e, component);
-
-		return ret;
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
 	}
 
 
