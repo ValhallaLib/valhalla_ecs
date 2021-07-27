@@ -19,6 +19,13 @@ public:
 	}
 
 	// FIXME: documentation
+	EntityBuilder emplace(Component, Args...)(auto ref Args args)
+	{
+		em.emplaceComponent!Component(entity, args);
+		return this;
+	}
+
+	// FIXME: documentation
 	EntityBuilder set(Component)(Component component)
 	{
 		em.set!Component(entity, component);
