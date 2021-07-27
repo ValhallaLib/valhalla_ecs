@@ -26,9 +26,9 @@ public:
 	}
 
 	// FIXME: documentation
-	EntityBuilder set(Component)(Component component)
+	EntityBuilder set(Components...)(Components components)
 	{
-		em.set!Component(entity, component);
+		em.set!Components(entity, components);
 		return this;
 	}
 
