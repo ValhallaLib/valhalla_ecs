@@ -75,16 +75,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).set!Bar.set(4);
-		entity.set!Foo;
-		entity.set!Foo;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Bar.set!int;
-		entity.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Foo;
+		entity.add!Foo;
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Bar, int);
+		entity.add!(Bar, int);
+		entity.add!(Foo, Bar, int);
+		entity.add!(Foo, Bar, int);
 	}
 
 	assertEquals(5, em.query!int.range.entities.length);
@@ -101,16 +101,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).set!Bar.set(4);
-		entity.set!Foo;
-		entity.set!Foo;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Bar.set!int;
-		entity.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Foo;
+		entity.add!Foo;
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Bar, int);
+		entity.add!(Bar, int);
+		entity.add!(Foo, Bar, int);
+		entity.add!(Foo, Bar, int);
 	}
 
 	auto range = [
@@ -192,16 +192,16 @@ unittest
 {
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).set!Bar.set(4);
-		entity.set!Foo;
-		entity.set!Foo;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Bar.set!int;
-		entity.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Foo;
+		entity.add!Foo;
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Bar, int);
+		entity.add!(Bar, int);
+		entity.add!(Foo, Bar, int);
+		entity.add!(Foo, Bar, int);
 	}
 
 	auto range = [Entity(0),Entity(6),Entity(7),Entity(8),Entity(9)];
@@ -223,16 +223,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).set!Bar.set(4);
-		entity.set!Foo;
-		entity.set!Foo;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Bar.set!int;
-		entity.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Foo;
+		entity.add!Foo;
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Bar, int);
+		entity.add!(Bar, int);
+		entity.add!(Foo, Bar, int);
+		entity.add!(Foo, Bar, int);
 	}
 
 	auto range = [
@@ -266,16 +266,16 @@ unittest
 	{
 		auto em = new EntityManager();
 		with(em) {
-			entity.set(Foo(2, 4)).set!Bar.set(4);
-			entity.set!Foo;
-			entity.set!Foo;
-			entity.set!Foo.set!Bar;
-			entity.set!Foo.set!Bar;
-			entity.set!Foo.set!Bar;
-			entity.set!Bar.set!int;
-			entity.set!Bar.set!int;
-			entity.set!Foo.set!Bar.set!int;
-			entity.set!Foo.set!Bar.set!int;
+			entity.set(Foo(2, 4)).add!Bar.set(4);
+			entity.add!Foo;
+			entity.add!Foo;
+			entity.add!(Foo, Bar);
+			entity.add!(Foo, Bar);
+			entity.add!(Foo, Bar);
+			entity.add!(Bar, int);
+			entity.add!(Bar, int);
+			entity.add!(Foo, Bar, int);
+			entity.add!(Foo, Bar, int);
 		}
 
 		auto range = [4,0,0,0,0];
@@ -311,16 +311,16 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).set!Bar.set(4);
-		entity.set!Foo;
-		entity.set!Foo;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Foo.set!Bar;
-		entity.set!Bar.set!int;
-		entity.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
-		entity.set!Foo.set!Bar.set!int;
+		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Foo;
+		entity.add!Foo;
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Foo, Bar);
+		entity.add!(Bar, int);
+		entity.add!(Bar, int);
+		entity.add!(Foo, Bar, int);
+		entity.add!(Foo, Bar, int);
 	}
 
 	auto range = [0,0];
