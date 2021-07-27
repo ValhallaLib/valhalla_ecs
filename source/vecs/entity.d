@@ -228,7 +228,7 @@ public:
 	void destroyEntity(in Entity e)
 		in (has(e))
 	{
-		removeAll(e);                                              // remove all components
+		removeAllComponents(e);                                              // remove all components
 		_entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
 		queue = e;                                                 // update the next in queue
 		queue.incrementBatch();                                    // increment batch for when it's revived
@@ -459,7 +459,7 @@ public:
 	 *     e = entity to disassociate.
 	 */
 	@system
-	void removeAll(in Entity e)
+	void removeAllComponents(in Entity e)
 		in (has(e))
 	{
 		foreach (sinfo; storageInfoMap)
@@ -1153,15 +1153,15 @@ unittest
 	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	// removes only if associated
-	em.removeAll(e); // removes int
-	em.removeAll(e); // doesn't remove any
+	em.removeAllComponents(e); // removes int
+	em.removeAllComponents(e); // doesn't remove any
 
 	assertThrown!AssertError(em.removeComponent!Foo(e)); // e does not contain Foo
 	assertThrown!AssertError(em.removeComponent!Bar(e)); // e does not contain Bar
 	assertThrown!AssertError(em.removeComponent!int(e)); // e does not contain ValidImmutable
 
 	// invalid entity
-	assertThrown!AssertError(em.removeAll(Entity(15)));
+	assertThrown!AssertError(em.removeAllComponents(Entity(15)));
 
 	// cannot call with invalid components
 	assertFalse(__traits(compiles, em.removeComponent!(void delegate())(e)));
