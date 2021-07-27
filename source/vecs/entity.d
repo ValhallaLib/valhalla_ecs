@@ -420,9 +420,12 @@ public:
 	 *     e = entity to disassociate.
 	 *     Component = component to remove.
 	 */
-	void tryRemoveComponent(Component)(in Entity e)
+	void tryRemoveComponent(Components...)(in Entity e)
 	{
-		if (has(e)) _assureStorageInfo!Component().tryRemove(e);
+		if (has(e))
+		{
+			static foreach (Component; Components) _assureStorageInfo!Component.tryRemove(e);
+		}
 	}
 
 
