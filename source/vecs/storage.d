@@ -196,7 +196,7 @@ public:
 		this.entities = &storage.entities;
 		this.has = &storage.has;
 		this.remove = &storage.remove;
-		this.removeAll = &storage.removeAll;
+		this.removeAll = &storage.clear;
 		this.tryRemove = &storage.tryRemove;
 		this.size = &storage.size;
 	}
@@ -210,7 +210,7 @@ public:
 
 	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
 	void delegate(in Entity e) @system remove;
-	void delegate() @trusted pure removeAll;
+	void delegate() @safe pure nothrow removeAll;
 	void delegate(in Entity e) @system tryRemove;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
 
@@ -364,8 +364,8 @@ package class Storage(Component)
 	/**
 	 * Clears all components and entities.
 	 */
-	@trusted pure
-	void removeAll()
+	@safe pure nothrow
+	void clear()
 	{
 		// FIXME: emit onRemove
 		_sparsedEntities = [];
