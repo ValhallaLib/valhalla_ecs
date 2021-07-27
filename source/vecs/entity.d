@@ -200,6 +200,14 @@ public:
 	}
 
 
+	// FIXME: documentation
+	Component* emplaceComponent(Component, Args...)(in Entity e, auto ref Args args)
+		in (has(e))
+	{
+		return _assureStorage!Component.emplace(e, args);
+	}
+
+
 	/**
 	 * Destroys a valid entity. When destroyed all the associated components are
 	 *     removed. Passig an invalid entity leads to undefined behaviour.
