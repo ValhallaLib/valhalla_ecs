@@ -236,29 +236,6 @@ public:
 
 
 	/**
-	 * Safely tries to discard an entity. If invalid does nothing.
-	 *
-	 * Params:
-	 *     e = entity to discard.
-	 *
-	 * Examples:
-	 * ---
-	 * auto em = new EntityManager();
-	 *
-	 * // might lead to undefined behavior
-	 * em.destroyEntity(em.entityNull);
-	 *
-	 * // safely tries to discard an entity
-	 * em.destroyEntity(em.entityNull);
-	 * ---
-	 */
-	void discardIfHas(in Entity e)
-	{
-		if (has(e)) destroyEntity(e);
-	}
-
-
-	/**
 	 * This signal occurs every time a Component is set. The onSet signal is
 	 *     emitted **after** the Component is set. A Component is set when
 	 *     assigning a new one to an entity or when updating an existing one.
