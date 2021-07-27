@@ -369,7 +369,7 @@ public:
 	 * Returns: `Component*` pointing to the component set either by creation or
 	 *     replacement.
 	 */
-	auto set(Components...)(in Entity e, Components components)
+	auto setComponent(Components...)(in Entity e, Components components)
 		if (Components.length)
 		in (has(e))
 	{
@@ -1217,19 +1217,19 @@ unittest
 }
 
 @system
-@("entity: EntityManager: set")
+@("entity: EntityManager: setComponent")
 unittest
 {
 	auto em = new EntityManager();
 
 	auto e = em.entity();
-	assertTrue(em.set(e, Foo(4, 5)));
-	assertThrown!AssertError(em.set(Entity(0, 5), Foo(4, 5)));
-	assertThrown!AssertError(em.set(Entity(2), Foo(4, 5)));
+	assertTrue(em.setComponent(e, Foo(4, 5)));
+	assertThrown!AssertError(em.setComponent(Entity(0, 5), Foo(4, 5)));
+	assertThrown!AssertError(em.setComponent(Entity(2), Foo(4, 5)));
 	assertEquals(Foo(4, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	{
-		auto components = em.set(em.entity(), Foo(4, 5), Bar("str"));
+		auto components = em.setComponent(em.entity(), Foo(4, 5), Bar("str"));
 		assertEquals(Foo(4,5), *components[0]);
 		assertEquals(Bar("str"), *components[1]);
 	}
@@ -1243,7 +1243,7 @@ unittest
 
 	assertThrown!AssertError(em.addComponent!Foo(Entity(45)));
 	assertThrown!AssertError(em.addComponent!(Foo, Bar)(Entity(45)));
-	assertThrown!AssertError(em.set(Entity(45), Foo.init, Bar.init));
+	assertThrown!AssertError(em.setComponent(Entity(45), Foo.init, Bar.init));
 }
 
 @system
