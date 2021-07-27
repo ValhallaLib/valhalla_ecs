@@ -283,20 +283,11 @@ package class Storage(Component)
 	 */
 	@system
 	Component* set(in Entity e, Component component)
-		in (!(e.id < _sparsedEntities.length
-			&& _sparsedEntities[e.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
-			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
-		)
 	{
-		// replace if exists or add the entity with the component
-		if (has(e))
-		{
-			_components[_sparsedEntities[e.id]] = component;
-			onSet.emit(e, &_components[_sparsedEntities[e.id]]);
-			return &_components[_sparsedEntities[e.id]];
-		}
-		else return _set(e, component);
+		Component* comp = _add(e);
+		*comp = component;
+		onSet.emit(e, comp);
+		return comp;
 	}
 
 
