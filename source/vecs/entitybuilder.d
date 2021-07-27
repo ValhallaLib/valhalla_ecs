@@ -32,6 +32,12 @@ public:
 		return this;
 	}
 
+	// FIXME: documentation
+	EntityBuilder remove(Components...)()
+	{
+		em.removeComponent!Components(entity);
+		return this;
+	}
 
 	// FIXME: documentation
 	EntityBuilder destroy()()
