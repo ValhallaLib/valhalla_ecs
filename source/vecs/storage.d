@@ -262,6 +262,16 @@ unittest
 package class Storage(Component)
 	if (isComponent!Component)
 {
+	// FIXME: documentation
+	Component* add(in Entity e)
+	{
+		Component* component = _add(e);
+		*component = Component.init;
+		onSet.emit(e, component);
+		return component;
+	}
+
+
 	/**
 	 * Associates a component to an entity. If the entity is already connected to
 	 *     a component of this type then it's component will be updated.
