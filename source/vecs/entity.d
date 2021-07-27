@@ -823,14 +823,6 @@ private:
 	}
 
 
-	/// Common logic for remove dependencies
-	void _remove(Component)(in Entity entity)
-		if (isComponent!Component)
-	{
-		_assureStorage!Component().remove(entity);
-	}
-
-
 	/// Assures the Component's storage availability
 	size_t _assure(Component)()
 		if (isComponent!Component)
