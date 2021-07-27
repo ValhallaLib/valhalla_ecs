@@ -197,7 +197,7 @@ public:
 		this.has = &storage.has;
 		this.remove = &storage.remove;
 		this.removeAll = &storage.removeAll;
-		this.removeIfHas = &storage.tryRemove;
+		this.tryRemove = &storage.tryRemove;
 		this.size = &storage.size;
 	}
 
@@ -211,7 +211,7 @@ public:
 	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
 	void delegate(in Entity e) @system remove;
 	void delegate() @trusted pure removeAll;
-	void delegate(in Entity e) @system removeIfHas;
+	void delegate(in Entity e) @system tryRemove;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
 
 

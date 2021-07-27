@@ -461,7 +461,7 @@ public:
 	{
 		foreach (sinfo; storageInfoMap)
 			if (sinfo.storage !is null)
-				sinfo.removeIfHas(e);
+				sinfo.tryRemove(e);
 	}
 
 
