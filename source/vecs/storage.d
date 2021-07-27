@@ -272,6 +272,17 @@ package class Storage(Component)
 	}
 
 
+	// FIXME: documentation
+	Component* emplace(Args...)(in Entity e, auto ref Args args)
+	{
+		import core.lifetime : emplace;
+		Component* component = _add(e);
+		component.emplace(args);
+		onSet.emit(e, component);
+		return component;
+	}
+
+
 	/**
 	 * Associates a component to an entity. If the entity is already connected to
 	 *     a component of this type then it's component will be updated.
