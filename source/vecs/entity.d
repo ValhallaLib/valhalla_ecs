@@ -360,7 +360,7 @@ public:
 	 * Returns: `Component*` pointing to the component set either by creation or
 	 *     replacement.
 	 */
-	Component* set(Component)(in Entity e, Component component = Component.init)
+	Component* set(Component)(in Entity e, Component component)
 		in (has(e))
 	{
 		return _set(e, component);
@@ -375,19 +375,6 @@ public:
 		mixin(format!q{Tuple!(%(ComponentRange[%s]*%|, %)) ret;}(ComponentRange.length.iota));
 
 		foreach (i, component; components) ret[i] = _set(e, component);
-
-		return ret;
-	}
-
-
-	/// Ditto
-	auto set(ComponentRange ...)(in Entity e)
-		if (ComponentRange.length > 1 && is(ComponentRange == NoDuplicates!ComponentRange))
-		in (has(e))
-	{
-		mixin(format!q{Tuple!(%(ComponentRange[%s]*%|, %)) ret;}(ComponentRange.length.iota));
-
-		foreach (i, Component; ComponentRange) ret[i] = _set!Component(e);
 
 		return ret;
 	}
@@ -1249,14 +1236,14 @@ unittest
 	}
 
 	{
-		auto components = em.set!(Foo, Bar, int)(em.entity());
+		auto components = em.addComponent!(Foo, Bar, int)(em.entity());
 		assertEquals(Foo.init, *components[0]);
 		assertEquals(Bar.init, *components[1]);
 		assertEquals(int.init, *components[2]);
 	}
 
-	assertThrown!AssertError(em.set!Foo(Entity(45)));
-	assertThrown!AssertError(em.set!(Foo, Bar)(Entity(45)));
+	assertThrown!AssertError(em.addComponent!Foo(Entity(45)));
+	assertThrown!AssertError(em.addComponent!(Foo, Bar)(Entity(45)));
 	assertThrown!AssertError(em.set(Entity(45), Foo.init, Bar.init));
 }
 
