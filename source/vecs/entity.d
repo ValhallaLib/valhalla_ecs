@@ -475,7 +475,7 @@ public:
 	void removeAll(Component)()
 	{
 		// FIXME: emit onRemove
-		_assureStorage!Component().removeAll();
+		_assureStorage!Component().clear();
 	}
 
 
