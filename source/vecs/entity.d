@@ -390,7 +390,7 @@ public:
 	void remove(Component)(in Entity e)
 		in (has(e))
 	{
-		_remove!Component(e);
+		_assureStorageInfo!Component.remove(e);
 	}
 
 
