@@ -472,7 +472,7 @@ public:
 
 
 	// FIXME: documentation
-	void removeAll(Components...)()
+	void clear(Components...)()
 	{
 		static if (Components.length)
 			static foreach (Component; Components) _assureStorageInfo!Component().clear();
@@ -1179,7 +1179,7 @@ unittest
 	foreach (i; 0..10) em.entity().add!(Foo, Bar);
 
 	assertEquals(10, em.size!Foo());
-	em.removeAll!Foo();
+	em.clear!Foo();
 	assertEquals(0, em.size!Foo());
 }
 
