@@ -422,7 +422,7 @@ public:
 	 */
 	void removeIfHas(Component)(in Entity e)
 	{
-		if (has(e)) _assureStorage!Component().removeIfHas(e);
+		if (has(e)) _assureStorage!Component().tryRemove(e);
 	}
 
 
