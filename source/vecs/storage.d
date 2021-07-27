@@ -197,7 +197,7 @@ public:
 		this.has = &storage.has;
 		this.remove = &storage.remove;
 		this.removeAll = &storage.removeAll;
-		this.removeIfHas = &storage.removeIfHas;
+		this.removeIfHas = &storage.tryRemove;
 		this.size = &storage.size;
 	}
 
@@ -355,7 +355,7 @@ package class Storage(Component)
 	 *     e = entity to disassociate.
 	 */
 	@system
-	void removeIfHas(in Entity e)
+	void tryRemove(in Entity e)
 	{
 		if (has(e)) remove(e);
 	}
