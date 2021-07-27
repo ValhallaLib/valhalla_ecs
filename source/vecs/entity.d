@@ -823,15 +823,6 @@ private:
 	}
 
 
-	/// Common logic for set dependencies
-	Component* _set(Component)(in Entity entity, Component component = Component.init)
-		if (isComponent!Component)
-	{
-		// set the component to entity
-		return _assureStorage!Component().set(entity, component);
-	}
-
-
 	/// Common logic for remove dependencies
 	void _remove(Component)(in Entity entity)
 		if (isComponent!Component)
