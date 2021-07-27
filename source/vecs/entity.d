@@ -380,14 +380,14 @@ public:
 	 * auto em = new EntityManager();
 	 *
 	 * // disassociates Foo from the newly generated entity
-	 * em.remove!Foo(em.gen!Foo());
+	 * em.removeComponent!Foo(em.gen!Foo());
 	 * ---
 	 *
 	 * Params:
 	 *     e = entity to disassociate.
 	 *     Component = component to remove.
 	 */
-	void remove(Component)(in Entity e)
+	void removeComponent(Component)(in Entity e)
 		in (has(e))
 	{
 		_assureStorageInfo!Component.remove(e);
@@ -408,8 +408,8 @@ public:
 	 * auto em = new EntityManager();
 	 *
 	 * // might lead to undefined behavior
-	 * em.remove!Foo(em.entityNull);
-	 * em.remove!Foo(em.gen());
+	 * em.removeComponent!Foo(em.entityNull);
+	 * em.removeComponent!Foo(em.gen());
 	 *
 	 * // safely tries to remove Foo from an entity
 	 * em.removeIfHas!Foo(em.entityNull);
@@ -1106,7 +1106,7 @@ unittest
 {
 	auto em = new EntityManager();
 	em.onRemove!Foo.connect((Entity,Foo* foo) { assertEquals(Foo(7, 8), *foo); });
-	em.remove!Foo(em.entity().set(Foo(7, 8)));
+	em.removeComponent!Foo(em.entity().set(Foo(7, 8)));
 }
 
 @system
@@ -1143,25 +1143,25 @@ unittest
 	auto em = new EntityManager();
 
 	auto e = em.entity().add!(Foo, Bar, int);
-	assertThrown!AssertError(em.remove!size_t(e)); // not in the storageInfoMap
+	assertThrown!AssertError(em.removeComponent!size_t(e)); // not in the storageInfoMap
 
-	em.remove!Foo(e); // removes Foo
-	assertThrown!AssertError(em.remove!Foo(e)); // e does not contain Foo
+	em.removeComponent!Foo(e); // removes Foo
+	assertThrown!AssertError(em.removeComponent!Foo(e)); // e does not contain Foo
 	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	// removes only if associated
 	em.removeAll(e); // removes int
 	em.removeAll(e); // doesn't remove any
 
-	assertThrown!AssertError(em.remove!Foo(e)); // e does not contain Foo
-	assertThrown!AssertError(em.remove!Bar(e)); // e does not contain Bar
-	assertThrown!AssertError(em.remove!int(e)); // e does not contain ValidImmutable
+	assertThrown!AssertError(em.removeComponent!Foo(e)); // e does not contain Foo
+	assertThrown!AssertError(em.removeComponent!Bar(e)); // e does not contain Bar
+	assertThrown!AssertError(em.removeComponent!int(e)); // e does not contain ValidImmutable
 
 	// invalid entity
 	assertThrown!AssertError(em.removeAll(Entity(15)));
 
 	// cannot call with invalid components
-	assertFalse(__traits(compiles, em.remove!(void delegate())(e)));
+	assertFalse(__traits(compiles, em.removeComponent!(void delegate())(e)));
 }
 
 @system
@@ -1217,6 +1217,6 @@ unittest
 	assertEquals(1, em.size!Foo());
 	assertEquals(0, em.size!Bar());
 
-	em.remove!Foo(e);
+	em.removeComponent!Foo(e);
 	assertEquals(0, em.size!Foo());
 }
