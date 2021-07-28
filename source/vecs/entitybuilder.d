@@ -40,6 +40,13 @@ public:
 	}
 
 	// FIXME: documentation
+	EntityBuilder removeAll()()
+	{
+		em.removeAllComponents(entity);
+		return this;
+	}
+
+	// FIXME: documentation
 	EntityBuilder destroy()()
 	{
 		em.destroyEntity(entity);
