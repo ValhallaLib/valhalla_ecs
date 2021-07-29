@@ -391,6 +391,14 @@ package class Storage(Component)
 	}
 
 
+	// FIXME: documentation
+	@safe pure nothrow @nogc
+	Component* tryGet(in Entity e)
+	{
+		return has(e) ? get(e) : null;
+	}
+
+
 	/**
 	 * Fetch the component if associated to the entity, otherwise the component
 	 *     passed set then returned. Emits onSet if the component is set.
