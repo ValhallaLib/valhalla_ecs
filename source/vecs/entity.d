@@ -497,12 +497,12 @@ public:
 	 * auto em = new EntityManager();
 	 *
 	 * // gets Foo from the newly generated entity
-	 * em.get!Foo(em.gen!Foo());
+	 * em.getComponent!Foo(em.gen!Foo());
 	 * ---
 	 *
 	 * Returns: `Component*` pointing to the component fetched.
 	 */
-	Component* get(Component)(in Entity e)
+	Component* getComponent(Component)(in Entity e)
 		in (has(e))
 	{
 		return _assureStorage!Component().get(e);
@@ -1081,14 +1081,14 @@ unittest
 
 	auto e = em.entity().add!(Foo, Bar);
 
-	assertEquals(Foo.init, *em.get!Foo(e));
-	assertEquals(Bar.init, *em.get!Bar(e));
-	assertThrown!AssertError(em.get!int(e));
+	assertEquals(Foo.init, *em.getComponent!Foo(e));
+	assertEquals(Bar.init, *em.getComponent!Bar(e));
+	assertThrown!AssertError(em.getComponent!int(e));
 
-	em.get!Foo(e).y = 10;
-	assertEquals(Foo(int.init, 10), *em.get!Foo(e));
+	em.getComponent!Foo(e).y = 10;
+	assertEquals(Foo(int.init, 10), *em.getComponent!Foo(e));
 
-	assertFalse(__traits(compiles, em.get!(immutable(int))(em.entity())));
+	assertFalse(__traits(compiles, em.getComponent!(immutable(int))(em.entity())));
 }
 
 @system
@@ -1123,7 +1123,7 @@ unittest
 	em.onSet!Foo.connect((Entity,Foo* foo) { *foo = Foo(12, 3); });
 
 	em.entity().add!Foo;
-	assertEquals(Foo(12,3), *em.get!Foo(Entity(0)));
+	assertEquals(Foo(12,3), *em.getComponent!Foo(Entity(0)));
 }
 
 @system
