@@ -482,6 +482,7 @@ public:
 	}
 
 
+	// FIXME: documentation
 	/**
 	 * Fetch a component associated to an entity. The entity must be associated
 	 *     with the Component passed. Passing an invalid entity leads to
@@ -502,10 +503,20 @@ public:
 	 *
 	 * Returns: `Component*` pointing to the component fetched.
 	 */
-	Component* getComponent(Component)(in Entity e)
+	auto getComponent(Components...)(in Entity e)
+		if (Components.length)
 		in (has(e))
 	{
-		return _assureStorage!Component().get(e);
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.get(e);
+
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
 	}
 
 
