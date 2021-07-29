@@ -520,7 +520,22 @@ public:
 	}
 
 
-	// TODO: getIfHas to safely try to get a component from an entity
+	// FIXME: documentation
+	auto tryGetComponent(Components...)(in Entity e)
+		if (Components.length)
+		in (has(e))
+	{
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.tryGet(e);
+
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
+	}
 
 
 	/**
