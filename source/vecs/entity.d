@@ -210,6 +210,14 @@ public:
 
 	// FIXME: documentation
 	@safe pure nothrow @nogc
+	void releaseEntity(in Entity e)
+	{
+		releaseEntity(e, (e.batch + 1) & Entity.maxbatch);
+	}
+
+
+	// FIXME: documentation
+	@safe pure nothrow @nogc
 	void releaseEntity(in Entity e, in size_t batch)
 		in (shallowEntity(e))
 	{
