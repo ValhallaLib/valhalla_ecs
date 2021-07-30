@@ -606,15 +606,9 @@ public:
 	@safe pure @property
 	EntityBuilder entity(in Entity e)
 	{
-		import std.algorithm : find;
-		import std.range : front, generate;
-		alias create = () => queue.isNull ? fabricate() : recycleId();
-
 		// entity: generates entities until one with e.id and returns the latter
 		EntityBuilder builder = {
-			entity: has(e)
-				? _entities[e.id]
-				: generate!create.find!(entity => entity.id == e.id).front,
+			entity: createEntity(e),
 			em: this
 		};
 
