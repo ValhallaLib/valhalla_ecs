@@ -833,6 +833,54 @@ private:
 
 
 	// FIXME: documentation
+	@safe pure nothrow
+	Entity createEntity(in Entity hint)
+		in (hint.id < Entity.maxid)
+	{
+		// if the identifier wasn't yet generated, generate it
+		if (hint.id >= _entities.length)
+		{
+			_entities.length = hint.id + 1;
+
+			// must release identifiers in between and set their next batch to 0
+			// to avoid shallow entities and make sure the batch 0 is used
+			foreach (pos; _entities.length .. hint.id)
+				releaseId(generateId(pos), 0);
+
+			_entities[hint.id] = hint;
+			return hint;
+		}
+
+		// if the hint's identifier is alive, return it
+		else if (hint.id == _entities[hint.id].id) return _entities[hint.id];
+
+		// if the hint's id is released revive it
+		else
+		{
+			if (queue.id == hint.id)
+			{
+				// ensures the queue is not broken
+				queue = _entities[hint.id];
+				_entities[hint.id] = hint;
+
+				return hint;
+			}
+
+			Entity* eptr = &_entities[queue.id];
+
+			while (eptr.id != hint.id)
+				eptr = &_entities[eptr.id];
+
+			// ensures the queue is not broken
+			*eptr = _entities[hint.id];
+			_entities[hint.id] = hint;
+
+			return hint;
+		}
+	}
+
+
+	// FIXME: documentation
 	@safe pure nothrow @nogc
 	Entity generateId(in size_t pos)
 	{
