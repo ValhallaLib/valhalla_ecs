@@ -594,7 +594,7 @@ public:
 	EntityBuilder entity()
 	{
 		EntityBuilder builder = {
-			entity: queue.isNull ? fabricate() : recycle(),
+			entity: queue.isNull ? fabricate() : recycleId(),
 			em: this
 		};
 
@@ -608,7 +608,7 @@ public:
 	{
 		import std.algorithm : find;
 		import std.range : front, generate;
-		alias create = () => queue.isNull ? fabricate() : recycle();
+		alias create = () => queue.isNull ? fabricate() : recycleId();
 
 		// entity: generates entities until one with e.id and returns the latter
 		EntityBuilder builder = {
@@ -840,7 +840,7 @@ private:
 	 * Returns: `Entity` newly created.
 	 */
 	@safe pure nothrow @nogc
-	Entity recycle()
+	Entity recycleId()
 		in (!queue.isNull)
 	{
 		immutable next = queue;     // get the next entity in queue
