@@ -351,19 +351,6 @@ package class Storage(Component)
 
 
 	/**
-	 * Disassociates a component from an entity if existent in Storage.
-	 *
-	 * Params:
-	 *     e = entity to disassociate.
-	 */
-	@system
-	void tryRemove(in Entity e)
-	{
-		if (has(e)) remove(e);
-	}
-
-
-	/**
 	 * Clears all components and entities.
 	 */
 	@safe pure nothrow
