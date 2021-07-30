@@ -30,7 +30,7 @@ package:
 	bool opCall(in Entity e)
 	{
 		foreach (sinfo; sinfos)
-			if (!sinfo.has(e))
+			if (!sinfo.contains(e))
 				return false;
 
 		return true;
@@ -57,7 +57,7 @@ package:
 	bool opCall(in Entity e)
 	{
 		foreach (sinfo; sinfos)
-			if (sinfo.has(e))
+			if (sinfo.contains(e))
 				return false;
 
 		return true;

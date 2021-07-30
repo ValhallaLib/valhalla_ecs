@@ -99,7 +99,7 @@ package struct QueryWorld(OutputTuple)
 	bool _validate()
 	{
 		foreach (sinfo; sinfos)
-			if (!sinfo.has(entities[0]))
+			if (!sinfo.contains(entities[0]))
 				return false;
 
 		return true;

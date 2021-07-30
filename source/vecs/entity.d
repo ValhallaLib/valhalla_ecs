@@ -266,7 +266,7 @@ public:
 		auto range = storageInfoMap.filter!(sinfo => sinfo.storage !is null);
 
 		foreach (sinfo; range)
-			if (sinfo.has(e))
+			if (sinfo.contains(e))
 				return false;
 
 		return true;
