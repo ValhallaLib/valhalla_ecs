@@ -235,6 +235,14 @@ public:
 	}
 
 
+	// FIXME: documentation
+	void destroyEntity(in Entity e, in size_t batch)
+	{
+		removeAllComponents(e);
+		releaseId(e, batch);
+	}
+
+
 	/**
 	 * This signal occurs every time a Component is set. The onSet signal is
 	 *     emitted **after** the Component is set. A Component is set when
