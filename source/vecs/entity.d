@@ -239,6 +239,23 @@ public:
 	}
 
 
+	// FIXME: documentation
+	@safe pure nothrow @nogc
+	bool shallowEntity(in Entity e)
+		in (has(e))
+	{
+		import std.algorithm : filter;
+
+		auto range = storageInfoMap.filter!(sinfo => sinfo.storage !is null);
+
+		foreach (sinfo; range)
+			if (sinfo.has(e))
+				return false;
+
+		return true;
+	}
+
+
 	/**
 	 * This signal occurs every time a Component is set. The onSet signal is
 	 *     emitted **after** the Component is set. A Component is set when
