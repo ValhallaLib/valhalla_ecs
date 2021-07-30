@@ -185,7 +185,7 @@ public:
 	// FIXME: documentation
 	auto addComponent(Components...)(in Entity e)
 		if (Components.length)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
@@ -202,7 +202,7 @@ public:
 
 	// FIXME: documentation
 	Component* emplaceComponent(Component, Args...)(in Entity e, auto ref Args args)
-		in (has(e))
+		in (validEntity(e))
 	{
 		return _assureStorage!Component.emplace(e, args);
 	}
@@ -259,7 +259,7 @@ public:
 	// FIXME: documentation
 	@safe pure nothrow @nogc
 	bool shallowEntity(in Entity e)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.algorithm : filter;
 
@@ -387,7 +387,7 @@ public:
 	 */
 	auto setComponent(Components...)(in Entity e, Components components)
 		if (Components.length)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
@@ -427,7 +427,7 @@ public:
 	 */
 	auto removeComponent(Components...)(in Entity e)
 		if (Components.length)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.meta : Repeat;
 		Repeat!(Components.length, bool) R; // removed components
@@ -472,7 +472,7 @@ public:
 	 */
 	@system
 	void removeAllComponents(in Entity e)
-		in (has(e))
+		in (validEntity(e))
 	{
 		foreach (sinfo; storageInfoMap)
 			if (sinfo.storage !is null)
@@ -517,7 +517,7 @@ public:
 	 */
 	auto getComponent(Components...)(in Entity e)
 		if (Components.length)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
@@ -535,7 +535,7 @@ public:
 	// FIXME: documentation
 	auto tryGetComponent(Components...)(in Entity e)
 		if (Components.length)
-		in (has(e))
+		in (validEntity(e))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
@@ -581,7 +581,7 @@ public:
 	 * Returns: `Component*` pointing to the component associated.
 	 */
 	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
-		in (has(e))
+		in (validEntity(e))
 	{
 		return _assureStorage!Component().getOrSet(e, component);
 	}
@@ -663,7 +663,7 @@ public:
 	 * Returns: `true` if the entity exists, `false` otherwise.
 	 */
 	@safe pure nothrow @nogc
-	bool has(in Entity e) const
+	bool validEntity(in Entity e) const
 		in (e.id < Entity.maxid)
 	{
 		return e.id < _entities.length && _entities[e.id] == e;
