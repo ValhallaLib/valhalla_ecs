@@ -194,7 +194,7 @@ public:
 
 		(() @trusted pure nothrow @nogc => this.storage = cast(void*) storage)();
 		this.entities = &storage.entities;
-		this.has = &storage.contains;
+		this.contains = &storage.contains;
 		this.remove = &storage.remove;
 		this.clear = &storage.clear;
 		this.size = &storage.size;
@@ -207,7 +207,7 @@ public:
 		return (() @trusted pure nothrow @nogc => cast(Storage!Component) storage)(); // safe cast
 	}
 
-	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
+	bool delegate(in Entity e) @safe pure nothrow @nogc const contains;
 	bool delegate(in Entity e) @system remove;
 	void delegate() @safe pure nothrow clear;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
