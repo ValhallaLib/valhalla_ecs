@@ -209,6 +209,15 @@ public:
 
 
 	// FIXME: documentation
+	@safe pure nothrow @nogc
+	void releaseEntity(in Entity e, in size_t batch)
+		in (shallowEntity(e))
+	{
+		releaseId(e, batch);
+	}
+
+
+	// FIXME: documentation
 	/**
 	 * Destroys a valid entity. When destroyed all the associated components are
 	 *     removed. Passig an invalid entity leads to undefined behaviour.
