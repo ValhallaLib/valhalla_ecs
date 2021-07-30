@@ -226,12 +226,8 @@ public:
 	 */
 	@system
 	void destroyEntity(in Entity e)
-		in (has(e))
 	{
-		removeAllComponents(e);                                              // remove all components
-		_entities[e.id] = queue.isNull ? entityNull : queue.get(); // move the next in queue to back
-		queue = e;                                                 // update the next in queue
-		queue.incrementBatch();                                    // increment batch for when it's revived
+		destroyEntity(e, (e.batch + 1) & Entity.maxbatch);
 	}
 
 
