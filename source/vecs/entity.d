@@ -473,7 +473,7 @@ public:
 	{
 		foreach (sinfo; storageInfoMap)
 			if (sinfo.storage !is null)
-				sinfo.tryRemove(e);
+				sinfo.remove(e);
 	}
 
 
