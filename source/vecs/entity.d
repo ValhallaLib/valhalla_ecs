@@ -183,6 +183,14 @@ public:
 
 
 	// FIXME: documentation
+	void registerComponent(Components...)()
+		if (Components.length)
+	{
+		static foreach (Component; Components) _assure!Component;
+	}
+
+
+	// FIXME: documentation
 	auto addComponent(Components...)(in Entity e)
 		if (Components.length)
 		in (validEntity(e))
