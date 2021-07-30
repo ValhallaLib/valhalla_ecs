@@ -209,7 +209,7 @@ public:
 	}
 
 	bool delegate(in Entity e) @safe pure nothrow @nogc const has;
-	void delegate(in Entity e) @system remove;
+	bool delegate(in Entity e) @system remove;
 	void delegate() @safe pure nothrow clear;
 	void delegate(in Entity e) @system tryRemove;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
@@ -246,7 +246,7 @@ unittest
 	assertEquals(1, storage._packedEntities.length);
 	assertEquals(Entity(0), storage._packedEntities.front);
 
-	assertThrown!AssertError(storage.remove(Entity(0, 45)));
+	assertFalse(storage.remove(Entity(0, 45)));
 
 	storage.remove(Entity(0));
 	assertEquals(0, storage._packedEntities.length);
@@ -312,6 +312,7 @@ package class Storage(Component)
 	}
 
 
+	// FIXME: documentation
 	/**
 	 * Disassociates an entity from it's component. Passing an invalid entity
 	 *     leads to undefined behaviour.
@@ -324,9 +325,10 @@ package class Storage(Component)
 	 * Params: e = the entity to disassociate from it's component.
 	 */
 	@system
-	void remove(in Entity e)
-		in (has(e))
+	bool remove(in Entity e)
 	{
+		if (!has(e)) return false;
+
 		import std.algorithm : swap;
 		import std.range : back, popBack;
 
@@ -345,6 +347,8 @@ package class Storage(Component)
 		// remove the last element
 		_components.popBack;
 		_packedEntities.popBack;
+
+		return true;
 	}
 
 
@@ -601,8 +605,8 @@ unittest
 	storage.set(Entity(0), Bar("bar"));
 	storage.set(Entity(1), Bar("bar"));
 
-	assertThrown!AssertError(storage.remove(Entity(0, 5)));
-	assertThrown!AssertError(storage.remove(Entity(42)));
+	assertFalse(storage.remove(Entity(0, 5)));
+	assertFalse(storage.remove(Entity(42)));
 
 	storage.remove(Entity(0));
 	assertEquals(1, storage._sparsedEntities[0]);

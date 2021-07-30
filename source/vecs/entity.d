@@ -1175,19 +1175,19 @@ unittest
 	auto em = new EntityManager();
 
 	auto e = em.entity().add!(Foo, Bar, int);
-	assertThrown!AssertError(em.removeComponent!size_t(e)); // not in the storageInfoMap
+	em.removeComponent!size_t(e); // not in the storageInfoMap
 
 	em.removeComponent!Foo(e); // removes Foo
-	assertThrown!AssertError(em.removeComponent!Foo(e)); // e does not contain Foo
+	em.removeComponent!Foo(e); // e does not contain Foo
 	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	// removes only if associated
 	em.removeAllComponents(e); // removes int
 	em.removeAllComponents(e); // doesn't remove any
 
-	assertThrown!AssertError(em.removeComponent!Foo(e)); // e does not contain Foo
-	assertThrown!AssertError(em.removeComponent!Bar(e)); // e does not contain Bar
-	assertThrown!AssertError(em.removeComponent!int(e)); // e does not contain ValidImmutable
+	em.removeComponent!Foo(e); // e does not contain Foo
+	em.removeComponent!Bar(e); // e does not contain Bar
+	em.removeComponent!int(e); // e does not contain ValidImmutable
 
 	// invalid entity
 	assertThrown!AssertError(em.removeAllComponents(Entity(15)));
