@@ -194,7 +194,7 @@ public:
 
 		(() @trusted pure nothrow @nogc => this.storage = cast(void*) storage)();
 		this.entities = &storage.entities;
-		this.has = &storage.has;
+		this.has = &storage.contains;
 		this.remove = &storage.remove;
 		this.clear = &storage.clear;
 		this.size = &storage.size;
@@ -325,7 +325,7 @@ package class Storage(Component)
 	@system
 	bool remove(in Entity e)
 	{
-		if (!has(e)) return false;
+		if (!contains(e)) return false;
 
 		import std.algorithm : swap;
 		import std.range : back, popBack;
@@ -374,7 +374,7 @@ package class Storage(Component)
 	 */
 	@safe pure nothrow @nogc
 	Component* get(in Entity e)
-		in (has(e))
+		in (contains(e))
 	{
 		return &_components[_sparsedEntities[e.id]];
 	}
@@ -384,7 +384,7 @@ package class Storage(Component)
 	@safe pure nothrow @nogc
 	Component* tryGet(in Entity e)
 	{
-		return has(e) ? get(e) : null;
+		return contains(e) ? get(e) : null;
 	}
 
 
@@ -411,7 +411,7 @@ package class Storage(Component)
 			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
 		)
 	{
-		return has(e) ? get(e) : set(e, component);
+		return contains(e) ? get(e) : set(e, component);
 	}
 
 
@@ -436,7 +436,7 @@ package class Storage(Component)
 	 * Returns:`true` if exists, `false` otherwise.
 	 */
 	@safe pure nothrow @nogc
-	bool has(in Entity e) const
+	bool contains(in Entity e) const
 	{
 		return e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
@@ -479,7 +479,7 @@ private:
 			&& _packedEntities[_sparsedEntities[e.id]].batch != e.batch
 		))
 	{
-		if (!has(e))
+		if (!contains(e))
 		{
 			_packedEntities ~= e; // set entity
 			_components.length++;
