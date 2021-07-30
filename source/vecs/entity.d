@@ -832,6 +832,17 @@ private:
 	}
 
 
+	// FIXME: documentation
+	@safe pure nothrow @nogc
+	Entity generateId(in size_t pos)
+	{
+		static immutable err = "Maximum entities (" ~ Entity.maxid.stringof ~ ") reached!";
+		if (pos >= Entity.maxid) assert(false, err);
+
+		return Entity(pos);
+	}
+
+
 	/**
 	 * Creates a new entity reusing the id of a **previously discarded entity**
 	 *     with a new batch. Swaps the current discarded entity stored the
