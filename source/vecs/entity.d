@@ -258,6 +258,22 @@ public:
 
 	// FIXME: documentation
 	@safe pure nothrow @nogc
+	size_t aliveEntities()
+	{
+		if (queue.isNull) return _entities.length;
+
+		auto alive = _entities.length - 1;
+
+		// search all destroyed entities
+		for (auto e = _entities[queue.id]; e != entityNull; alive--)
+			e = _entities[e.id];
+
+		return alive;
+	}
+
+
+	// FIXME: documentation
+	@safe pure nothrow @nogc
 	bool shallowEntity(in Entity e)
 		in (validEntity(e))
 	{
