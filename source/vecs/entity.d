@@ -594,7 +594,7 @@ public:
 	EntityBuilder entity()
 	{
 		EntityBuilder builder = {
-			entity: queue.isNull ? fabricate() : recycleId(),
+			entity: createEntity(),
 			em: this
 		};
 
@@ -815,14 +815,16 @@ private:
 	 * Returns: `Entity` newly created or asserts is maximum is reached.
 	 */
 	@safe pure nothrow
-	Entity fabricate()
+	Entity createEntity()
 	{
-		enum err = "Maximum entities (" ~ Entity.maxid.stringof ~ ") reached!";
-		if (_entities.length >= Entity.maxid) assert(false, err);
+		if (queue.isNull)
+		{
+			import std.range : back;
+			_entities ~= generateId(_entities.length);
+			return _entities.back;
+		}
 
-		import std.range : back;
-		_entities ~= Entity(_entities.length);
-		return _entities.back;
+		else return recycleId();
 	}
 
 
