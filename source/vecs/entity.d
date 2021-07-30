@@ -861,6 +861,16 @@ private:
 	}
 
 
+	// FIXME: documentation
+	@safe pure nothrow @nogc
+	void releaseId(in Entity e, in size_t batch)
+		in (batch <= Entity.maxbatch)
+	{
+		_entities[e.id] = queue.isNull ? entityNull : queue.get();
+		queue = Entity(e.id, batch);
+	}
+
+
 	/// Assures the Component's storage availability
 	size_t _assure(Component)()
 		if (isComponent!Component)
