@@ -404,41 +404,6 @@ public:
 
 
 	/**
-	 * Safely tries to disassociate an entity from a component. If invalid does
-	 *     nothing.
-	 *
-	 * Safety: The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onRemove **before** disassociating the component.
-	 *
-	 * Examples:
-	 * ---
-	 * auto em = new EntityManager();
-	 *
-	 * // might lead to undefined behavior
-	 * em.removeComponent!Foo(em.entityNull);
-	 * em.removeComponent!Foo(em.gen());
-	 *
-	 * // safely tries to remove Foo from an entity
-	 * em.removeIfHas!Foo(em.entityNull);
-	 * em.removeIfHas!Foo(em.gen());
-	 * ---
-	 *
-	 * Params:
-	 *     e = entity to disassociate.
-	 *     Component = component to remove.
-	 */
-	void tryRemoveComponent(Components...)(in Entity e)
-	{
-		if (has(e))
-		{
-			static foreach (Component; Components) _assureStorageInfo!Component.tryRemove(e);
-		}
-	}
-
-
-	/**
 	 * Removes all components associated to an entity. Passing an invalid entity
 	 *     leads to undefined behaviour. If a component is passed instead, it
 	 *     clears the storage of the same disassociating every entity in it.
