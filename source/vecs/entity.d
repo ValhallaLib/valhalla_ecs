@@ -1186,17 +1186,15 @@ unittest
 	auto e = em.entity().add!(Foo, Bar, int);
 	em.removeComponent!size_t(e); // not in the storageInfoMap
 
-	em.removeComponent!Foo(e); // removes Foo
-	em.removeComponent!Foo(e); // e does not contain Foo
+	assertTrue(em.removeComponent!Foo(e)); // removes Foo
+	assertFalse(em.removeComponent!Foo(e)); // e does not contain Foo
 	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
 
 	// removes only if associated
 	em.removeAllComponents(e); // removes int
 	em.removeAllComponents(e); // doesn't remove any
 
-	em.removeComponent!Foo(e); // e does not contain Foo
-	em.removeComponent!Bar(e); // e does not contain Bar
-	em.removeComponent!int(e); // e does not contain ValidImmutable
+	assertEquals([false, false, false], em.removeComponent!(Foo, Bar, int)(e));
 
 	// invalid entity
 	assertThrown!AssertError(em.removeAllComponents(Entity(15)));
