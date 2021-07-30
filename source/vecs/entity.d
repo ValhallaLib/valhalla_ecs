@@ -601,6 +601,26 @@ public:
 	}
 
 
+	// FIXME: documentation
+	@safe pure @property
+	EntityBuilder entity(in Entity e)
+	{
+		import std.algorithm : find;
+		import std.range : front, generate;
+		alias create = () => queue.isNull ? fabricate() : recycle();
+
+		// entity: generates entities until one with e.id and returns the latter
+		EntityBuilder builder = {
+			entity: has(e)
+				? _entities[e.id]
+				: generate!create.find!(entity => entity.id == e.id).front,
+			em: this
+		};
+
+		return builder;
+	}
+
+
 	/**
 	 * Checks if an entity is valid within EntityManager.
 	 *
