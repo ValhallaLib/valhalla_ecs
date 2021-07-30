@@ -387,10 +387,19 @@ public:
 	 *     e = entity to disassociate.
 	 *     Component = component to remove.
 	 */
-	void removeComponent(Components...)(in Entity e)
+	auto removeComponent(Components...)(in Entity e)
+		if (Components.length)
 		in (has(e))
 	{
-		static foreach (Component; Components) _assureStorageInfo!Component.remove(e);
+		import std.meta : Repeat;
+		Repeat!(Components.length, bool) R; // removed components
+
+		static foreach (i, Component; Components) R[i] = _assureStorageInfo!Component.remove(e);
+
+		static if (Components.length == 1)
+			return R[0];
+		else
+			return [R];
 	}
 
 
