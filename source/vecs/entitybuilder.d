@@ -60,29 +60,3 @@ public:
 package:
 	EntityManager em;
 }
-
-@system
-@("entitybuilder: entityBuilder")
-unittest
-{
-	import vecs.storage;
-	EntityManager em = new EntityManager();
-
-	Entity[] entts;
-	with(em) entts = [
-		entity,
-		entity,
-		entity,
-	];
-
-	assertEquals([Entity(0), Entity(1), Entity(2)], entts);
-
-	with(em) entts = [
-		entity.add!Foo,
-		entity,
-		entity.set(Bar("str")),
-		entity.add!(Foo, int),
-	];
-
-	assertEquals([Entity(3), Entity(4), Entity(5), Entity(6)], entts);
-}

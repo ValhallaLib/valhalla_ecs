@@ -142,29 +142,28 @@ private:
 	size_t _signature;
 }
 
-@safe pure
-@("entity: Entity")
-unittest
+@("[Entity]")
+@safe pure nothrow @nogc unittest
 {
-	assertEquals(Entity.init, Entity(0));
-	assertEquals(Entity.init, Entity(0, 0));
+	assert(Entity.init == Entity(0));
+	assert(Entity.init == Entity(0, 0));
 
 	{
 		immutable e = Entity.init;
-		assertEquals(e.id, 0);
-		assertEquals(e.batch, 0);
-		assertEquals(e.signature, 0);
+		assert(e.id == 0);
+		assert(e.batch == 0);
+		assert(e.signature == 0);
 	}
 
 	{
 		immutable e = Entity.init.incrementBatch();
-		assertEquals(e.id, 0);
-		assertEquals(e.batch, 1);
-		assertEquals(e.signature, Entity.maxid + 1);
-		assertEquals(e, Entity(0, 1));
+		assert(e.id == 0);
+		assert(e.batch == 1);
+		assert(e.signature == Entity.maxid + 1);
+		assert(e == Entity(0, 1));
 	}
 
-	assertEquals(Entity(0, Entity.maxbatch).incrementBatch().batch, 0);
+	assert(Entity(0, Entity.maxbatch).incrementBatch().batch == 0);
 }
 
 
@@ -1161,214 +1160,207 @@ public:
 	enum Entity entityNull = Entity(Entity.maxid);
 }
 
-
-@system
-@("entity: EntityManager: discard")
+@("[EntityManager] component operations (adding and updating)")
 unittest
 {
-	auto em = new EntityManager();
-	assertTrue(em.queue.isNull);
+	scope world = new EntityManager();
 
-	auto entity0 = em.entity();
-	auto entity1 = em.entity();
-	auto entity2 = em.entity();
+	assert(*world.addComponent!int(world.entity) == 0);
+	assert(*world.emplaceComponent!int(world.entity, 34) == 34);
+	assert(*world.setComponent(world.entity, 45) == 45);
 
+	struct Position { ulong x, y; }
+	auto entity = world.entity
+		.add!int
+		.set("Hello")
+		.emplace!Position(1LU, 4LU);
 
-	em.destroyEntity(entity1);
-	assertFalse(em.queue.isNull);
-	assertEquals(em.entityNull, em._entities[entity1.id]);
-	(() @trusted pure => assertEquals(Entity(1, 1), em.queue.get))(); // batch was incremented
+	int* integral;
+	string* str;
 
-	em.destroyEntity(entity0);
-	assertEquals(Entity(1, 1), em._entities[entity0.id]);
-	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
+	AliasSeq!(integral, str) = world.getComponent!(int, string)(entity);
 
-	// cannot discard invalid entities
-	assertThrown!AssertError(em.destroyEntity(Entity(50)));
-	assertThrown!AssertError(em.destroyEntity(Entity(entity2.id, 40)));
+	assert(*integral == 0);
+	assert(*str == "Hello");
 
-	assertEquals(3, em._entities.length);
+	entity.emplace!int(45);
+
+	assert(*integral == 45);
+
+	Position* position;
+	uint* uintegral;
+
+	AliasSeq!(position, uintegral) = world.tryGetComponent!(Position, uint)(entity);
+
+	assert(*position == Position(1, 4));
+	assert(!uintegral);
+
+	assert(*world.getOrSet!uint(entity, 45) == 45);
+	assert(*world.getOrSet!uint(entity, 64) == 45);
 }
 
-@system
-@("entity: EntityManager: fabricate")
+version(assert)
+@("[EntityManager] component operations (invalid entities)")
 unittest
 {
-	import std.range : back;
-	auto em = new EntityManager();
+	scope world = new EntityManager();
+	const entity = world.entity;
 
-	auto entity0 = em.entity(); // calls fabricate
-	em.destroyEntity(entity0); // discards
-	em.entity(); // recycles
-	assertTrue(em.queue.isNull);
+	assertThrown!AssertError(world.getComponent!int(entity));
 
-	assertEquals(Entity(1), em.entity()); // calls fabricate again
-	assertEquals(2, em._entities.length);
-	assertEquals(Entity(1), em._entities.back);
+	const invalid = Entity(entity.id, entity.batch + 1);
+
+	assertThrown!AssertError(world.addComponent!int(invalid));
+	assertThrown!AssertError(world.setComponent!int(invalid, 0));
+	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
+	assertThrown!AssertError(world.getComponent!int(invalid));
+	assertThrown!AssertError(world.getOrSet!int(invalid));
+	assertThrown!AssertError(world.removeComponent!int(invalid));
+	assertThrown!AssertError(world.removeAllComponents(invalid));
 }
 
-// TODO: add fabricate assert thrown unit tests
-
-@safe pure
-@("entity: EntityManager: entity")
+@("[EntityManager] component operations (register and remove)")
 unittest
 {
-	import std.range : front;
-	auto em = new EntityManager();
+	scope world = new EntityManager();
 
-	assert(Entity(0) == em.entity());
-	assert(1 == em._entities.length);
-	assert(Entity(0) == em._entities.front);
-}
+	world.registerComponent!(int, string, ulong);
 
-@system
-@("entity: EntityManager: get")
-unittest
-{
-	auto em = new EntityManager();
+	import std.meta : staticMap;
+	import std.algorithm : max;
+	immutable maxid = staticMap!(ComponentId, int, string, ulong).max;
 
-	auto e = em.entity().add!(Foo, Bar);
+	assert(world.storageInfoMap.length == maxid + 1);
 
-	assertEquals(Foo.init, *em.getComponent!Foo(e));
-	assertEquals(Bar.init, *em.getComponent!Bar(e));
-	assertThrown!AssertError(em.getComponent!int(e));
-
-	em.getComponent!Foo(e).y = 10;
-	assertEquals(Foo(int.init, 10), *em.getComponent!Foo(e));
-
-	assertFalse(__traits(compiles, em.getComponent!(immutable(int))(em.entity())));
-}
-
-@system
-@("entity: EntityManager: getOrSet")
-unittest
-{
-	auto em = new EntityManager();
-
-	auto e = em.entity().add!Foo;
-	assertEquals(Foo.init, *em.getOrSet!Foo(e));
-	assertEquals(Foo.init, *em.getOrSet(e, Foo(2, 3)));
-	assertEquals(Bar("str"), *em.getOrSet(e, Bar("str")));
-
-	assertThrown!AssertError(em.getOrSet!Foo(Entity(0, 12)));
-	assertThrown!AssertError(em.getOrSet!Foo(Entity(3)));
-}
-
-@system
-@("entity: EntityManager: onRemove")
-unittest
-{
-	auto em = new EntityManager();
-	em.onRemove!Foo.connect((Entity,Foo* foo) { assertEquals(Foo(7, 8), *foo); });
-	em.removeComponent!Foo(em.entity().set(Foo(7, 8)));
-}
-
-@system
-@("entity: EntityManager: onSet")
-unittest
-{
-	auto em = new EntityManager();
-	em.onSet!Foo.connect((Entity,Foo* foo) { *foo = Foo(12, 3); });
-
-	em.entity().add!Foo;
-	assertEquals(Foo(12,3), *em.getComponent!Foo(Entity(0)));
-}
-
-@system
-@("entity: EntityManager: recycle")
-unittest
-{
-	import std.range : front;
-	auto em = new EntityManager();
-
-	auto entity0 = em.entity(); // calls fabricate
-	em.destroyEntity(entity0); // discards
-	(() @trusted pure => assertEquals(Entity(0, 1), em.queue.get))(); // batch was incremented
-	assertFalse(Entity(0, 1) == entity0); // entity's batch is not updated
-
-	em.entity(); // recycles
-	assertEquals(Entity(0, 1), em._entities.front);
-}
-
-@system
-@("entity: EntityManager: remove")
-unittest
-{
-	auto em = new EntityManager();
-
-	auto e = em.entity().add!(Foo, Bar, int);
-	em.removeComponent!size_t(e); // not in the storageInfoMap
-
-	assertTrue(em.removeComponent!Foo(e)); // removes Foo
-	assertFalse(em.removeComponent!Foo(e)); // e does not contain Foo
-	assertThrown!AssertError(em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
-
-	// removes only if associated
-	em.removeAllComponents(e); // removes int
-	em.removeAllComponents(e); // doesn't remove any
-
-	assertEquals([false, false, false], em.removeComponent!(Foo, Bar, int)(e));
-
-	// invalid entity
-	assertThrown!AssertError(em.removeAllComponents(Entity(15)));
-
-	// cannot call with invalid components
-	assertFalse(__traits(compiles, em.removeComponent!(void delegate())(e)));
-}
-
-@system
-@("entity: EntityManager: removeAll")
-unittest
-{
-	auto em = new EntityManager();
-
-	foreach (i; 0..10) em.entity().add!(Foo, Bar);
-
-	assertEquals(10, em.size!Foo());
-	em.clear!Foo();
-	assertEquals(0, em.size!Foo());
-}
-
-@system
-@("entity: EntityManager: setComponent")
-unittest
-{
-	auto em = new EntityManager();
-
-	auto e = em.entity();
-	assertTrue(em.setComponent(e, Foo(4, 5)));
-	assertThrown!AssertError(em.setComponent(Entity(0, 5), Foo(4, 5)));
-	assertThrown!AssertError(em.setComponent(Entity(2), Foo(4, 5)));
-	assertEquals(Foo(4, 5), *em.storageInfoMap[ComponentId!Foo].get!(Foo).get(e));
-
-	{
-		auto components = em.setComponent(em.entity(), Foo(4, 5), Bar("str"));
-		assertEquals(Foo(4,5), *components[0]);
-		assertEquals(Bar("str"), *components[1]);
+	with(world) {
+		world.entity.add!int;
+		world.entity.add!int;
+		world.entity.add!(int, uint, ulong);
 	}
 
-	{
-		auto components = em.addComponent!(Foo, Bar, int)(em.entity());
-		assertEquals(Foo.init, *components[0]);
-		assertEquals(Bar.init, *components[1]);
-		assertEquals(int.init, *components[2]);
-	}
+	assert(world.size!int == 3);
 
-	assertThrown!AssertError(em.addComponent!Foo(Entity(45)));
-	assertThrown!AssertError(em.addComponent!(Foo, Bar)(Entity(45)));
-	assertThrown!AssertError(em.setComponent(Entity(45), Foo.init, Bar.init));
+	world.clear!int();
+
+	assert(!world.size!int);
+	assert( world.size!uint == 1);
+	assert( world.size!ulong == 1);
+
+	world.clear();
+
+	assert(!world.size!uint);
+	assert(!world.size!ulong);
+
+	auto entity = world.entity
+		.add!int
+		.add!uint
+		.add!ulong;
+
+	assert( world.removeComponent!int(entity));
+	assert(!world.removeComponent!int(entity));
+	assert(world.shallowEntity(entity.removeAll()));
 }
 
-@system
-@("entity: EntityManager: size")
+@("[EntityManager] entity manipulation (entity properties)")
 unittest
 {
-	auto em = new EntityManager();
+	scope world = new EntityManager();
 
-	auto e = em.entity().add!Foo;
-	assertEquals(1, em.size!Foo());
-	assertEquals(0, em.size!Bar());
+	auto entity = world.entity();
 
-	em.removeComponent!Foo(e);
-	assertEquals(0, em.size!Foo());
+	assert(world.aliveEntities() == 1);
+	assert(world.shallowEntity(entity));
+	assert(world.validEntity(entity));
+
+	world.releaseEntity(entity);
+
+	assert(!world.aliveEntities());
+	assert(!world.validEntity(entity));
+}
+
+@("[EntityManager] entity manipulation (generated and recycled)")
+unittest
+{
+	scope world = new EntityManager();
+
+	assert(!world._entities);
+
+	auto entity = world.entity();
+
+	assert(entity.id == 0);
+	assert(entity.batch == 0);
+	assert(world._entities.length == 1);
+
+	auto generated = world.entity();
+
+	assert(generated.id == 1);
+	assert(generated.batch == 0);
+	assert(world._entities.length == 2);
+
+	generated.destroy();
+	auto recycled = world.entity();
+
+	assert(recycled.id == generated.id);
+	assert(recycled.batch == generated.batch + 1);
+	assert(world._entities.length == 2);
+}
+
+version(assert)
+@("[EntityManager] entity manipulation (invalid entities)")
+unittest
+{
+	scope world = new EntityManager();
+	const entity = world.entity;
+	const invalid = Entity(entity.id, entity.batch + 1);
+
+	assertThrown!AssertError(world.shallowEntity(invalid));
+	assertThrown!AssertError(world.destroyEntity(invalid));
+	assertThrown!AssertError(world.releaseEntity(invalid));
+	assertThrown!AssertError(world.releaseEntity(entity, size_t.max));
+	assertThrown!AssertError(world.entity(world.entityNull));
+	assertThrown!AssertError(world.validEntity(world.entityNull));
+	assertThrown!AssertError(world.generateId(world.entityNull.id));
+}
+
+@("[EntityManager] entity manipulation (queue properties)")
+unittest
+{
+	scope world = new EntityManager();
+
+	assert(world.queue.isNull);
+
+	auto entity = world.entity.destroy();
+
+	assert(world.queue == Entity(entity.id, entity.batch + 1));
+	assert(world._entities[entity.id] == world.entityNull);
+}
+
+@("[EntityManager] entity manipulation (request batches on destruction and release)")
+unittest
+{
+	scope world = new EntityManager();
+	immutable eid = 4;
+
+	world.destroyEntity(world.entity(Entity(eid)), 78);
+	Entity entity = world.entity();
+
+	assert(entity.id == eid);
+	assert(entity.batch == 78);
+
+	world.releaseEntity(entity, 28);
+	entity = world.entity();
+
+	assert(entity.id == eid);
+	assert(entity.batch == 28);
+}
+
+@("[EntityManager] entity manipulation (request ids and batches on construction)")
+unittest
+{
+	scope world = new EntityManager();
+	auto entity = world.entity(Entity(5, 78));
+
+	assert(entity.id == 5);
+	assert(entity.batch == 78);
+	assert(world.entity(Entity(entity.id, 94)) == entity);
 }
