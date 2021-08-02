@@ -14,6 +14,8 @@ version(vecs_unittest)
 	import core.exception : AssertError;
 }
 
+
+// TODO: remove this
 /**
  * A component must define this as an UDA.
  */
@@ -21,14 +23,13 @@ enum Component;
 
 
 /**
- * Evalute is some T is a valid component. A component is defined by being a
- *     **struct** with **all fields mutable** and must have the **Component**
- *     UDA.
- *
- * Params: T = valid component type.
- *
- * Returns: true is is a valid component, false otherwise.
- */
+Checks if a type is a valid Component type.
+
+Params:
+	T = a type to evaluate.
+
+Returns: True if the type is a Component type, false otherwise.
+*/
 enum isComponent(T) = !(is(T == class)
 	|| is(T == union)
 	|| isSomeFunction!T
@@ -258,87 +259,97 @@ unittest
 package class Storage(Component)
 	if (isComponent!Component)
 {
-	// FIXME: documentation
-	Component* add(in Entity e)
+	/**
+	Adds or updates the component for the entity.
+
+	Signal: emits $(LREF onSet) after adding the component.
+
+	Params:
+		entity = a valid entity.
+
+	Returns: A pointer to the component of the entity.
+	*/
+	Component* add(in Entity entity)
 	{
-		Component* component = _add(e);
+		Component* component = _add(entity);
 		*component = Component.init;
-		onSet.emit(e, component);
-		return component;
-	}
-
-
-	// FIXME: documentation
-	Component* emplace(Args...)(in Entity e, auto ref Args args)
-	{
-		import core.lifetime : emplace;
-		Component* component = _add(e);
-		component.emplace(args);
-		onSet.emit(e, component);
+		onSet.emit(entity, component);
 		return component;
 	}
 
 
 	/**
-	 * Associates a component to an entity. If the entity is already connected to
-	 *     a component of this type then it's component will be updated.
-	 *     Passing an invalid entity leads to undefined behaviour. Emits onSet
-	 *     after associating the component to the entity, either by creation or
-	 *     by replacement.
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet **after** associating the component.
-	 *
-	 * Params:
-	 *     e = entity to associate.
-	 *     component = a valid component.
-	 *
-	 * Returns: `Component*` pointing to the component set either by creation or
-	 *     replacement.
-	 */
-	@system
-	Component* set(in Entity e, Component component)
+	Emplace or replace the component for the entity.
+
+	Signal: emits $(LREF onSet) after adding the component.
+
+	Params:
+		entity = a valid entity.
+		args = arguments to construct the component to emplace or replace.
+
+	Returns: A pointer to the component of the entity.
+	*/
+	Component* emplace(Args...)(in Entity entity, auto ref Args args)
 	{
-		Component* comp = _add(e);
+		import core.lifetime : emplace;
+		Component* component = _add(entity);
+		component.emplace(args);
+		onSet.emit(entity, component);
+		return component;
+	}
+
+
+	/**
+	Assigns or updates the component for the entity.
+
+	Signal: emits $(LREF onSet) after adding the component.
+
+	Params:
+		entity = a valid entity.
+		component = component to assign or update.
+
+	Returns: A pointer to the component of the entity.
+	*/
+	@system
+	Component* set(in Entity entity, Component component)
+	{
+		Component* comp = _add(entity);
 		*comp = component;
-		onSet.emit(e, comp);
+		onSet.emit(entity, comp);
 		return comp;
 	}
 
 
-	// FIXME: documentation
-	/**
-	 * Disassociates an entity from it's component. Passing an invalid entity
-	 *     leads to undefined behaviour.
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onRemove **before** disassociating the component.
-	 *
-	 * Params: e = the entity to disassociate from it's component.
-	 */
+	/*
+	Removes the entity and its component from this storage. If the storage does
+	not contain the entity, nothing happens.
+
+	Signal: emits $(LREF onRemove) before removing the component.
+
+	Params:
+		entity = an entity.
+
+	Returns: True if the entity was removed, false otherwise.
+	*/
 	@system
-	bool remove(in Entity e)
+	bool remove(in Entity entity)
 	{
-		if (!contains(e)) return false;
+		if (!contains(entity)) return false;
 
 		import std.algorithm : swap;
 		import std.range : back, popBack;
 
 		// emit onRemove
-		onRemove.emit(e, &_components[_sparsedEntities[e.id]]);
+		onRemove.emit(entity, &_components[_sparsedEntities[entity.id]]);
 
 		immutable last = _packedEntities.back;
 
 		// swap with the last element of packedEntities
-		swap(_components.back, _components[_sparsedEntities[e.id]]);
-		swap(_packedEntities.back, _packedEntities[_sparsedEntities[e.id]]);
+		swap(_components.back, _components[_sparsedEntities[entity.id]]);
+		swap(_packedEntities.back, _packedEntities[_sparsedEntities[entity.id]]);
 
 		// map the sparseEntities to the new value in packedEntities
-		swap(_sparsedEntities[last.id], _sparsedEntities[e.id]);
+		swap(_sparsedEntities[last.id], _sparsedEntities[entity.id]);
 
 		// remove the last element
 		_components.popBack;
@@ -362,23 +373,31 @@ package class Storage(Component)
 
 
 	/**
-	 * Fetches the component associated to an entity. Passing an invalid entity
-	 *     leads to undefined behaviour.
-	 *
-	 * Params:
-	 *     e = entity to search.
-	 *
-	 * Returns: `Component*` pointing to the entity's component.
-	 */
+	Fetches the component of the entity.
+
+	Attempting to use an entity not in the storage leads to undefined behavior.
+
+	Params:
+		entity = a valid entity.
+
+	Returns: A pointer to the component of the entity.
+	*/
 	@safe pure nothrow @nogc
-	Component* get(in Entity e)
-		in (contains(e))
+	Component* get(in Entity entity)
+		in (contains(entity))
 	{
-		return &_components[_sparsedEntities[e.id]];
+		return &_components[_sparsedEntities[entity.id]];
 	}
 
 
-	// FIXME: documentation
+	/**
+	Fetches the component of the entity.
+
+	Params:
+		entity = an entity.
+
+	Returns: A pointer to the component of the entity, `null` otherwise.
+	*/
 	@safe pure nothrow @nogc
 	Component* tryGet(in Entity e)
 	{
@@ -426,13 +445,13 @@ package class Storage(Component)
 
 
 	/**
-	 * Checks if an entity exists in the Storage.
-	 *
-	 * Params:
-	 *     e = entity to check.
-	 *
-	 * Returns:`true` if exists, `false` otherwise.
-	 */
+	Checks if an entity is in the storage.
+
+	Params:
+		entity = entity to check.
+
+	Returns: True if the entity is in the storage, false otherwise.
+	*/
 	@safe pure nothrow @nogc
 	bool contains(in Entity e) const
 	{
@@ -469,27 +488,34 @@ package:
 
 
 private:
-	// FIXME: documentation
-	Component* _add(in Entity e)
-		in (!(e.id < _sparsedEntities.length
-			&& _sparsedEntities[e.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
-			&& _packedEntities[_sparsedEntities[e.id]].batch != e.batch
+	/**
+	Adds the entity if not in the storage.
+
+	Params:
+		entity = an entity.
+
+	Retuns: A pointer to the component of the entity.
+	*/
+	Component* _add(in Entity entity)
+		in (!(entity.id < _sparsedEntities.length
+			&& _sparsedEntities[entity.id] < _packedEntities.length
+			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
+			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
 		))
 	{
-		if (!contains(e))
+		if (!contains(entity))
 		{
-			_packedEntities ~= e; // set entity
+			_packedEntities ~= entity; // set entity
 			_components.length++;
 
 			// map to the correct entity from the packedEntities from sparsedEntities
-			if (e.id >= _sparsedEntities.length)
-				_sparsedEntities.length = e.id + 1;
+			if (entity.id >= _sparsedEntities.length)
+				_sparsedEntities.length = entity.id + 1;
 
-			_sparsedEntities[e.id] = _packedEntities.length - 1;
+			_sparsedEntities[entity.id] = _packedEntities.length - 1;
 		}
 
-		return &_components[_sparsedEntities[e.id]];
+		return &_components[_sparsedEntities[entity.id]];
 	}
 
 

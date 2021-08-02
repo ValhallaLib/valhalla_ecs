@@ -181,7 +181,12 @@ public:
 	}
 
 
-	// FIXME: documentation
+	/**
+	Registers all `Components` in `EntityManager`.
+
+	Params:
+		Components = Component types to register.
+	*/
 	void registerComponent(Components...)()
 		if (Components.length)
 	{
@@ -189,16 +194,38 @@ public:
 	}
 
 
-	// FIXME: documentation
-	auto addComponent(Components...)(in Entity e)
+	/**
+	Add `Components` to an `entity`. `Components` are contructed according to
+	their dafault initializer.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	struct Position { ulong x, y; }
+	auto world = new EntityManager();
+
+	Position* i = world.add!Position(world.entity);
+	Tuple!(int*, string*) t = world.add!(int, string)(world.entity);
+	---
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		Components = Component types to add.
+		entity = a valid entity.
+
+	Returns: A pointer or a `Tuple` of pointers to the added components.
+ 	*/
+	auto addComponent(Components...)(in Entity entity)
 		if (Components.length)
-		in (validEntity(e))
+		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
-		static foreach (i, Component; Components) C[i] = _assureStorage!Component.add(e);
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.add(entity);
 
 		static if (Components.length == 1)
 			return C[0];
@@ -207,55 +234,85 @@ public:
 	}
 
 
-	// FIXME: documentation
-	Component* emplaceComponent(Component, Args...)(in Entity e, auto ref Args args)
-		in (validEntity(e))
-	{
-		return _assureStorage!Component.emplace(e, args);
-	}
-
-
-	// FIXME: documentation
-	@safe pure nothrow @nogc
-	void releaseEntity(in Entity e)
-	{
-		releaseEntity(e, (e.batch + 1) & Entity.maxbatch);
-	}
-
-
-	// FIXME: documentation
-	@safe pure nothrow @nogc
-	void releaseEntity(in Entity e, in size_t batch)
-		in (shallowEntity(e))
-	{
-		releaseId(e, batch);
-	}
-
-
-	// FIXME: documentation
 	/**
-	 * Destroys a valid entity. When destroyed all the associated components are
-	 *     removed. Passig an invalid entity leads to undefined behaviour.
-	 *
-	 * Params:
-	 *     e = entity to discard.
-	 *
-	 * Examples:
-	 * ---
-	 * auto em = new EntityManager();
-	 *
-	 * // discards the newly generated entity
-	 * em.destroyEntity(em.gen());
-	 * ---
-	 */
-	@system
-	void destroyEntity(in Entity e)
+	Assigns the `Component` to the `entity`. The `Component` is initialized with
+	the `args` provided.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	struct Position { ulong x, y; }
+	auto world = new EntityManager();
+
+	Position* i = world.emplace!Position(world.entity, 2LU, 3LU);
+	---
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		Component = Component type to emplace.
+		entity = a valid entity.
+		args = arguments to contruct the Component type.
+
+	Returns: A pointer to the emplaced component.
+	*/
+	Component* emplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
 	{
-		destroyEntity(e, (e.batch + 1) & Entity.maxbatch);
+		return _assureStorage!Component.emplace(entity, args);
 	}
 
 
-	// FIXME: documentation
+	/**
+	Releases a `shallow entity`. It's `id` is released and the `batch` is updated
+	to be ready for the next recycling.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		entity = a valid entity.
+		batch = batch to update upon release.
+
+	See_Also: $(LREF shallowEntity)
+	*/
+	@safe pure nothrow @nogc
+	void releaseEntity(in Entity entity)
+	{
+		releaseEntity(entity, (entity.batch + 1) & Entity.maxbatch);
+	}
+
+
+	/// Ditto
+	@safe pure nothrow @nogc
+	void releaseEntity(in Entity entity, in size_t batch)
+		in (shallowEntity(entity))
+	{
+		releaseId(entity, batch);
+	}
+
+
+	/**
+	Removes all components from an entity and releases it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		entity = a valid entity.
+		batch = batch to update upon release.
+
+	Signal: emits `onRemove` before each component is removed.
+
+	See_Also: $(LREF releaseEntity), $(LREF removeAll)
+	*/
+	@system
+	void destroyEntity(in Entity entity)
+	{
+		destroyEntity(entity, (entity.batch + 1) & Entity.maxbatch);
+	}
+
+
+	/// Ditto
 	void destroyEntity(in Entity e, in size_t batch)
 	{
 		removeAllComponents(e);
@@ -263,7 +320,13 @@ public:
 	}
 
 
-	// FIXME: documentation
+	/**
+	Returns the number of entities currently alive.
+
+	Returns: Number of entities in use.
+
+	See_Also: $(LREF eachEntity)
+	*/
 	@safe pure nothrow @nogc
 	size_t aliveEntities()
 	{
@@ -272,14 +335,24 @@ public:
 		auto alive = _entities.length - 1;
 
 		// search all destroyed entities
-		for (auto e = _entities[queue.id]; e != entityNull; alive--)
-			e = _entities[e.id];
+		for (auto entity = _entities[queue.id]; entity != entityNull; alive--)
+			entity = _entities[entity.id];
 
 		return alive;
 	}
 
 
-	// FIXME: documentation
+	/**
+	Checks if an entity is shallow. A shallow entity does not have assigned
+	components.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		entity = a valid entity.
+
+	Returns: True if shallow, false otherwise.
+	*/
 	@safe pure nothrow @nogc
 	bool shallowEntity(in Entity e)
 		in (validEntity(e))
@@ -377,46 +450,37 @@ public:
 	}
 
 
-	// FIXME: documentation
 	/**
-	 * Associates an entity to a component. Passing an invalid entity leads to
-	 *     undefined behaviour. Emits onSet after associating the component to
-	 *     the entity, either by creation or by replacement.
-	 *
-	 * Safety: The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet **after** setting the component.
-	 *
-	 * Params:
-	 *     e = entity to associate.
-	 *     component = component to set.
-	 *     components = components to set.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo { int i; }
-	 * auto em = new EntityManager();
-	 *
-	 * // associates the newly generated entity with Foo.init
-	 * em.set!Foo(em.gen());
-	 *
-	 * // associates the newly generated entity with Foo(3)
-	 * em.set(em.gen(), Foo(3));
-	 * ---
-	 *
-	 * Returns: `Component*` pointing to the component set either by creation or
-	 *     replacement.
-	 */
-	auto setComponent(Components...)(in Entity e, Components components)
+	Assigns the components to an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	struct Position { ulong x, y; }
+	auto world = new EntityManager();
+
+	Position* i = world.set(world.entity, Position(2, 3));
+	Tuple!(int*, string*) = world.set(world.entity, 45, "str")
+	---
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		entity = a valid entity.
+		components = components to assign.
+
+	Returns: A pointer or `Tuple` of pointers to the components set.
+	*/
+	auto setComponent(Components...)(in Entity entity, Components components)
 		if (Components.length)
-		in (validEntity(e))
+		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
-		static foreach (i, Component; Components) C[i] = _assureStorage!Component.set(e, components[i]);
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.set(entity, components[i]);
 
 		static if (Components.length == 1)
 			return C[0];
@@ -426,36 +490,35 @@ public:
 
 
 	/**
-	 * Disassociates an entity from a component. Passing and invalid entity or
-	 *     an entity which isn't associated with Component leads to undefined
-	 *     behaviour.
-	 *
-	 * Safety: The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onRemove **before** disassociating the component.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo {}
-	 * auto em = new EntityManager();
-	 *
-	 * // disassociates Foo from the newly generated entity
-	 * em.removeComponent!Foo(em.gen!Foo());
-	 * ---
-	 *
-	 * Params:
-	 *     e = entity to disassociate.
-	 *     Component = component to remove.
-	 */
-	auto removeComponent(Components...)(in Entity e)
+	Removes components from an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	assert(world.removeComponent!int(world.entity.add!int));
+	assert(world.removeComponent!(int, string)(world.entity.add!int) == [true, false]);
+	---
+
+	Signal: emits $(LREF onRemove) before each component is removed.
+
+	Params:
+		Components = Component types to remove.
+		entity = a valid entity.
+
+	Returns: A boolean or and array of booleans evaluating to `true` if the
+	component was removed, `false` otherwise;
+	*/
+	auto removeComponent(Components...)(in Entity entity)
 		if (Components.length)
-		in (validEntity(e))
+		in (validEntity(entity))
 	{
 		import std.meta : Repeat;
 		Repeat!(Components.length, bool) R; // removed components
 
-		static foreach (i, Component; Components) R[i] = _assureStorageInfo!Component.remove(e);
+		static foreach (i, Component; Components) R[i] = _assureStorageInfo!Component.remove(entity);
 
 		static if (Components.length == 1)
 			return R[0];
@@ -465,34 +528,15 @@ public:
 
 
 	/**
-	 * Removes all components associated to an entity. Passing an invalid entity
-	 *     leads to undefined behaviour. If a component is passed instead, it
-	 *     clears the storage of the same disassociating every entity in it.
-	 *
-	 * Safety: The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onRemove **before** disassociating the component.
-	 *
-	 * Params:
-	 *     e = entity to disassociate.
-	 *     Component = component storage to clear.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo {}
-	 * auto em = new EntityManager();
-	 *
-	 * // safely removes every component associated with the newly generated entity
-	 * em.removeAll(em.gen());
-	 *
-	 * // safely clears Foo's storage
-	 * em.removeAll!Foo();
-	 * ---
-	 *
-	 * Params:
-	 *     e = entity to disassociate.
-	 */
+	Removes all components from an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits $(LREF onRemove) before each component is removed.
+
+	Params:
+		entity = a valid entity.
+	*/
 	@system
 	void removeAllComponents(in Entity e)
 		in (validEntity(e))
@@ -503,10 +547,13 @@ public:
 	}
 
 
-	// TODO: removeAllIfHas to safely try to remove from an entity
+	/**
+	Removes all entities from each Component storage. If no Components are
+	provided it clears all storages.
 
-
-	// FIXME: documentation
+	Params:
+		Components = Component types to clear.
+	*/
 	void clear(Components...)()
 	{
 		static if (Components.length)
@@ -517,36 +564,34 @@ public:
 	}
 
 
-	// FIXME: documentation
 	/**
-	 * Fetch a component associated to an entity. The entity must be associated
-	 *     with the Component passed. Passing an invalid entity leads to
-	 *     undefined behaviour.
-	 *
-	 * Params:
-	 *     e = entity to get the associated Component.
-	 *     Component = component type to retrieve.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo { int i; }
-	 * auto em = new EntityManager();
-	 *
-	 * // gets Foo from the newly generated entity
-	 * em.getComponent!Foo(em.gen!Foo());
-	 * ---
-	 *
-	 * Returns: `Component*` pointing to the component fetched.
-	 */
-	auto getComponent(Components...)(in Entity e)
+	Fetches components of an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	int* i = world.get!int(world.entity.add!int);
+	Tuple!(int*, string*) t = world.get!(int, string)(world.entity.add!(int, string));
+	---
+
+	Params:
+		Components = Component types to get.
+		entity = a valid entity.
+
+	Returns: A pointer or a `Tuple` of pointers to the components of the entity.
+	*/
+	auto getComponent(Components...)(in Entity entity)
 		if (Components.length)
-		in (validEntity(e))
+		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
-		static foreach (i, Component; Components) C[i] = _assureStorage!Component.get(e);
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.get(entity);
 
 		static if (Components.length == 1)
 			return C[0];
@@ -555,16 +600,40 @@ public:
 	}
 
 
-	// FIXME: documentation
-	auto tryGetComponent(Components...)(in Entity e)
+	/**
+	Attempts to get components of an entity. A `null` pointer is returned for
+	components that are not assigned to the entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	assert(!world.tryGetComponent!int(world.entity));
+
+	int* i; string* str;
+	AliasSeq!(i, str) = world.tryGetComponent!(int, string)(world.entity);
+	assert(!i); assert(!str);
+	---
+
+	Params:
+		Components = Component types to get.
+		entity = a valid entity.
+
+	Returns: A pointer or a `Tuple` with pointers to the components potencialy
+	assigned to the entity. A pointer is `null` if the component is not assigned
+	to the entity.
+	*/
+	auto tryGetComponent(Components...)(in Entity entity)
 		if (Components.length)
-		in (validEntity(e))
+		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
 		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
-		static foreach (i, Component; Components) C[i] = _assureStorage!Component.tryGet(e);
+		static foreach (i, Component; Components) C[i] = _assureStorage!Component.tryGet(entity);
 
 		static if (Components.length == 1)
 			return C[0];
@@ -610,9 +679,6 @@ public:
 	}
 
 
-	// TODO: getOrSetIfHas to safely try to get or set a component
-
-
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
 	 *     and components are stored in the Component's storage.
@@ -638,19 +704,17 @@ public:
 
 
 	/**
-	 * Returns a new builder used for chaining entity calls.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo {}
-	 * auto em = new EntityManager();
-	 *
-	 * // gets an EntityBuilder with a new entity and binds Foo to it
-	 * em.entity.set!Foo;
-	 * ---
-	 *
-	 * Returns: `EntityBuilder`.
-	 */
+	Creates new entity and wraps it in an EntityBuilder. If a hint is provided,
+	then it will create an entity matching the hint if the id is not in use,
+	otherwise it will return the entity in use.
+
+	Attempting to use an invalid entity id leads to undefined behavior.
+
+	Params:
+		hint = an entity with valid id.
+
+	Returns: The created or in use entity wrapped in an EntityBuilder.
+	*/
 	@safe pure nothrow @property
 	EntityBuilder entity()
 	{
@@ -663,13 +727,12 @@ public:
 	}
 
 
-	// FIXME: documentation
+	/// Ditto
 	@safe pure nothrow @property
-	EntityBuilder entity(in Entity e)
+	EntityBuilder entity(in Entity hint)
 	{
-		// entity: generates entities until one with e.id and returns the latter
 		EntityBuilder builder = {
-			entity: createEntity(e),
+			entity: createEntity(hint),
 			em: this
 		};
 
@@ -678,18 +741,20 @@ public:
 
 
 	/**
-	 * Checks if an entity is valid within EntityManager.
-	 *
-	 * Params:
-	 *     e = entity to check.
-	 *
-	 * Returns: `true` if the entity exists, `false` otherwise.
-	 */
+	Checks if an entity is in use.
+
+	Attempting to use an invalid entity id leads to undefined behavior.
+
+	Params:
+		entity = a valid entity.
+
+	Returns: True if the entity is valid, false otherwise.
+	*/
 	@safe pure nothrow @nogc
-	bool validEntity(in Entity e) const
-		in (e.id < Entity.maxid)
+	bool validEntity(in Entity entity) const
+		in (entity.id < Entity.maxid)
 	{
-		return e.id < _entities.length && _entities[e.id] == e;
+		return entity.id < _entities.length && _entities[entity.id] == entity;
 	}
 
 
@@ -796,12 +861,12 @@ public:
 	auto queryOne(Output, Filter)() { return query!(Output, Filter).front; }
 
 
-	// FIXME: documentation
 	/**
-	 * Gets every entity currently alive/existent within EntityManager.
-	 *
-	 * Returns: `Entity[]` of alive/existent entities.
-	 */
+	Iterates each entity in use and applies a function to it.
+
+	Params:
+		fun = the function to apply to each entity.
+	*/
 	void eachEntity(F)(F fun) const
 	{
 		if (queue.isNull)
@@ -867,11 +932,18 @@ public:
 
 
 	/**
-	 * Creates a new entity with a new id. The entity's id follows the number
-	 *     of entities created.
-	 *
-	 * Returns: `Entity` newly created or asserts is maximum is reached.
-	 */
+	Creates a new entity. If the queue is null a new id is generated, otherwise
+	an id is recycled. If a hint is provided, an entity matching the hint is
+	created, only if the id is not in use, otherwise it will return the entity
+	in use.
+
+	Attempting to use an invalid entity id leads to undefined behavior.
+
+	Params:
+		entity = an entity with valid id.
+
+	Returns: The created or in use entity.
+	*/
 	@safe pure nothrow
 	Entity createEntity()
 	{
@@ -886,7 +958,7 @@ public:
 	}
 
 
-	// FIXME: documentation
+	/// Ditto
 	@safe pure nothrow
 	Entity createEntity(in Entity hint)
 		in (hint.id < Entity.maxid)
@@ -935,7 +1007,16 @@ public:
 
 
 private:
-	// FIXME: documentation
+	/**
+	Generates a new entity identifier.
+
+	If the position reaches maximum capacity, the program will attempt to halt.
+
+	Params:
+		pos = valid entity position.
+
+	Returns: The created entity with id equal to its position.
+	*/
 	@safe pure nothrow @nogc
 	Entity generateId(in size_t pos)
 	{
@@ -947,12 +1028,11 @@ private:
 
 
 	/**
-	 * Creates a new entity reusing the id of a **previously discarded entity**
-	 *     with a new batch. Swaps the current discarded entity stored the
-	 *     queue's entity place with it.
-	 *
-	 * Returns: `Entity` newly created.
-	 */
+	Creates a new entity by recycling a previously generated id.
+
+	Returns: The created entity with id and batch equal to the last entity in
+	queue.
+	*/
 	@safe pure nothrow @nogc
 	Entity recycleId()
 		in (!queue.isNull)
@@ -964,13 +1044,19 @@ private:
 	}
 
 
-	// FIXME: documentation
+	/**
+	Invalidates the entity's id and prepares the batch for the next recycling.
+
+	Params:
+		entity = an entity with valid id.
+		batch = batch to update for the next recycling call.
+	*/
 	@safe pure nothrow @nogc
-	void releaseId(in Entity e, in size_t batch)
+	void releaseId(in Entity entity, in size_t batch)
 		in (batch <= Entity.maxbatch)
 	{
-		_entities[e.id] = queue.isNull ? entityNull : queue.get();
-		queue = Entity(e.id, batch);
+		_entities[entity.id] = queue.isNull ? entityNull : queue.get();
+		queue = Entity(entity.id, batch);
 	}
 
 

@@ -11,42 +11,105 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 struct EntityBuilder
 {
 public:
-	// FIXME: documentation
+	/**
+	Add `Components` to an `entity`. `Components` are contructed according to
+	their dafault initializer.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		Components = Component types to add.
+
+	Returns: This instance.
+	*/
 	EntityBuilder add(Components...)()
 	{
 		em.addComponent!Components(entity);
 		return this;
 	}
 
-	// FIXME: documentation
+	/**
+	Assigns the `Component` to the `entity`. The `Component` is initialized with
+	the `args` provided.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		Component = Component type to emplace.
+		args = arguments to contruct the Component type.
+
+	Returns: This instance.
+	*/
 	EntityBuilder emplace(Component, Args...)(auto ref Args args)
 	{
 		em.emplaceComponent!Component(entity, args);
 		return this;
 	}
 
-	// FIXME: documentation
+	/**
+	Assigns the components to an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits `onSet` after each component is assigned.
+
+	Params:
+		components = components to assign.
+
+	Returns: This instance.
+	*/
 	EntityBuilder set(Components...)(Components components)
 	{
 		em.setComponent!Components(entity, components);
 		return this;
 	}
 
-	// FIXME: documentation
+	/**
+	Removes components from an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits $(LREF onRemove) before each component is removed.
+
+	Params:
+		Components = Component types to remove.
+
+	Returns: This instance.
+	*/
 	EntityBuilder remove(Components...)()
 	{
 		em.removeComponent!Components(entity);
 		return this;
 	}
 
-	// FIXME: documentation
+	/**
+	Removes all components from an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits $(LREF onRemove) before each component is removed.
+
+	Returns: This instance.
+	*/
 	EntityBuilder removeAll()()
 	{
 		em.removeAllComponents(entity);
 		return this;
 	}
 
-	// FIXME: documentation
+	/**
+	Removes all components from an entity and releases it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Signal: emits `onRemove` before each component is removed.
+
+	Returns: This instance.
+	*/
 	EntityBuilder destroy()()
 	{
 		em.destroyEntity(entity);
