@@ -796,22 +796,19 @@ public:
 	auto queryOne(Output, Filter)() { return query!(Output, Filter).front; }
 
 
+	// FIXME: documentation
 	/**
 	 * Gets every entity currently alive/existent within EntityManager.
 	 *
 	 * Returns: `Entity[]` of alive/existent entities.
 	 */
-	@safe pure nothrow @property
-	Entity[] entities() const
+	void eachEntity(F)(F fun) const
 	{
-		import std.array : appender;
-		auto ret = appender!(Entity[]);
+		if (queue.isNull)
+			foreach (i, entity; _entities) fun(entity);
 
-		foreach (i, e; _entities)
-			if (e.id == i)
-				ret ~= e;
-
-		return ret.data;
+		else
+			foreach (i, entity; _entities) if (entity.id == i) fun(entity);
 	}
 
 
@@ -1139,7 +1136,12 @@ private:
 	Entity[] _queryEntities(ComponentRange ...)()
 	{
 		static if (ComponentRange.length == 0)
-			return entities();
+		{
+			Entity[] ret;
+			ret.reserve(aliveEntities());
+			eachEntity((const Entity entity) { ret ~= entity; });
+			return ret;
+		}
 		else
 		{
 			import std.algorithm : minElement;
