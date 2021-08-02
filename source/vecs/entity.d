@@ -865,7 +865,7 @@ public:
 		return *(() @trusted pure nothrow @nogc => cast(R*)resource.data)();
 	}
 
-private:
+
 	/**
 	 * Creates a new entity with a new id. The entity's id follows the number
 	 *     of entities created.
@@ -934,6 +934,7 @@ private:
 	}
 
 
+private:
 	// FIXME: documentation
 	@safe pure nothrow @nogc
 	Entity generateId(in size_t pos)
