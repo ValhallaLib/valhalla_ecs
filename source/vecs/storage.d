@@ -40,53 +40,49 @@ enum isComponent(T) = !(is(T == class)
 	|| !isMutable!T
 );
 
+///
+@("[isComponent] valid components")
+@safe pure nothrow @nogc unittest
+{
+	import std.meta : AliasSeq, staticMap;
+	import std.traits : PointerTarget;
+
+	struct Empty { }
+	struct MutableMembers { string str; int i; }
+
+	assert(isComponent!Empty);
+	assert(isComponent!MutableMembers);
+
+	alias PtrIntegrals  = AliasSeq!(byte*, short*, int*, long*);
+	alias PtrUIntegrals = AliasSeq!(ubyte*, ushort*, uint*, ulong*);
+	alias Strings       = AliasSeq!(string, dstring, wstring);
+	alias Integrals     = staticMap!(PointerTarget, PtrIntegrals);
+	alias UIntegrals    = staticMap!(PointerTarget, PtrUIntegrals);
+
+	static foreach (T; AliasSeq!(PtrIntegrals, PtrUIntegrals, Integrals, UIntegrals, Strings))
+		assert(isComponent!T);
+}
 
 ///
-@safe pure
-@("storage: isComponent")
-unittest
+@("[isComponent] invalid components")
+@safe pure nothrow @nogc unittest
 {
-	import std.meta : AliasSeq;
+	class Class {}
+	union Union {}
+	struct ImmutableMembers { immutable int x; }
+	struct ConstMembers { const string x; }
+	void FunctionPointer() {}
 
-	struct ComponentStructEmpty {}
-	struct ComponentStructInt { int a; }
-	struct ComponentStructString { immutable(char)[] x; } // aka string
-
-	class NotComponentClass() {}
-	union NotComponentUnion() {}
-	struct NotComponentStructImmutable { immutable int x; }
-	struct NotComponentStructConst { const string x; }
-	void NotComponentFuncPtr() {}
-
-	assertTrue(isComponent!ComponentStructEmpty);
-	assertTrue(isComponent!ComponentStructInt);
-	assertTrue(isComponent!ComponentStructString);
-
-	foreach (t; AliasSeq!(byte, short, int, long))
-		assertTrue(isComponent!t);
-
-	foreach (t; AliasSeq!(ubyte, ushort, uint, ulong))
-		assertTrue(isComponent!t);
-
-	foreach (t; AliasSeq!(byte*, short*, int*, long*))
-		assertTrue(isComponent!t);
-
-	foreach (t; AliasSeq!(ubyte*, ushort*, uint*, ulong*))
-		assertTrue(isComponent!t);
-
-	foreach (t; AliasSeq!(string, wstring, string*, wstring*))
-		assertTrue(isComponent!t);
-
-	assertFalse(isComponent!NotComponentStructImmutable);
-	assertFalse(isComponent!NotComponentStructConst);
-	assertFalse(isComponent!(void function()));
-	assertFalse(isComponent!(int delegate()));
-	assertFalse(isComponent!char);
-	assertFalse(isComponent!wchar);
-
-	assertFalse(__traits(compiles, isComponent!NotComponentClass));
-	assertFalse(__traits(compiles, isComponent!NotComponentUnion));
-	assertFalse(__traits(compiles, isComponent!NotComponentFuncPtr));
+	assert(!isComponent!Entity);
+	assert(!isComponent!Class);
+	assert(!isComponent!Union);
+	assert(!isComponent!ImmutableMembers);
+	assert(!isComponent!ConstMembers);
+	assert(!isComponent!(void function()));
+	assert(!isComponent!(int delegate()));
+	assert(!isComponent!(typeof(FunctionPointer)));
+	assert(!isComponent!char);
+	assert(!isComponent!wchar);
 }
 
 
@@ -148,31 +144,29 @@ template ComponentId(Component)
 	}
 }
 
-
-@("storage: ComponentId multithreaded")
-@system
+@("[ComponentId] multithreaded")
 unittest
 {
 	import std.algorithm : each;
 	import core.thread.osthread;
-	import vecs.entity;
+
+	struct A {}
+	struct B {}
 
 	Thread[2] threads;
 	size_t[2] ids;
 
-	auto em = new EntityManager();
-
 	threads[0] = new Thread(() {
-		ids[0] = ComponentId!Foo;
+		ids[0] = ComponentId!A;
 	}).start();
 
 	threads[1] = new Thread(() {
-		ids[1] = ComponentId!Bar;
+		ids[1] = ComponentId!B;
 	}).start();
 
 	threads.each!"a.join()";
 
-	assertFalse(ids[0] == ids[1]);
+	assert(ids[0] != ids[1]);
 }
 
 
@@ -220,34 +214,38 @@ package:
 	void* storage;
 }
 
-@trusted pure
-@("storage: StorageInfo")
-unittest
+@("[StorageInfo] construct")
+@safe pure nothrow @nogc unittest
 {
-	auto sinfo = StorageInfo().__ctor!(int)();
+	class Foo {}
 
-	assertTrue(typeid(Storage!int) is typeid(sinfo.get!int));
-	assertThrown!AssertError(sinfo.get!size_t());
-	assertFalse(__traits(compiles, sinfo.get!(immutable(int))()));
+	assert( __traits(compiles, { scope sinfo = StorageInfo().__ctor!int; }));
+	assert(!__traits(compiles, { scope sinfo = StorageInfo().__ctor!Foo; }));
 }
 
-@system
-@("storage: StorageInfo")
+@("[StorageInfo] instance manipulation")
+@safe pure nothrow unittest
+{
+	auto sinfo = StorageInfo().__ctor!int;
+
+	assert(sinfo.cid is TypeInfoComponent!int);
+	assert(sinfo.get!int !is null);
+
+	auto storage = sinfo.get!int;
+
+	assert(&storage.contains is sinfo.contains);
+	assert(&storage.remove is sinfo.remove);
+	assert(&storage.clear is sinfo.clear);
+	assert(&storage.size is sinfo.size);
+}
+
+version(assert)
+@("[StorageInfo] instance manipulation (component getter missmatch)")
 unittest
 {
-	import std.range : front;
+	auto sinfo = StorageInfo().__ctor!int;
 
-	auto sinfo = StorageInfo().__ctor!(int)();
-	Storage!int storage = sinfo.get!(int);
-
-	assertTrue(storage.set(Entity(0), 3));
-	assertEquals(1, storage._packedEntities.length);
-	assertEquals(Entity(0), storage._packedEntities.front);
-
-	assertFalse(storage.remove(Entity(0, 45)));
-
-	storage.remove(Entity(0));
-	assertEquals(0, storage._packedEntities.length);
+	assertThrown!AssertError(sinfo.get!size_t());
 }
 
 
@@ -504,122 +502,119 @@ public:
 	Signal!(Entity,Component*) onRemove;
 }
 
-version(vecs_unittest)
-{
-	struct Foo { int x, y; }
-	struct Bar { string str; }
-
-	// problem: cannot return &(_components[_sparsedEntities[e.id]] = component
-	// directly if Component contains has an opAssign template overload,
-	// accepting it's type as a value
-	// solution: split action in 2 sections, assingn then return the reference
-private:
-	struct Assign
-	{
-		// accepts Assign, we're doomed to failure
-		void opAssign(T : Assign)(T other) {}
-	}
-}
-
-@safe pure
-@("storage: Storage")
+@("[Storage] component manipulation")
 unittest
 {
-	assertTrue(__traits(compiles, new Storage!Foo));
-	assertTrue(__traits(compiles, new Storage!Bar));
-	assertFalse(__traits(compiles, new Storage!InvalidComponent));
-}
+	struct Position { ulong x, y; }
+	scope storage = new Storage!Position;
 
-@system
-@("storage: Storage: get")
-unittest
-{
-	auto storage = new Storage!Foo();
-
-	storage.set(Entity(0), Foo(3, 3));
-
-	assertThrown!AssertError(storage.get(Entity(0, 54)));
-	assertThrown!AssertError(storage.get(Entity(21)));
-	assertEquals(Foo(3, 3), *storage.get(Entity(0)));
-}
-
-@system
-@("storage: Storage: getOrSet")
-unittest
-{
-	auto storage = new Storage!Foo();
-
-	assertEquals(Foo.init, *storage.getOrSet(Entity(0), Foo.init));
-	assertEquals(Foo.init, *storage.getOrSet(Entity(0), Foo(2, 3)));
-	assertThrown!AssertError(storage.getOrSet(Entity(0, 54), Foo(2, 3)));
-}
-
-@system
-@("storage: Storage: onRemove")
-unittest
-{
-	scope storage = new Storage!Foo();
-	int i;
-	storage.onRemove.connect((Entity, Foo*) { i++; });
-	assertEquals(0, i);
-
-	storage.set(Entity(0), Foo.init);
-	storage.remove(Entity(0));
-	assertEquals(1, i);
-}
-
-@system
-@("storage: Storage: onSet")
-unittest
-{
-	scope storage = new Storage!Foo();
-	int i;
-	storage.onSet.connect((Entity, Foo*) { i++; });
-	assertEquals(0, i);
-
-	storage.set(Entity(0), Foo.init);
-	assertEquals(1, i);
-}
-
-@system
-@("storage: Storage: remove")
-unittest
-{
-	auto storage = new Storage!Bar();
-
-	storage.set(Entity(0), Bar("bar"));
-	storage.set(Entity(1), Bar("bar"));
-
-	assertFalse(storage.remove(Entity(0, 5)));
-	assertFalse(storage.remove(Entity(42)));
-
-	storage.remove(Entity(0));
-	assertEquals(1, storage._sparsedEntities[0]);
-	assertEquals(Entity(1), storage._packedEntities[storage._sparsedEntities[1]]);
-	assertEquals(Entity(1), storage._packedEntities[0]);
-}
-
-@system
-@("storage: Storage: set")
-unittest
-{
-	{
-		scope storage = new Storage!Foo();
-
-		assertTrue(storage.set(Entity(0), Foo(3, 2)));
-		assertThrown!AssertError(storage.set(Entity(0, 4), Foo(3, 2)));
-		assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
-		assertEquals(Entity(0), storage._packedEntities[0]);
-		assertEquals(Foo(3, 2), storage._components[0]);
-
-		assertTrue(storage.set(Entity(0), Foo(5, 5)));
-		assertEquals(Entity(0), storage._packedEntities[storage._sparsedEntities[0]]);
-		assertEquals(Entity(0), storage._packedEntities[0]);
-		assertEquals(Foo(5, 5), storage._components[0]);
+	with (storage) {
+		add(Entity(0));
+		emplace(Entity(5), 4, 6);
+		set(Entity(3), Position(2, 3));
 	}
 
-	{
-		scope storage = new Storage!Assign();
-		storage.set(Entity(0), Assign());
+	assert(*storage.get(Entity(0)) == Position.init);
+	assert(*storage.get(Entity(5)) == Position(4, 6));
+	assert(*storage.get(Entity(3)) == Position(2, 3));
+
+	assert( storage.tryGet(Entity(0)));
+	assert(!storage.tryGet(Entity(1234)));
+
+	with (storage) {
+		assert(*add(Entity(5)) == *storage.get(Entity(5)));
+		assert(*emplace(Entity(3), 4, 6) == *storage.get(Entity(3)));
+		assert(*set(Entity(0), Position(2, 3)) == *storage.get(Entity(0)));
 	}
+
+	assert( storage.remove(Entity(3)));
+	assert(!storage.tryGet(Entity(3)));
+}
+
+@("[Storage] construct")
+@safe pure nothrow @nogc unittest
+{
+	struct Foo {}
+	class Bar {}
+
+	assert( __traits(compiles, { scope foo = new Storage!Foo; }));
+	assert(!__traits(compiles, { scope bar = new Storage!Bar; }));
+}
+
+@("[Storage] entity manipulation")
+unittest
+{
+	scope storage = new Storage!int;
+
+	with (storage) {
+		add(Entity(0));
+		add(Entity(5));
+	}
+
+	assert(storage.contains(Entity(0)));
+
+	assert(storage._sparsedEntities.length == 6);
+	assert(storage._packedEntities.length == 2);
+	assert(storage.size() == 2);
+
+	assert(storage.remove(Entity(0)));
+
+	assert(storage._sparsedEntities.length == 6);
+	assert(storage._packedEntities.length == 1);
+	assert(storage.size() == 1);
+
+	assert(!storage.contains(Entity(0)));
+
+	assert(!storage.remove(Entity(5, 1)));
+	assert( storage.contains(Entity(5)));
+}
+
+version(assert)
+@("[Storage] entity manipulation (invalid entities)")
+unittest
+{
+	scope storage = new Storage!int;
+
+	storage.add(Entity(1));
+
+	assertThrown!AssertError(storage.add(Entity(1, 4)));
+}
+
+@("[Storage] getOrSet")
+unittest
+{
+	scope storage = new Storage!int();
+
+	assert(*storage.getOrSet(Entity(0), 55) == 55);
+	assert(*storage.getOrSet(Entity(0), 13) == 55);
+}
+
+version(assert)
+@("[Storage] getOrSet (invalid entities)")
+unittest
+{
+	scope storage = new Storage!int();
+
+	storage.add(Entity(0));
+
+	assertThrown!AssertError(storage.getOrSet(Entity(0, 1), 6));
+}
+
+@("[Storage] signals")
+unittest
+{
+	scope storage = new Storage!int;
+	enum e = Entity(0);
+
+	int value;
+	void delegate(Entity, int*) fun = (Entity, int*) { value++; };
+
+	storage.onSet.connect(fun);
+	storage.onRemove.connect(fun);
+
+	storage.add(e);
+	assert(value == 1);
+
+	storage.remove(e);
+	assert(value == 2);
 }

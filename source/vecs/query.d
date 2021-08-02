@@ -11,7 +11,12 @@ import std.range : iota;
 import std.traits : isInstanceOf, staticMap, TemplateArgsOf;
 import std.typecons : Tuple, tuple;
 
-version(vecs_unittest) import aurorafw.unit.assertion;
+version(vecs_unittest)
+{
+	import aurorafw.unit.assertion;
+	struct Foo { int x, y; }
+	struct Bar { string str; }
+}
 
 struct Query(Output)
 {
