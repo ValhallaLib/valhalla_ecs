@@ -651,7 +651,7 @@ public:
 	 *
 	 * Returns: `EntityBuilder`.
 	 */
-	@safe pure @property
+	@safe pure nothrow @property
 	EntityBuilder entity()
 	{
 		EntityBuilder builder = {
@@ -664,7 +664,7 @@ public:
 
 
 	// FIXME: documentation
-	@safe pure @property
+	@safe pure nothrow @property
 	EntityBuilder entity(in Entity e)
 	{
 		// entity: generates entities until one with e.id and returns the latter
