@@ -128,18 +128,29 @@ public:
 	alias signature this;
 }
 
-@("[Entity]")
+@("[Entity] properties")
 @safe pure nothrow @nogc unittest
 {
-	assert(Entity.init == Entity(0));
-	assert(Entity.init == Entity(0, 0));
-
 	{
-		immutable e = Entity.init;
-		assert(e.id == 0);
-		assert(e.batch == 0);
-		assert(e.signature == 0);
+		immutable entity = Entity.init;
+		assert(entity.id == 0);
+		assert(entity.batch == 0);
+		assert(entity.signature == 0);
 	}
+
+	assert(Entity(Entity.maxid) == nullentity);
+	assert(Entity(Entity.maxid, 45) == nullentity);
+}
+
+version(assert)
+@("[Entity] invalid id and batch")
+unittest
+{
+	import std.exception : assertThrown;
+	import core.exception : AssertError;
+
+	assertThrown!AssertError(Entity(size_t.max, 0));
+	assertThrown!AssertError(Entity(0, size_t.max));
 }
 
 
