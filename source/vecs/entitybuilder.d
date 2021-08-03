@@ -126,6 +126,30 @@ public:
 		return this;
 	}
 
+	/**
+	Releases a `shallow entity`. It's `id` is released and the `batch` is updated
+	to be ready for the next recycling.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		batch = batch to update upon release.
+
+	Returns: This instance.
+	*/
+	EntityBuilder release()()
+	{
+		entityManager.releaseEntity(entity);
+		return this;
+	}
+
+	/// Ditto
+	EntityBuilder release()(in size_t batch)
+	{
+		entityManager.releaseEntity(entity, batch);
+		return this;
+	}
+
 
 	Entity entity = EntityManager.entityNull;
 	alias entity this;
