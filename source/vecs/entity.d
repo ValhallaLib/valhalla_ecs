@@ -174,7 +174,7 @@ struct NullEntity
 }
 
 ///
-@("[NullEntity] operations")
+@("[NullEntity] properties")
 @safe pure nothrow @nogc unittest
 {
 	assert(is(NullEntity : Entity));
