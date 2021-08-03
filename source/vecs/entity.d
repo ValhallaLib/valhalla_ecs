@@ -51,10 +51,9 @@ struct Entity
 {
 public:
 	@safe pure nothrow @nogc
-	this(in size_t id)
-		in (id <= maxid)
+	this(in size_t signature)
 	{
-		signature = id;
+		this.signature = signature;
 	}
 
 	@safe pure nothrow @nogc
