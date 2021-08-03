@@ -26,7 +26,7 @@ public:
 	*/
 	EntityBuilder add(Components...)()
 	{
-		em.addComponent!Components(entity);
+		entityManager.addComponent!Components(entity);
 		return this;
 	}
 
@@ -46,7 +46,7 @@ public:
 	*/
 	EntityBuilder emplace(Component, Args...)(auto ref Args args)
 	{
-		em.emplaceComponent!Component(entity, args);
+		entityManager.emplaceComponent!Component(entity, args);
 		return this;
 	}
 
@@ -64,7 +64,7 @@ public:
 	*/
 	EntityBuilder set(Components...)(Components components)
 	{
-		em.setComponent!Components(entity, components);
+		entityManager.setComponent!Components(entity, components);
 		return this;
 	}
 
@@ -82,7 +82,7 @@ public:
 	*/
 	EntityBuilder remove(Components...)()
 	{
-		em.removeComponent!Components(entity);
+		entityManager.removeComponent!Components(entity);
 		return this;
 	}
 
@@ -97,7 +97,7 @@ public:
 	*/
 	EntityBuilder removeAll()()
 	{
-		em.removeAllComponents(entity);
+		entityManager.removeAllComponents(entity);
 		return this;
 	}
 
@@ -112,7 +112,7 @@ public:
 	*/
 	EntityBuilder destroy()()
 	{
-		em.destroyEntity(entity);
+		entityManager.destroyEntity(entity);
 		return this;
 	}
 
@@ -120,5 +120,5 @@ public:
 	immutable Entity entity = EntityManager.entityNull;
 	alias entity this;
 
-	EntityManager em;
+	EntityManager entityManager;
 }
