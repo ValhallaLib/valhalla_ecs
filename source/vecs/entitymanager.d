@@ -179,13 +179,10 @@ public:
 	@safe pure nothrow @nogc
 	size_t aliveEntities()
 	{
-		// TODO: improve code
-		if (queue == nullentity) return _entities.length;
-
-		auto alive = _entities.length - 1;
+		auto alive = _entities.length;
 
 		// search all destroyed entities
-		for (auto entity = _entities[queue.id]; entity != nullentity; alive--)
+		for (auto entity = queue; entity != nullentity; alive--)
 			entity = _entities[entity.id];
 
 		return alive;
