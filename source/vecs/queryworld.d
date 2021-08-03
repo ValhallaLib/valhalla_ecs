@@ -1,6 +1,6 @@
 module vecs.queryworld;
 
-import vecs.entity;
+import vecs.entitymanager;
 import vecs.storage;
 
 import std.format : format;

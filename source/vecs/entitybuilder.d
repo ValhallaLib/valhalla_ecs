@@ -1,6 +1,6 @@
 module vecs.entitybuilder;
 
-import vecs.entity;
+import vecs.entitymanager;
 
 version(vecs_unittest) import aurorafw.unit.assertion;
 

@@ -1,4 +1,4 @@
-module vecs.entity;
+module vecs.entitymanager;
 
 private enum VECS_32 = typeof(int.sizeof).sizeof == 4;
 private enum VECS_64 = typeof(int.sizeof).sizeof == 8;
