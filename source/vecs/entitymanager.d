@@ -830,16 +830,7 @@ public:
 		// if the hint's id is released revive it
 		else
 		{
-			if (queue.id == hint.id)
-			{
-				// ensures the queue is not broken
-				queue = _entities[hint.id];
-				_entities[hint.id] = hint;
-
-				return hint;
-			}
-
-			Entity* eptr = &_entities[queue.id];
+			Entity* eptr = &queue;
 
 			while (eptr.id != hint.id)
 				eptr = &_entities[eptr.id];
