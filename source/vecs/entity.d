@@ -75,7 +75,14 @@ public:
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
-		return signature & idmask;
+		return id(signature);
+	}
+
+
+	@safe pure nothrow @nogc @property
+	static size_t id(in size_t signature)
+	{
+		return signature & Entity.idmask;
 	}
 
 
