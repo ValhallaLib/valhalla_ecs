@@ -165,3 +165,13 @@ struct NullEntity
 		return Entity(this.id, Entity.batch(signature));
 	}
 }
+
+///
+@("[NullEntity] operations")
+@safe pure nothrow @nogc unittest
+{
+	assert(is(NullEntity : Entity));
+	assert(nullentity == nullentity);
+	assert(nullentity == Entity.maxid);
+	assert((nullentity | Entity(4, 3)).batch == 3);
+}
