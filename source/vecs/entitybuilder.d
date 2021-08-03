@@ -120,6 +120,5 @@ public:
 	immutable Entity entity = EntityManager.entityNull;
 	alias entity this;
 
-package:
 	EntityManager em;
 }
