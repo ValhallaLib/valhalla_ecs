@@ -134,3 +134,34 @@ public:
 		assert(e.signature == 0);
 	}
 }
+
+
+enum nullentity = NullEntity();
+struct NullEntity
+{
+	alias entity this;
+
+	@safe pure nothrow @nogc
+	Entity entity() const
+	{
+		with(Entity) return Entity(batchmask | idmask);
+	}
+
+	@safe pure nothrow @nogc
+	bool opEquals(in size_t signature) const
+	{
+		return this.id == Entity.id(signature);
+	}
+
+	@safe pure nothrow @nogc
+	bool opEquals(in NullEntity) const
+	{
+		return true;
+	}
+
+	Entity opBinary(string op)(in size_t signature) const
+		if (op == "|")
+	{
+		return Entity(this.id, Entity.batch(signature));
+	}
+}
