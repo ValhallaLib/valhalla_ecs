@@ -72,6 +72,13 @@ public:
 	}
 
 
+	@safe pure nothrow @nogc
+	bool opEquals(in NullEntity other) const
+	{
+		return other.opEquals(this);
+	}
+
+
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
