@@ -116,6 +116,13 @@ public:
 		return this;
 	}
 
+	/// Ditto
+	EntityBuilder destroy()(in size_t batch)
+	{
+		entityManager.destroyEntity(entity, batch);
+		return this;
+	}
+
 
 	Entity entity = EntityManager.entityNull;
 	alias entity this;
