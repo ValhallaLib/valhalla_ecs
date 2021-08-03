@@ -119,14 +119,6 @@ public:
 
 	size_t signature;
 	alias signature this;
-
-private:
-	@safe pure nothrow @nogc
-	auto incrementBatch()
-	{
-		signature = (id | ((batch + 1) << idshift));
-		return this;
-	}
 }
 
 @("[Entity]")
@@ -141,14 +133,4 @@ private:
 		assert(e.batch == 0);
 		assert(e.signature == 0);
 	}
-
-	{
-		immutable e = Entity.init.incrementBatch();
-		assert(e.id == 0);
-		assert(e.batch == 1);
-		assert(e.signature == Entity.maxid + 1);
-		assert(e == Entity(0, 1));
-	}
-
-	assert(Entity(0, Entity.maxbatch).incrementBatch().batch == 0);
 }
