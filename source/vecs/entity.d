@@ -67,13 +67,6 @@ public:
 
 
 	@safe pure nothrow @nogc
-	bool opEquals(in Entity other) const
-	{
-		return other.signature == signature;
-	}
-
-
-	@safe pure nothrow @nogc
 	bool opEquals(in size_t signature) const
 	{
 		return this.signature == signature;
