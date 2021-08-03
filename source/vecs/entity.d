@@ -112,6 +112,7 @@ public:
 	enum size_t batchmask = maxbatch << idshift; /// last  12 bits or 32 bits
 
 	size_t signature;
+	alias signature this;
 
 private:
 	@safe pure nothrow @nogc
