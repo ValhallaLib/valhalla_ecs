@@ -13,7 +13,7 @@ import std.format : format;
 import std.meta : AliasSeq, NoDuplicates;
 import std.range : iota;
 import std.traits : isInstanceOf, TemplateArgsOf;
-import std.typecons : Nullable, Tuple, tuple;
+import std.typecons : Tuple, tuple;
 
 version(vecs_unittest)
 {
@@ -186,12 +186,13 @@ public:
 	@safe pure nothrow @nogc
 	size_t aliveEntities()
 	{
-		if (queue.isNull) return _entities.length;
+		// TODO: improve code
+		if (queue == nullentity) return _entities.length;
 
 		auto alive = _entities.length - 1;
 
 		// search all destroyed entities
-		for (auto entity = _entities[queue.id]; entity != entityNull; alive--)
+		for (auto entity = _entities[queue.id]; entity != nullentity; alive--)
 			entity = _entities[entity.id];
 
 		return alive;
@@ -725,7 +726,7 @@ public:
 	*/
 	void eachEntity(F)(F fun) const
 	{
-		if (queue.isNull)
+		if (queue == nullentity)
 			foreach (i, entity; _entities) fun(entity);
 
 		else
@@ -803,7 +804,7 @@ public:
 	@safe pure nothrow
 	Entity createEntity()
 	{
-		if (queue.isNull)
+		if (queue == nullentity)
 		{
 			import std.range : back;
 			_entities ~= generateId(_entities.length);
@@ -891,7 +892,7 @@ private:
 	*/
 	@safe pure nothrow @nogc
 	Entity recycleId()
-		in (!queue.isNull)
+		in (queue != nullentity)
 	{
 		immutable next = queue;     // get the next entity in queue
 		queue = _entities[next.id]; // grab the entity which will be the next in queue
@@ -911,7 +912,7 @@ private:
 	void releaseId(in Entity entity, in size_t batch)
 		in (batch <= Entity.maxbatch)
 	{
-		_entities[entity.id] = queue.isNull ? entityNull : queue.get();
+		_entities[entity.id] = queue;
 		queue = Entity(entity.id, batch);
 	}
 
@@ -1097,7 +1098,7 @@ private:
 
 
 	Entity[] _entities;
-	Nullable!(Entity, entityNull) queue;
+	Entity queue = nullentity;
 	StorageInfo[] storageInfoMap;
 	Resource[] resources;
 
@@ -1272,12 +1273,12 @@ unittest
 {
 	scope world = new EntityManager();
 
-	assert(world.queue.isNull);
+	assert(world.queue == nullentity);
 
 	auto entity = world.entity.destroy();
 
 	assert(world.queue == Entity(entity.id, entity.batch + 1));
-	assert(world._entities[entity.id] == world.entityNull);
+	assert(world._entities[entity.id] == nullentity);
 }
 
 @("[EntityManager] entity manipulation (request batches on destruction and release)")
