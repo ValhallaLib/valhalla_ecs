@@ -73,6 +73,13 @@ public:
 	}
 
 
+	@safe pure nothrow @nogc
+	bool opEquals(in size_t signature) const
+	{
+		return this.signature == signature;
+	}
+
+
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
