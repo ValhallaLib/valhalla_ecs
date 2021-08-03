@@ -30,13 +30,6 @@ version(vecs_unittest)
 class EntityManager
 {
 public:
-	@safe pure nothrow @nogc
-	this()
-	{
-		queue = nullentity;
-	}
-
-
 	/**
 	Registers all `Components` in `EntityManager`.
 
