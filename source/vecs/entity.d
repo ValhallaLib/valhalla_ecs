@@ -54,7 +54,7 @@ public:
 	this(in size_t id)
 		in (id <= maxid)
 	{
-		_signature = id;
+		signature = id;
 	}
 
 	@safe pure nothrow @nogc
@@ -62,34 +62,28 @@ public:
 		in (id <= maxid)
 		in (batch <= maxbatch)
 	{
-		_signature = (id | (batch << idshift));
+		signature = (id | (batch << idshift));
 	}
 
 
 	@safe pure nothrow @nogc
 	bool opEquals(in Entity other) const
 	{
-		return other._signature == _signature;
+		return other.signature == signature;
 	}
 
 
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
-		return _signature & maxid;
+		return signature & maxid;
 	}
 
 
 	@safe pure nothrow @nogc @property
 	size_t batch() const
 	{
-		return _signature >> idshift;
-	}
-
-	@safe pure nothrow @nogc @property
-	size_t signature() const
-	{
-		return _signature;
+		return signature >> idshift;
 	}
 
 
@@ -110,15 +104,15 @@ public:
 	enum size_t idmask = maxid;                  /// first 20 bits or 32 bits
 	enum size_t batchmask = maxbatch << idshift; /// last  12 bits or 32 bits
 
+	size_t signature;
+
 private:
 	@safe pure nothrow @nogc
 	auto incrementBatch()
 	{
-		_signature = (id | ((batch + 1) << idshift));
+		signature = (id | ((batch + 1) << idshift));
 		return this;
 	}
-
-	size_t _signature;
 }
 
 @("[Entity]")
