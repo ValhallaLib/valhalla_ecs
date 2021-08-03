@@ -720,7 +720,7 @@ public:
 	{
 		EntityBuilder builder = {
 			entity: createEntity(),
-			em: this
+			entityManager: this
 		};
 
 		return builder;
@@ -733,7 +733,7 @@ public:
 	{
 		EntityBuilder builder = {
 			entity: createEntity(hint),
-			em: this
+			entityManager: this
 		};
 
 		return builder;
