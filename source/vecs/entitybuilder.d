@@ -108,6 +108,9 @@ public:
 
 	Signal: emits `onRemove` before each component is removed.
 
+	Params:
+		batch = batch to update upon release.
+
 	Returns: This instance.
 	*/
 	EntityBuilder destroy()()
