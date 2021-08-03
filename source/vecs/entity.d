@@ -76,7 +76,7 @@ public:
 	@safe pure nothrow @nogc @property
 	size_t id() const
 	{
-		return signature & maxid;
+		return signature & idmask;
 	}
 
 
