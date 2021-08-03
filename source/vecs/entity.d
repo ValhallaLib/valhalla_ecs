@@ -89,7 +89,14 @@ public:
 	@safe pure nothrow @nogc @property
 	size_t batch() const
 	{
-		return signature >> idshift;
+		return batch(signature);
+	}
+
+
+	@safe pure nothrow @nogc @property
+	static size_t batch(in size_t signature)
+	{
+		return signature >> Entity.idshift;
 	}
 
 
