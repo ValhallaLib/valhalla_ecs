@@ -33,7 +33,7 @@ public:
 	@safe pure nothrow @nogc
 	this()
 	{
-		queue = entityNull;
+		queue = nullentity;
 	}
 
 
@@ -1101,9 +1101,6 @@ private:
 	Entity queue = nullentity;
 	StorageInfo[] storageInfoMap;
 	Resource[] resources;
-
-public:
-	enum Entity entityNull = Entity(Entity.maxid);
 }
 
 @("[EntityManager] component operations (adding and updating)")
@@ -1263,9 +1260,9 @@ unittest
 	assertThrown!AssertError(world.destroyEntity(invalid));
 	assertThrown!AssertError(world.releaseEntity(invalid));
 	assertThrown!AssertError(world.releaseEntity(entity, size_t.max));
-	assertThrown!AssertError(world.entity(world.entityNull));
-	assertThrown!AssertError(world.validEntity(world.entityNull));
-	assertThrown!AssertError(world.generateId(world.entityNull.id));
+	assertThrown!AssertError(world.entity(nullentity));
+	assertThrown!AssertError(world.validEntity(nullentity));
+	assertThrown!AssertError(world.generateId(nullentity.id));
 }
 
 @("[EntityManager] entity manipulation (queue properties)")

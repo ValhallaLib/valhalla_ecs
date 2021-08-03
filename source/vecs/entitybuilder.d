@@ -152,7 +152,7 @@ public:
 	}
 
 
-	Entity entity = EntityManager.entityNull;
+	Entity entity = nullentity;
 	alias entity this;
 
 	EntityManager entityManager;
