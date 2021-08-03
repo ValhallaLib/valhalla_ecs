@@ -117,7 +117,7 @@ public:
 	}
 
 
-	immutable Entity entity = EntityManager.entityNull;
+	Entity entity = EntityManager.entityNull;
 	alias entity this;
 
 	EntityManager entityManager;
