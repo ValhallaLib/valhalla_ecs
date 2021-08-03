@@ -90,7 +90,7 @@ public:
 	// if size_t is 32 or 64 bits
 	version(VECS_32)
 	{
-		enum size_t idshift = 20UL;   /// 20 bits   or 32 bits
+		enum size_t idshift = 20U;    /// 20 bits   or 32 bits
 		enum size_t maxid = 0xFFFF_F; /// 1_048_575 or 4_294_967_295
 		enum size_t maxbatch = 0xFFF; /// 4_095     or 4_294_967_295
 	}
