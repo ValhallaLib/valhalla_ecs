@@ -1,6 +1,6 @@
 module vecs.query;
 
-import vecs.entity;
+import vecs.entitymanager;
 import vecs.storage;
 import vecs.queryfilter;
 import vecs.queryworld;

@@ -1,6 +1,6 @@
 module vecs.storage;
 
-import vecs.entity : Entity;
+import vecs.entitymanager : Entity;
 import vecs.signal;
 
 import std.meta : allSatisfy;

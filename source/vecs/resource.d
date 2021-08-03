@@ -3,7 +3,7 @@ module vecs.resource;
 version(vecs_unittest)
 {
 	import aurorafw.unit.assertion;
-	import vecs.entity;
+	import vecs.entitymanager;
 }
 
 

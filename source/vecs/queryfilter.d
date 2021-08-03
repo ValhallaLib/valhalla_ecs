@@ -1,6 +1,6 @@
 module vecs.queryfilter;
 
-import vecs.entity : Entity;
+import vecs.entitymanager : Entity;
 import vecs.storage : areComponents, ComponentId, StorageInfo;
 
 import std.meta : allSatisfy, NoDuplicates, staticMap;
