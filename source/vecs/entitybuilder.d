@@ -15,6 +15,11 @@ struct EntityBuilder(EntityManagerT)
 	if (isInstanceOf!(.EntityManagerT, EntityManagerT))
 {
 public:
+	bool opEquals(R)(in R other) const
+	{
+		return entity == other;
+	}
+
 	/**
 	Add `Components` to an `entity`. `Components` are contructed according to
 	their dafault initializer.
