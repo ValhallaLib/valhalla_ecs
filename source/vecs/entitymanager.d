@@ -366,7 +366,7 @@ public:
 		import std.meta : Repeat;
 		Repeat!(Components.length, bool) R; // removed components
 
-		static foreach (i, Component; Components) R[i] = _assureStorageInfo!Component.remove(entity);
+		static foreach (i, Component; Components) R[i] = _assureStorage!Component.remove(entity);
 
 		static if (Components.length == 1)
 			return R[0];
