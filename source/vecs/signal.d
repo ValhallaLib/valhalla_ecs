@@ -3,7 +3,7 @@ module vecs.signal;
 version(vecs_unittest) import aurorafw.unit.assertion;
 
 import std.traits : isDelegate, Parameters, OriginalType;
-import std.traits : FunctionAttribute, SetFunctionAttributes;
+import std.traits : FunctionAttribute, functionAttributes, SetFunctionAttributes;
 
 alias Signal(T...) = SignalT!(void delegate(T));
 struct SignalT(Slot)
@@ -20,6 +20,13 @@ struct SignalT(Slot)
 		if (is(slot : void delegate()))
 	{
 		alias attributes = SignalT!slot;
+	}
+
+
+	template parameters(alias slot)
+		if (is(slot : void delegate(Args), Args...))
+	{
+		alias parameters = SignalT!(SetFunctionAttributes!(slot, "D", functionAttributes!Slot));
 	}
 
 
