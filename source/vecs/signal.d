@@ -62,7 +62,7 @@ private:
 @("signal: empty")
 unittest
 {
-	Signal!() sig; // empty signal
+	SignalT!(void delegate()) sig;
 	size_t num;
 	auto fun = () { num++; };
 
@@ -79,8 +79,8 @@ unittest
 @("signal: different instances having the same Signal type")
 unittest
 {
-	Signal!(int) sigA;
-	Signal!(int) sigB;
+	SignalT!(void delegate(int)) sigA;
+	SignalT!(void delegate(int)) sigB;
 	size_t num;
 
 	sigA.connect((int x) { num = x; });
@@ -96,7 +96,7 @@ unittest
 unittest
 {
 	import std.functional : toDelegate;
-	Signal!(size_t*) sig;
+	SignalT!(void delegate(size_t*)) sig;
 	size_t num;
 
 	auto fun = function(size_t* n) { (*n)++; };
