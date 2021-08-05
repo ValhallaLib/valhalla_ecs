@@ -3,13 +3,16 @@ module vecs.entitybuilder;
 import vecs.entity;
 import vecs.entitymanager;
 
+import std.traits : isInstanceOf;
+
 version(vecs_unittest) import aurorafw.unit.assertion;
 
 
 /**
  * Helper struct to perform multiple action sequences.
  */
-struct EntityBuilder
+struct EntityBuilder(EntityManagerT)
+	if (isInstanceOf!(.EntityManagerT, EntityManagerT))
 {
 public:
 	/**
@@ -155,5 +158,5 @@ public:
 	Entity entity = nullentity;
 	alias entity this;
 
-	EntityManager entityManager;
+	EntityManagerT entityManager;
 }
