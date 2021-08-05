@@ -51,9 +51,7 @@ struct SignalT(Slot)
 
 	void emit(Parameters!Slot args)
 	{
-		foreach (ref slot; slots) {
-			slot(args);
-		}
+		foreach (slot; slots) slot(args);
 	}
 
 	Slot[] slots;
