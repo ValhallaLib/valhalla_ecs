@@ -190,7 +190,7 @@ public:
 		(() @trusted pure nothrow @nogc => this.storage = cast(void*) storage)();
 		this.entities = &storage.entities;
 		this.contains = &storage.contains;
-		this.remove = &storage.remove;
+		this.remove = &storage.remove!();
 		this.clear = &storage.clear;
 		this.size = &storage.size;
 	}
@@ -203,7 +203,7 @@ public:
 	}
 
 	bool delegate(in Entity e) @safe pure nothrow @nogc const contains;
-	bool delegate(in Entity e) @system remove;
+	bool delegate(in Entity e) remove;
 	void delegate() @safe pure nothrow clear;
 	size_t delegate() @safe pure nothrow @nogc @property const size;
 
@@ -236,7 +236,7 @@ package:
 	auto storage = sinfo.get!(int, fun);
 
 	assert(&storage.contains is sinfo.contains);
-	assert(&storage.remove is sinfo.remove);
+	assert(&storage.remove!() is sinfo.remove);
 	assert(&storage.clear is sinfo.clear);
 	assert(&storage.size is sinfo.size);
 }
@@ -271,7 +271,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Returns: A pointer to the component of the entity.
 	*/
-	Component* add(in Entity entity)
+	Component* add()(in Entity entity)
 	{
 		Component* component = _add(entity);
 		*component = Component.init;
@@ -312,8 +312,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Returns: A pointer to the component of the entity.
 	*/
-	@system
-	Component* set(in Entity entity, Component component)
+	Component* set()(in Entity entity, Component component)
 	{
 		Component* comp = _add(entity);
 		*comp = component;
@@ -333,8 +332,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Returns: True if the entity was removed, false otherwise.
 	*/
-	@system
-	bool remove(in Entity entity)
+	bool remove()(in Entity entity)
 	{
 		if (!contains(entity)) return false;
 
@@ -422,8 +420,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	 *
 	 * Returns: `Component*` pointing to the component associated.
 	 */
-	@system
-	Component* getOrSet(in Entity e, Component component)
+	Component* getOrSet()(in Entity e, Component component)
 		in (!(e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
 			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
@@ -498,6 +495,7 @@ private:
 
 	Retuns: A pointer to the component of the entity.
 	*/
+	@safe pure nothrow
 	Component* _add(in Entity entity)
 		in (!(entity.id < _sparsedEntities.length
 			&& _sparsedEntities[entity.id] < _packedEntities.length
