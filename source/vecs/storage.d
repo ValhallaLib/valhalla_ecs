@@ -529,10 +529,10 @@ public:
 }
 
 @("[Storage] component manipulation")
-unittest
+@safe pure nothrow unittest
 {
 	struct Position { ulong x, y; }
-	scope storage = new Storage!Position;
+	scope storage = new Storage!(Position, void delegate() @safe pure nothrow);
 
 	with (storage) {
 		add(Entity(0));
@@ -568,9 +568,9 @@ unittest
 }
 
 @("[Storage] entity manipulation")
-unittest
+@safe pure nothrow unittest
 {
-	scope storage = new Storage!int;
+	scope storage = new Storage!(int, void delegate() @safe pure nothrow @nogc);
 
 	with (storage) {
 		add(Entity(0));
@@ -607,9 +607,9 @@ unittest
 }
 
 @("[Storage] getOrSet")
-unittest
+@safe pure nothrow unittest
 {
-	scope storage = new Storage!int();
+	scope storage = new Storage!(int, void delegate() @safe pure nothrow @nogc);
 
 	assert(*storage.getOrSet(Entity(0), 55) == 55);
 	assert(*storage.getOrSet(Entity(0), 13) == 55);
@@ -619,7 +619,7 @@ version(assert)
 @("[Storage] getOrSet (invalid entities)")
 unittest
 {
-	scope storage = new Storage!int();
+	scope storage = new Storage!int;
 
 	storage.add(Entity(0));
 
@@ -627,13 +627,13 @@ unittest
 }
 
 @("[Storage] signals")
-unittest
+@safe pure nothrow unittest
 {
-	scope storage = new Storage!int;
+	scope storage = new Storage!(int, void delegate() @safe pure nothrow @nogc);
 	enum e = Entity(0);
 
 	int value;
-	void delegate(Entity, int*) @safe fun = (Entity, int*) { value++; };
+	void delegate(Entity, int*) @safe pure nothrow @nogc fun = (Entity, int*) { value++; };
 
 	storage.onSet.connect(fun);
 	storage.onRemove.connect(fun);
