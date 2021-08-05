@@ -2,19 +2,20 @@ module vecs.signal;
 
 version(vecs_unittest) import aurorafw.unit.assertion;
 
-struct Signal(T ...)
-{
-	alias SlotType = void delegate(T);
-	alias SlotTypeRef = void delegate(ref T);
+import std.traits : isDelegate, Parameters;
 
+alias Signal(T...) = SignalT!(void delegate(T));
+struct SignalT(Slot)
+	if (isDelegate!Slot)
+{
 	@safe pure nothrow
-	void connect(SlotType slot)
+	void connect(Slot slot)
 	{
 		slots ~= slot;
 	}
 
 	@safe pure nothrow
-	void disconnect(SlotType slot)
+	void disconnect(Slot slot)
 	{
 		import std.algorithm : countUntil;
 		auto index = slots.countUntil(slot);
@@ -25,14 +26,14 @@ struct Signal(T ...)
 	}
 
 	@system
-	void emit(T args)
+	void emit(Parameters!Slot args)
 	{
 		foreach (ref slot; slots) {
 			slot(args);
 		}
 	}
 
-	SlotType[] slots;
+	Slot[] slots;
 }
 
 @system
