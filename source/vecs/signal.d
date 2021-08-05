@@ -41,12 +41,11 @@ struct SignalT(Slot)
 
 	void disconnect(Slot slot)
 	{
-		import std.algorithm : countUntil;
-		auto index = slots.countUntil(slot);
+		import std.algorithm : countUntil, remove, SwapStrategy;
+		immutable index = slots.countUntil(slot);
+
 		if (index != -1)
-		{
-			slots = slots[0 .. index] ~ slots[index+1 .. $];
-		}
+			slots = slots.remove!(SwapStrategy.unstable)(index);
 	}
 
 
