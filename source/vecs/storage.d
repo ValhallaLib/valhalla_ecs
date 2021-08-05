@@ -182,7 +182,7 @@ unittest
 package struct StorageInfo
 {
 public:
-	this(Component)()
+	this(Component, Fun = void delegate() @safe)()
 	{
 		auto storage = new Storage!Component();
 		this.cid = TypeInfoComponent!Component;
