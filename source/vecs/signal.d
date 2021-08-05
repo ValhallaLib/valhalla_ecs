@@ -5,7 +5,8 @@ version(vecs_unittest) import aurorafw.unit.assertion;
 import std.traits : isDelegate, Parameters, OriginalType;
 import std.traits : FunctionAttribute, functionAttributes, SetFunctionAttributes;
 
-alias Signal(T...) = SignalT!(void delegate(T));
+alias Signal = SignalT!(void delegate());
+
 struct SignalT(Slot)
 	if (isDelegate!Slot)
 {

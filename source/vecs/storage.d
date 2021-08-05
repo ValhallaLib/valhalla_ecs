@@ -635,7 +635,7 @@ unittest
 	enum e = Entity(0);
 
 	int value;
-	void delegate(Entity, int*) fun = (Entity, int*) { value++; };
+	void delegate(Entity, int*) @safe fun = (Entity, int*) { value++; };
 
 	storage.onSet.connect(fun);
 	storage.onRemove.connect(fun);
