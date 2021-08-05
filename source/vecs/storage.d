@@ -256,7 +256,7 @@ unittest
  *
  * Params: Component = a valid component.
  */
-package class Storage(Component)
+package class Storage(Component, Fun = void delegate() @safe)
 	if (isComponent!Component)
 {
 	/**

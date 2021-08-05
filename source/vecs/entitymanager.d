@@ -924,7 +924,7 @@ private:
 
 
 	/// Assures the Component's storage availability and returns the Storage
-	Storage!Component _assureStorage(Component)()
+	Storage!(Component, Fun) _assureStorage(Component)()
 		if (isComponent!Component)
 	{
 		immutable index = _assure!Component(); // to fix dmd boundscheck=off
