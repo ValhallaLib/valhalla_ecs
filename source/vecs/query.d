@@ -19,11 +19,11 @@ version(vecs_unittest)
 	struct Bar { string str; }
 }
 
-struct Query(Output)
+struct Query(EntityManagerT, Output)
 {
 package:
 	@safe pure nothrow @nogc
-	this(QueryWorld!Output range)
+	this(QueryWorld!(EntityManagerT, Output) range)
 	{
 		this.range = range;
 	}
@@ -48,7 +48,7 @@ public:
 	}
 
 private:
-	QueryWorld!Output range;
+	QueryWorld!(EntityManagerT, Output) range;
 }
 
 @system
@@ -142,11 +142,11 @@ unittest
 }
 
 
-struct Query(Output, Filter)
+struct Query(EntityManagerT, Output, Filter)
 {
 package:
 	@safe pure nothrow @nogc
-	this(QueryWorld!Output range, QueryFilter!Filter filter)
+	this(QueryWorld!(EntityManagerT, Output) range, QueryFilter!Filter filter)
 	{
 		this.range = range;
 		this.filter = filter;
@@ -188,7 +188,7 @@ private:
 		return filter.validate(range.entities[0]);
 	}
 
-	QueryWorld!Output range;
+	QueryWorld!(EntityManagerT, Output) range;
 	QueryFilter!Filter filter;
 }
 
