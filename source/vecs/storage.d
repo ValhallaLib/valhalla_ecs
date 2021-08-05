@@ -184,7 +184,7 @@ package struct StorageInfo
 public:
 	this(Component, Fun = void delegate() @safe)()
 	{
-		auto storage = new Storage!Component();
+		auto storage = new Storage!(Component, Fun)();
 		this.cid = TypeInfoComponent!Component;
 
 		(() @trusted pure nothrow @nogc => this.storage = cast(void*) storage)();
@@ -196,10 +196,10 @@ public:
 	}
 
 	///
-	Storage!Component get(Component)()
+	Storage!(Component, Fun) get(Component, Fun)()
 		in (cid is TypeInfoComponent!Component)
 	{
-		return (() @trusted pure nothrow @nogc => cast(Storage!Component) storage)(); // safe cast
+		return (() @trusted pure nothrow @nogc => cast(Storage!(Component, Fun)) storage)(); // safe cast
 	}
 
 	bool delegate(in Entity e) @safe pure nothrow @nogc const contains;
@@ -227,12 +227,13 @@ package:
 @("[StorageInfo] instance manipulation")
 @safe pure nothrow unittest
 {
-	auto sinfo = StorageInfo().__ctor!int;
+	alias fun = void delegate();
+	auto sinfo = StorageInfo().__ctor!(int, fun);
 
 	assert(sinfo.cid is TypeInfoComponent!int);
-	assert(sinfo.get!int !is null);
+	assert(sinfo.get!(int, fun) !is null);
 
-	auto storage = sinfo.get!int;
+	auto storage = sinfo.get!(int, fun);
 
 	assert(&storage.contains is sinfo.contains);
 	assert(&storage.remove is sinfo.remove);
@@ -244,9 +245,10 @@ version(assert)
 @("[StorageInfo] instance manipulation (component getter missmatch)")
 unittest
 {
-	auto sinfo = StorageInfo().__ctor!int;
+	alias fun = void delegate();
+	auto sinfo = StorageInfo().__ctor!(int, fun);
 
-	assertThrown!AssertError(sinfo.get!size_t());
+	assertThrown!AssertError(sinfo.get!(size_t, fun)());
 }
 
 

@@ -10,7 +10,7 @@ import std.traits : isInstanceOf, TemplateArgsOf;
 import std.typecons : Tuple, tuple;
 
 
-package struct QueryWorld(Output : Entity)
+package struct QueryWorld(EntityManagerT, Output : Entity)
 {
 	@safe pure nothrow @nogc
 	this(immutable Entity[] entities)
@@ -40,10 +40,10 @@ package struct QueryWorld(Output : Entity)
 }
 
 
-alias QueryWorld(T : Tuple!Entity) = QueryWorld!Entity;
+alias QueryWorld(EntityManagerT, T : Tuple!Entity) = QueryWorld!(EntityManagerT, Entity);
 
 
-package struct QueryWorld(Output)
+package struct QueryWorld(EntityManagerT, Output)
 	if (isComponent!Output)
 {
 	@safe pure nothrow @nogc
@@ -78,7 +78,7 @@ package struct QueryWorld(Output)
 }
 
 
-package struct QueryWorld(OutputTuple)
+package struct QueryWorld(EntityManagerT, OutputTuple)
 	if (isInstanceOf!(Tuple, OutputTuple))
 {
 	@safe pure nothrow @nogc
@@ -124,13 +124,14 @@ package struct QueryWorld(OutputTuple)
 	auto front()
 	{
 		immutable e = entities[0];
-		enum components = format!q{%(sinfos[%s].get!(Components[%s]).get(e)%|,%)}(Components.length.iota);
+		enum components = format!q{%(sinfos[%s].get!(Components[%s], Fun).get(e)%|,%)}(Components.length.iota);
 		static if (is(Out[0] == Entity))
 			return mixin(format!q{tuple(e, %s)}(components));
 		else
 			return mixin(format!q{tuple(%s)}(components));
 	}
 
+	alias Fun = TemplateArgsOf!EntityManagerT[0];
 	alias Out = TemplateArgsOf!OutputTuple;
 	static if (is(Out[0] == Entity))
 		alias Components = Out[1..$];

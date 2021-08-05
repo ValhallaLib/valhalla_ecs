@@ -679,7 +679,7 @@ public:
 	{
 		auto queryW = _queryWorld!Output();
 
-		return Query!(TemplateArgsOf!(typeof(queryW)))(queryW);
+		return Query!(EntityManagerT, TemplateArgsOf!(typeof(queryW))[1 .. $])(queryW);
 	}
 
 
@@ -698,7 +698,7 @@ public:
 		auto queryW = _queryWorld!(Output, Extra)();
 		auto queryF = _queryFilter!Filter();
 
-		return Query!(TemplateArgsOf!(typeof(queryW)),TemplateArgsOf!(typeof(queryF)))(queryW, queryF);
+		return Query!(EntityManagerT, TemplateArgsOf!(typeof(queryW))[1 .. $],TemplateArgsOf!(typeof(queryF)))(queryW, queryF);
 	}
 
 
@@ -928,7 +928,7 @@ private:
 		if (isComponent!Component)
 	{
 		immutable index = _assure!Component(); // to fix dmd boundscheck=off
-		return storageInfoMap[index].get!Component();
+		return storageInfoMap[index].get!(Component, Fun)();
 	}
 
 
@@ -951,31 +951,31 @@ private:
 
 
 	/// Query helper
-	QueryWorld!(Entity) _queryWorld(Output : Entity, Extra ...)()
+	QueryWorld!(EntityManagerT, Entity) _queryWorld(Output : Entity, Extra ...)()
 	{
-		return QueryWorld!Entity(_queryEntities!(Extra).idup);
+		return QueryWorld!(EntityManagerT, Entity)(_queryEntities!(Extra).idup);
 	}
 
 
 	/// Ditto
-	QueryWorld!(Entity) _queryWorld(Output : Tuple!Entity, Extra ...)()
+	QueryWorld!(EntityManagerT, Entity) _queryWorld(Output : Tuple!Entity, Extra ...)()
 	{
 		return _queryWorld!(Entity, Extra)();
 	}
 
 
 	/// Ditto
-	QueryWorld!(Component) _queryWorld(Component, Extra ...)()
+	QueryWorld!(EntityManagerT, Component) _queryWorld(Component, Extra ...)()
 		if (isComponent!Component)
 	{
 		auto storage = _assureStorage!Component();
 		auto entities = _queryEntities!(Component);
-		return QueryWorld!Component(entities.idup, storage.components());
+		return QueryWorld!(EntityManagerT, Component)(entities.idup, storage.components());
 	}
 
 
 	/// Ditto
-	QueryWorld!(Component) _queryWorld(Output : Tuple!(Component), Component, Extra ...)()
+	QueryWorld!(EntityManagerT, Component) _queryWorld(Output : Tuple!(Component), Component, Extra ...)()
 		if (isComponent!Component && Output.length == 1)
 	{
 		return _queryWorld!(Component, Extra)();
@@ -983,7 +983,7 @@ private:
 
 
 	/// Ditto
-	QueryWorld!(OutputTuple) _queryWorld(OutputTuple, Extra ...)()
+	QueryWorld!(EntityManagerT, OutputTuple) _queryWorld(OutputTuple, Extra ...)()
 		if (isInstanceOf!(Tuple, OutputTuple))
 	{
 		alias Out = NoDuplicates!(TemplateArgsOf!OutputTuple);
@@ -997,7 +997,7 @@ private:
 
 		// get entities and build the Query
 		auto entities = _queryEntities!(Components, Extra);
-		enum queryworld = format!q{QueryWorld!(OutputTuple)(entities.idup,%s)}(components);
+		enum queryworld = format!q{QueryWorld!(EntityManagerT, OutputTuple)(entities.idup,%s)}(components);
 
 		return mixin(queryworld);
 	}
