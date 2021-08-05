@@ -32,7 +32,10 @@ struct SignalT(Slot)
 
 	void connect(Slot slot)
 	{
-		slots ~= slot;
+		import std.algorithm : canFind;
+
+		if (!slots.canFind(slot))
+			slots ~= slot;
 	}
 
 
