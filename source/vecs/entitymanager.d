@@ -156,15 +156,14 @@ public:
 
 	See_Also: $(LREF releaseEntity), $(LREF removeAll)
 	*/
-	@system
-	void destroyEntity(in Entity entity)
+	void destroyEntity()(in Entity entity)
 	{
 		destroyEntity(entity, (entity.batch + 1) & Entity.maxbatch);
 	}
 
 
 	/// Ditto
-	void destroyEntity(in Entity e, in size_t batch)
+	void destroyEntity()(in Entity e, in size_t batch)
 	{
 		removeAllComponents(e);
 		releaseId(e, batch);
@@ -386,8 +385,7 @@ public:
 	Params:
 		entity = a valid entity.
 	*/
-	@system
-	void removeAllComponents(in Entity e)
+	void removeAllComponents()(in Entity e)
 		in (validEntity(e))
 	{
 		foreach (sinfo; storageInfoMap)
