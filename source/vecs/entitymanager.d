@@ -565,9 +565,9 @@ public:
 	Returns: The created or in use entity wrapped in an EntityBuilder.
 	*/
 	@safe pure nothrow @property
-	EntityBuilder entity()
+	EntityBuilder!EntityManagerT entity()
 	{
-		EntityBuilder builder = {
+		EntityBuilder!EntityManagerT builder = {
 			entity: createEntity(),
 			entityManager: this
 		};
@@ -578,9 +578,9 @@ public:
 
 	/// Ditto
 	@safe pure nothrow @property
-	EntityBuilder entity(in Entity hint)
+	EntityBuilder!EntityManagerT entity(in Entity hint)
 	{
-		EntityBuilder builder = {
+		EntityBuilder!EntityManagerT builder = {
 			entity: createEntity(hint),
 			entityManager: this
 		};
