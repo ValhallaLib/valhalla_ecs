@@ -916,7 +916,7 @@ private:
 		// creates a storage if there is none of Component
 		if (storageInfoMap[index].storage is null)
 		{
-			storageInfoMap[index] = StorageInfo().__ctor!(Component)();
+			storageInfoMap[index] = StorageInfo().__ctor!(Component, Fun)();
 		}
 
 		return index;
