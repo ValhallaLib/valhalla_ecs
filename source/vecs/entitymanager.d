@@ -388,9 +388,11 @@ public:
 	void removeAllComponents()(in Entity e)
 		in (validEntity(e))
 	{
+		import std.traits : functionAttributes, SetFunctionAttributes;
+
 		foreach (sinfo; storageInfoMap)
 			if (sinfo.storage !is null)
-				sinfo.remove(e);
+				(() @trusted => cast(SetFunctionAttributes!(typeof(sinfo.remove), "D", functionAttributes!Fun)) sinfo.remove)()(e);
 	}
 
 
