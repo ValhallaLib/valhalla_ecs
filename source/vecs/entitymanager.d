@@ -1087,9 +1087,9 @@ private:
 }
 
 @("[EntityManager] component operations (adding and updating)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 
 	assert(*world.addComponent!int(world.entity) == 0);
 	assert(*world.emplaceComponent!int(world.entity, 34) == 34);
@@ -1146,9 +1146,9 @@ unittest
 }
 
 @("[EntityManager] component operations (register and remove)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 
 	world.registerComponent!(int, string, ulong);
 
@@ -1188,9 +1188,9 @@ unittest
 }
 
 @("[EntityManager] entity manipulation (entity properties)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 
 	auto entity = world.entity();
 
@@ -1205,9 +1205,9 @@ unittest
 }
 
 @("[EntityManager] entity manipulation (generated and recycled)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 
 	assert(!world._entities);
 
@@ -1249,9 +1249,9 @@ unittest
 }
 
 @("[EntityManager] entity manipulation (queue properties)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 
 	assert(world.queue == nullentity);
 
@@ -1262,9 +1262,9 @@ unittest
 }
 
 @("[EntityManager] entity manipulation (request batches on destruction and release)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 	immutable eid = 4;
 
 	world.destroyEntity(world.entity(Entity(eid)), 78);
@@ -1281,9 +1281,9 @@ unittest
 }
 
 @("[EntityManager] entity manipulation (request ids and batches on construction)")
-unittest
+@safe pure nothrow unittest
 {
-	scope world = new EntityManager();
+	scope world = new EntityManagerT!(void delegate() @safe pure nothrow @nogc);
 	auto entity = world.entity(Entity(5, 78));
 
 	assert(entity.id == 5);
