@@ -2,12 +2,27 @@ module vecs.signal;
 
 version(vecs_unittest) import aurorafw.unit.assertion;
 
-import std.traits : isDelegate, Parameters;
+import std.traits : isDelegate, Parameters, OriginalType;
+import std.traits : FunctionAttribute, SetFunctionAttributes;
 
 alias Signal(T...) = SignalT!(void delegate(T));
 struct SignalT(Slot)
 	if (isDelegate!Slot)
 {
+	template attributes(alias attrs)
+		if (is(typeof(attrs) : OriginalType!FunctionAttribute))
+	{
+		alias attributes = SignalT!(SetFunctionAttributes!(Slot, "D", attrs));
+	}
+
+
+	template attributes(alias slot)
+		if (is(slot : void delegate()))
+	{
+		alias attributes = SignalT!slot;
+	}
+
+
 	@safe pure nothrow
 	void connect(Slot slot)
 	{
