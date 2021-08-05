@@ -22,12 +22,14 @@ version(vecs_unittest)
 	import core.exception : AssertError;
 }
 
+alias EntityManager = EntityManagerImpl!(void delegate() @safe);
 
 /**
  * Responsible for managing all entities lifetime and access to components as
  *     well as any operation related to them.
  */
-class EntityManager
+class EntityManagerImpl(Fun)
+	if(is(Fun : void delegate()))
 {
 public:
 	/**
