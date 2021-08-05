@@ -526,8 +526,8 @@ private:
 	Component[] _components;
 
 public:
-	Signal!(Entity,Component*) onSet;
-	Signal!(Entity,Component*) onRemove;
+	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onSet;
+	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onRemove;
 }
 
 @("[Storage] component manipulation")
