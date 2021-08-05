@@ -54,6 +54,7 @@ struct SignalT(Slot)
 		foreach (slot; slots) slot(args);
 	}
 
+private:
 	Slot[] slots;
 }
 
