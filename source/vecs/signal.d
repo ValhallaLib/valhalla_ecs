@@ -30,13 +30,12 @@ struct SignalT(Slot)
 	}
 
 
-	@safe pure nothrow
 	void connect(Slot slot)
 	{
 		slots ~= slot;
 	}
 
-	@safe pure nothrow
+
 	void disconnect(Slot slot)
 	{
 		import std.algorithm : countUntil;
@@ -47,7 +46,7 @@ struct SignalT(Slot)
 		}
 	}
 
-	@system
+
 	void emit(Parameters!Slot args)
 	{
 		foreach (ref slot; slots) {
