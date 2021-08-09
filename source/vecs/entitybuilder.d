@@ -77,6 +77,16 @@ public:
 		return this;
 	}
 
+	// TODO: documentation
+	template patch(Components...)
+	{
+		EntityBuilder patch(Callbacks...)(Callbacks callbacks)
+		{
+			entityManager.patchComponent!Components(entity, callbacks);
+			return this;
+		}
+	}
+
 	/**
 	Removes components from an entity.
 
