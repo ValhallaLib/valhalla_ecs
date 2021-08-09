@@ -322,7 +322,6 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	void patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
 		in (contains(entity))
 	{
@@ -577,6 +576,10 @@ public:
 
 	assert( storage.remove(Entity(3)));
 	assert(!storage.tryGet(Entity(3)));
+
+	storage.patch(Entity(0), (ref Position pos) { pos.x = 12; });
+
+	assert(storage.get(Entity(0)).x == 12);
 }
 
 @("[Storage] construct")
