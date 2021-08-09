@@ -337,7 +337,25 @@ public:
 	}
 
 
-	// TODO: documentation
+	/**
+	Patch a component of an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	struct Position { ulong x, y; }
+	auto world = new EntityManager();
+
+	auto entity = world.entity.add!Position;
+	entity.patch!Position((ref Position pos) { pos.x = 24; });
+	---
+
+	Params:
+		Components: Component types to patch.
+		entity: a valid entity.
+		callbacks: callbacks to call for each Component type.
+	*/
 	template patchComponent(Components...)
 	{
 		void patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
