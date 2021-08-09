@@ -338,7 +338,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tets
 	template patchComponent(Components...)
 	{
 		void patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
@@ -1123,7 +1122,13 @@ private:
 	assert(*integral == 0);
 	assert(*str == "Hello");
 
-	entity.emplace!int(45);
+	assert(!__traits(compiles, entity.patch!int()));
+	assert(!__traits(compiles, entity.patch!int((int) {})));
+	assert(!__traits(compiles, entity.patch!int((char) {})));
+	assert(!__traits(compiles, entity.patch!int((ref int i) => i++)));
+	assert(!__traits(compiles, entity.patch!int((ref int) {}, (ref int) {})));
+
+	entity.patch!int((ref int i) { i = 45; });
 
 	assert(*integral == 45);
 
@@ -1147,12 +1152,14 @@ unittest
 	const entity = world.entity;
 
 	assertThrown!AssertError(world.getComponent!int(entity));
+	assertThrown!AssertError(world.patchComponent!int(entity, (ref int i) {}));
 
 	const invalid = Entity(entity.id, entity.batch + 1);
 
 	assertThrown!AssertError(world.addComponent!int(invalid));
 	assertThrown!AssertError(world.setComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
+	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
 	assertThrown!AssertError(world.getComponent!int(invalid));
 	assertThrown!AssertError(world.getOrSet!int(invalid));
 	assertThrown!AssertError(world.removeComponent!int(invalid));
