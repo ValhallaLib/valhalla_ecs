@@ -77,7 +77,17 @@ public:
 		return this;
 	}
 
-	// TODO: documentation
+	/**
+	Patch a component of an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		Components: Component types to patch.
+		callbacks: callbacks to call for each Component type.
+
+	Returns: This instance.
+	*/
 	template patch(Components...)
 	{
 		EntityBuilder patch(Callbacks...)(Callbacks callbacks)
