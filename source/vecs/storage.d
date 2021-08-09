@@ -321,6 +321,28 @@ package class Storage(Component, Fun = void delegate() @safe)
 	}
 
 
+	// TODO: documentation
+	// TODO: unit tests
+	void patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
+		in (contains(entity))
+	{
+		fn(_components[_sparsedEntities[entity]]);
+	}
+
+
+	/// Ditto
+	void patch(Fn : void function(ref Component))(in Entity entity, Fn fn)
+	{
+		import std.functional : toDelegate;
+
+		// workarround for toDelegate bug not working with @safe functions
+		static if (is(Fn : void function(ref Component) @safe))
+			patch(entity, (() @trusted => fn.toDelegate())());
+		else
+			patch(entity, fn.toDelegate());
+	}
+
+
 	/*
 	Removes the entity and its component from this storage. If the storage does
 	not contain the entity, nothing happens.
