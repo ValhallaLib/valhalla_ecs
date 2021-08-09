@@ -321,7 +321,15 @@ package class Storage(Component, Fun = void delegate() @safe)
 	}
 
 
-	// TODO: documentation
+	/**
+	Patch a component of an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		entity: an entity in the storage.
+		fn: the callback to call.
+	*/
 	void patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
 		in (contains(entity))
 	{
