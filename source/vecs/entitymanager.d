@@ -337,6 +337,20 @@ public:
 	}
 
 
+	// TODO: documentation
+	// TODO: unit tets
+	template patchComponent(Components...)
+	{
+		void patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
+			if (Components.length == Callbacks.length)
+			in (validEntity(entity))
+		{
+			static foreach (i, Component; Components)
+				_assureStorage!Component.patch(entity, callbacks[i]);
+		}
+	}
+
+
 	/**
 	Removes components from an entity.
 
