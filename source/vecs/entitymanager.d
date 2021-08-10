@@ -382,6 +382,26 @@ public:
 	}
 
 
+	// TODO: documentation
+	// TODO: unit tests
+	Component* replaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
+	{
+		import core.lifetime : emplace, forward;
+
+		return _assureStorage!Component.patch(entity, (ref Component c) {
+			Component[Component.sizeof] buf = void;
+
+			// emplace can be @trusted if the struct ctor is @safe
+			// with multiple ctors we must verify the correspondent one to args
+			static if (is(Component == struct) && !__traits(compiles, () @safe => Component(forward!args)))
+				c = *emplace!Component(buf, forward!args);
+			else
+				c = *(() @trusted => emplace!Component(buf, forward!args))();
+		});
+	}
+
+
 	/**
 	Removes components from an entity.
 
