@@ -330,23 +330,25 @@ package class Storage(Component, Fun = void delegate() @safe)
 		entity: an entity in the storage.
 		fn: the callback to call.
 	*/
-	void patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
+	Component* patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
 		in (contains(entity))
 	{
-		fn(_components[_sparsedEntities[entity]]);
+		Component* component = &_components[_sparsedEntities[entity]];
+		fn(*component);
+		return component;
 	}
 
 
 	/// Ditto
-	void patch(Fn : void function(ref Component))(in Entity entity, Fn fn)
+	Component* patch(Fn : void function(ref Component))(in Entity entity, Fn fn)
 	{
 		import std.functional : toDelegate;
 
 		// workarround for toDelegate bug not working with @safe functions
 		static if (is(Fn : void function(ref Component) @safe))
-			patch(entity, (() @trusted => fn.toDelegate())());
+			return patch(entity, (() @trusted => fn.toDelegate())());
 		else
-			patch(entity, fn.toDelegate());
+			return patch(entity, fn.toDelegate());
 	}
 
 
