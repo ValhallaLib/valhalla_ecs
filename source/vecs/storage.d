@@ -330,6 +330,8 @@ package class Storage(Component, Fun = void delegate() @safe)
 	Params:
 		entity: an entity in the storage.
 		fn: the callback to call.
+
+	Returns: A pointer to the patched component.
 	*/
 	Component* patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
 		in (contains(entity))
