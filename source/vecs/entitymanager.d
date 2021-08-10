@@ -383,7 +383,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	Component* replaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
 		in (validEntity(entity))
 	{
@@ -1185,6 +1184,8 @@ private:
 	assert(*integral == 45);
 	assert(world.patchComponent!(int, string)(entity, (ref int) {}, (ref string s) {}) == tuple(integral, str));
 
+	assert(*world.replaceComponent!int(entity, 3) == 3);
+
 	Position* position;
 	uint* uintegral;
 
@@ -1205,6 +1206,7 @@ unittest
 	const entity = world.entity;
 
 	assertThrown!AssertError(world.getComponent!int(entity));
+	assertThrown!AssertError(world.replaceComponent!int(entity, 0));
 	assertThrown!AssertError(world.patchComponent!int(entity, (ref int i) {}));
 
 	const invalid = Entity(entity.id, entity.batch + 1);
@@ -1212,6 +1214,7 @@ unittest
 	assertThrown!AssertError(world.addComponent!int(invalid));
 	assertThrown!AssertError(world.setComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
+	assertThrown!AssertError(world.replaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
 	assertThrown!AssertError(world.getComponent!int(invalid));
 	assertThrown!AssertError(world.getOrSet!int(invalid));
