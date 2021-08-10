@@ -97,7 +97,17 @@ public:
 		}
 	}
 
-	// TODO: documentation
+	/**
+	Replaces a component of an entity.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		Comonent: Component type to replace.
+		args: arguments to contruct the Component type.
+
+	Returns: This instance.
+	*/
 	EntityBuilder replace(Component, Args...)(auto ref Args args)
 	{
 		import core.lifetime : forward;
