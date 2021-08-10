@@ -97,6 +97,15 @@ public:
 		}
 	}
 
+	// TODO: documentation
+	EntityBuilder replace(Component, Args...)(auto ref Args args)
+	{
+		import core.lifetime : forward;
+
+		entityManager.replaceComponent!Component(entity, forward!args);
+		return this;
+	}
+
 	/**
 	Removes components from an entity.
 
