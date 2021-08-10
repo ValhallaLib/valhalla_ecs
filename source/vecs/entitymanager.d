@@ -357,6 +357,8 @@ public:
 		Components: Component types to patch.
 		entity: a valid entity.
 		callbacks: callbacks to call for each Component type.
+
+	Returns: A pointer or `Tuple` of pointers to the patched components.
 	*/
 	template patchComponent(Components...)
 	{
