@@ -360,12 +360,22 @@ public:
 	*/
 	template patchComponent(Components...)
 	{
-		void patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+
+		auto patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
 			if (Components.length == Callbacks.length)
 			in (validEntity(entity))
 		{
+			staticMap!(PointerOf, Components) C;
+
 			static foreach (i, Component; Components)
-				_assureStorage!Component.patch(entity, callbacks[i]);
+				C[i] = _assureStorage!Component.patch(entity, callbacks[i]);
+
+			static if (Components.length == 1)
+				return C[0];
+			else
+				return tuple(C);
 		}
 	}
 
