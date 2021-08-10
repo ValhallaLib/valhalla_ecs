@@ -1163,6 +1163,7 @@ private:
 	entity.patch!int((ref int i) { i = 45; });
 
 	assert(*integral == 45);
+	assert(world.patchComponent!(int, string)(entity, (ref int) {}, (ref string s) {}) == tuple(integral, str));
 
 	Position* position;
 	uint* uintegral;
