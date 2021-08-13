@@ -3,8 +3,6 @@ module vecs.entitybuilder;
 import vecs.entity;
 import vecs.entitymanager;
 
-import std.traits : isInstanceOf;
-
 version(vecs_unittest) import aurorafw.unit.assertion;
 
 
@@ -12,7 +10,7 @@ version(vecs_unittest) import aurorafw.unit.assertion;
  * Helper struct to perform multiple action sequences.
  */
 struct EntityBuilder(EntityManagerT)
-	if (isInstanceOf!(.EntityManagerT, EntityManagerT))
+	if (is(EntityManagerT == E!T, alias E = .EntityManagerT, T))
 {
 public:
 	bool opEquals(R)(in R other) const
