@@ -293,9 +293,10 @@ package class Storage(Component, Fun = void delegate() @safe)
 	*/
 	Component* emplace(Args...)(in Entity entity, auto ref Args args)
 	{
-		import core.lifetime : emplace;
+		import core.lifetime : emplace, forward;
+
 		Component* component = _add(entity);
-		component.emplace(args);
+		component.emplace(forward!args);
 		onSet.emit(entity, component);
 		return component;
 	}
