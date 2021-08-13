@@ -46,7 +46,7 @@ struct SignalT(Slot)
 	{
 		// workarround for toDelegate bug not working with @safe functions
 		static if (is(Slot : void delegate(Parameters!Slot) @safe))
-			(() @trusted pure nothrow => connect(slot.toDelegate()))();
+			connect((() @trusted => slot.toDelegate())());
 		else
 			connect(slot.toDelegate());
 	}
