@@ -111,7 +111,9 @@ public:
 	Component* emplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
 		in (validEntity(entity))
 	{
-		return _assureStorage!Component.emplace(entity, args);
+		import core.lifetime : forward;
+
+		return _assureStorage!Component.emplace(entity, forward!args);
 	}
 
 
