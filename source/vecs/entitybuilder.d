@@ -116,6 +116,15 @@ public:
 		return this;
 	}
 
+	// TODO: documentation
+	EntityBuilder emplaceOrReplace(Component, Args...)(auto ref Args args)
+	{
+		import core.lifetime : forward;
+
+		entityManager.emplaceOrReplaceComponent!Component(entity, forward!args);
+		return this;
+	}
+
 	/**
 	Removes components from an entity.
 
