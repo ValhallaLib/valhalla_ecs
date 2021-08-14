@@ -419,7 +419,26 @@ public:
 	}
 
 
-	// TODO: documentation
+	/**
+	Replaces or emplaces a component of an entity if it owes or not the same
+	Component type.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	assert(*world.entity.emplaceOrReplace!int(3) == 3);
+	---
+
+	Params:
+		Comonent: Component type to emplace or replace.
+		entity: a valid entity.
+		args: arguments to contruct the Component type.
+
+	Returns: A pointer to the emplaced or replaced component.
+	*/
 	Component* emplaceOrReplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
 		in (validEntity(entity))
 	{
