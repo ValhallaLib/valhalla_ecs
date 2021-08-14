@@ -116,7 +116,18 @@ public:
 		return this;
 	}
 
-	// TODO: documentation
+	/**
+	Replaces or emplaces a component of an entity if it owes or not the same
+	Component type.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		Comonent: Component type to emplace or replace.
+		args: arguments to contruct the Component type.
+
+	Returns: This instance.
+	*/
 	EntityBuilder emplaceOrReplace(Component, Args...)(auto ref Args args)
 	{
 		import core.lifetime : forward;
