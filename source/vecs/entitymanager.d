@@ -420,7 +420,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	Component* emplaceOrReplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
 		in (validEntity(entity))
 	{
@@ -1204,7 +1203,7 @@ private:
 	auto entity = world.entity
 		.add!int
 		.set("Hello")
-		.emplace!Position(1LU, 4LU);
+		.emplaceOrReplace!Position(1LU, 4LU);
 
 	int* integral;
 	string* str;
@@ -1256,6 +1255,7 @@ unittest
 	assertThrown!AssertError(world.setComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.replaceComponent!int(invalid, 0));
+	assertThrown!AssertError(world.emplaceOrReplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
 	assertThrown!AssertError(world.getComponent!int(invalid));
 	assertThrown!AssertError(world.getOrSet!int(invalid));
