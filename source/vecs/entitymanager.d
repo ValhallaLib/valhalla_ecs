@@ -460,6 +460,31 @@ public:
 	}
 
 
+	// TODO: documentation
+	// TODO: unit tests
+	auto resetComponent(Components...)(in Entity entity)
+		if (Components.length)
+		in (validEntity(entity))
+	{
+		import std.meta : staticMap;
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components)
+			C[i] = _assureStorage!Component.patch(entity, (ref Component c) {
+				import core.lifetime : emplace;
+				Component[Component.sizeof] buf = void;
+
+				c = *(() @trusted => emplace!Component(buf, Component.init))();
+			});
+
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
+	}
+
+
 	/**
 	Removes components from an entity.
 
