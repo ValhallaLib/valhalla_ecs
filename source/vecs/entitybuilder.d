@@ -136,7 +136,17 @@ public:
 		return this;
 	}
 
-	// TODO: documentation
+	/**
+	Replaces a component of an entity with the init state of the Component type
+	if it owes it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		Comonents: Component types to replace.
+
+	Returns: This instance.
+	*/
 	EntityBuilder reset(Components...)()
 	{
 		entityManager.resetComponent!Components(entity);
