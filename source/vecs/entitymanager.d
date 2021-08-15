@@ -460,7 +460,25 @@ public:
 	}
 
 
-	// TODO: documentation
+	/**
+	Replaces a component of an entity with the init state of the Component type
+	if it owes it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	assert(*world.resetComponent!int(world.entity.emplace!int(4)) == int.init);
+	---
+
+	Params:
+		Comonents: Component types to replace.
+		entity: a valid entity.
+
+	Returns: A pointer or `Tuple` of pointers to the replaced component.
+	*/
 	auto resetComponent(Components...)(in Entity entity)
 		if (Components.length)
 		in (validEntity(entity))
