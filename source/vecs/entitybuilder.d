@@ -38,16 +38,16 @@ public:
 	}
 
 	/**
-	Assigns the `Component` to the `entity`. The `Component` is initialized with
-	the `args` provided.
+	Assigns the Components to an entity. The Components are initialized with
+	the args provided.
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
 	Signal: emits `onSet` after each component is assigned.
 
 	Params:
-		Component = Component type to emplace.
-		args = arguments to contruct the Component type.
+		Components = Component types to emplace.
+		args = arguments to contruct the Component types.
 
 	Returns: This instance.
 	*/
