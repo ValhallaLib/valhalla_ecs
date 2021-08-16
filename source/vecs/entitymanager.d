@@ -86,8 +86,8 @@ public:
 
 
 	/**
-	Assigns the `Component` to the `entity`. The `Component` is initialized with
-	the `args` provided.
+	Assigns Components to an entity. The Components is initialized with
+	the args provided.
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
@@ -96,17 +96,26 @@ public:
 	struct Position { ulong x, y; }
 	auto world = new EntityManager();
 
-	Position* i = world.emplace!Position(world.entity, 2LU, 3LU);
+	// with one component field arguments can be used
+	Position* i = world.emplaceComponent!Position(world.entity, 2LU, 3LU);
+
+	int* i; Position* pos;
+
+	// with multiple components only the type can be used, not field arguments
+	// components can be infered as well
+	AliasSeq!(i, pos) = world.emplaceComponent!(int, Position)(world.entity, 3, Position(1, 2));
+
+	assert(*i = 3 && *pos = Position(1, 2));
 	---
 
 	Signal: emits `onSet` after each component is assigned.
 
 	Params:
-		Component = Component type to emplace.
+		Components = Component types to emplace.
 		entity = a valid entity.
-		args = arguments to contruct the Component type.
+		args = arguments to contruct the Component types.
 
-	Returns: A pointer to the emplaced component.
+	Returns: A pointer or `Tuple` of pointers to the emplaced components.
 	*/
 	template emplaceComponent(Components...)
 		if (Components.length)
