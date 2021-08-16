@@ -151,7 +151,17 @@ public:
 		return this;
 	}
 
-	// TODO: documentation
+	/**
+	Adds or replaces a component of an entity with the init state of the
+	Component type if it owes it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Params:
+		Comonents: Component types to add or replace.
+
+	Returns: This instance.
+	*/
 	EntityBuilder addOrReset(Components...)()
 	{
 		entityManager.addOrResetComponent!Components(entity);
