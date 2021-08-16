@@ -99,13 +99,13 @@ public:
 	}
 
 	/**
-	Replaces a component of an entity.
+	Replaces components of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
 	Params:
-		Comonent: Component type to replace.
-		args: arguments to contruct the Component type.
+		Components: Component types to replace.
+		args: arguments to contruct the Component types.
 
 	Returns: This instance.
 	*/
