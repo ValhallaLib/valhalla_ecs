@@ -151,6 +151,13 @@ public:
 		return this;
 	}
 
+	// TODO: documentation
+	EntityBuilder addOrReset(Components...)()
+	{
+		entityManager.addOrResetComponent!Components(entity);
+		return this;
+	}
+
 	/**
 	Removes components from an entity.
 
