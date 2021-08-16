@@ -108,12 +108,35 @@ public:
 
 	Returns: A pointer to the emplaced component.
 	*/
-	Component* emplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
-		in (validEntity(entity))
+	template emplaceComponent(Components...)
+		if (Components.length)
 	{
 		import core.lifetime : forward;
+		static if (Components.length == 1)
+		{
+			alias Component = Components[0];
+			Component* emplaceComponent(Args...)(in Entity entity, auto ref Args args)
+				in (validEntity(entity))
+			{
+				return _assureStorage!Component.emplace(entity, forward!args);
+			}
+		}
+		else
+		{
+			import std.meta : staticMap;
+			alias PointerOf(T) = T*;
 
-		return _assureStorage!Component.emplace(entity, forward!args);
+			auto emplaceComponent(in Entity entity, auto ref Components args)
+				in (validEntity(entity))
+			{
+				staticMap!(PointerOf, Components) C;
+
+				static foreach (i, Component; Components)
+					C[i] = emplaceComponent!Component(entity, forward!(args[i]));
+
+				return tuple(C);
+			}
+		}
 	}
 
 
