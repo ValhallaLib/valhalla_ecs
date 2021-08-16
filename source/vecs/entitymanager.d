@@ -471,24 +471,49 @@ public:
 
 	Returns: A pointer to the emplaced or replaced component.
 	*/
-	Component* emplaceOrReplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
-		in (validEntity(entity))
+	template emplaceOrReplaceComponent(Components...)
+		if (Components.length)
 	{
 		import core.lifetime : emplace, forward;
-		auto storage = _assureStorage!Component;
 
-		return storage.contains(entity)
-			? storage.patch(entity, (ref Component c) {
-					Component[Component.sizeof] buf = void;
+		static if (Components.length)
+		{
+			alias Component = Components[0];
+			Component* emplaceOrReplaceComponent(Args...)(in Entity entity, auto ref Args args)
+				in (validEntity(entity))
+			{
+				auto storage = _assureStorage!Component;
 
-					// emplace can be @trusted if the struct ctor is @safe
-					// with multiple ctors we must verify the correspondent one to args
-					static if (is(Component == struct) && !__traits(compiles, () @safe => Component(forward!args)))
-						c = *emplace!Component(buf, forward!args);
-					else
-						c = *(() @trusted => emplace!Component(buf, forward!args))();
-				})
-			: storage.emplace(entity, forward!args);
+				return storage.contains(entity)
+					? storage.patch(entity, (ref Component c) {
+							Component[Component.sizeof] buf = void;
+
+							// emplace can be @trusted if the struct ctor is @safe
+							// with multiple ctors we must verify the correspondent one to args
+							static if (is(Component == struct) && !__traits(compiles, () @safe => Component(forward!args)))
+								c = *emplace!Component(buf, forward!args);
+							else
+								c = *(() @trusted => emplace!Component(buf, forward!args))();
+						})
+					: storage.emplace(entity, forward!args);
+			}
+		}
+		else
+		{
+			import std.meta : staticMap;
+			alias PointerOf(T) = T*;
+
+			auto emplaceOrReplaceComponent(in Entity entity, auto ref Components args)
+				in (validEntity(entity))
+			{
+				staticMap!(PointerOf, Components) C;
+
+				static foreach (i, Component; Components)
+					C[i] = emplaceOrReplaceComponent!Component(entity, forward!(args[i]));
+
+				return tuple(C);
+			}
+		}
 	}
 
 
