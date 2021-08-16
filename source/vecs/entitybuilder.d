@@ -51,10 +51,13 @@ public:
 
 	Returns: This instance.
 	*/
-	EntityBuilder emplace(Component, Args...)(auto ref Args args)
+	template emplace(Components...)
 	{
-		entityManager.emplaceComponent!Component(entity, args);
-		return this;
+		EntityBuilder emplace(Args...)(auto ref Args args)
+		{
+			entityManager.emplaceComponent!Components(entity, args);
+			return this;
+		}
 	}
 
 	/**
