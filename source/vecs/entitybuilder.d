@@ -132,12 +132,15 @@ public:
 
 	Returns: This instance.
 	*/
-	EntityBuilder emplaceOrReplace(Component, Args...)(auto ref Args args)
+	template emplaceOrReplace(Components...)
 	{
-		import core.lifetime : forward;
+		EntityBuilder emplaceOrReplace(Args...)(auto ref Args args)
+		{
+			import core.lifetime : forward;
 
-		entityManager.emplaceOrReplaceComponent!Component(entity, forward!args);
-		return this;
+			entityManager.emplaceOrReplaceComponent!Components(entity, forward!args);
+			return this;
+		}
 	}
 
 	/**
