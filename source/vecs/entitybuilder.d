@@ -121,14 +121,14 @@ public:
 	}
 
 	/**
-	Replaces or emplaces a component of an entity if it owes or not the same
-	Component type.
+	Replaces or emplaces components of an entity if it owes or not the same
+	Component types.
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
 	Params:
-		Comonent: Component type to emplace or replace.
-		args: arguments to contruct the Component type.
+		Components: Component types to emplace or replace.
+		args: arguments to contruct the Component types.
 
 	Returns: This instance.
 	*/
