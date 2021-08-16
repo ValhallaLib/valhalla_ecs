@@ -502,7 +502,25 @@ public:
 	}
 
 
-	// TODO: documentation
+	/**
+	Adds or replaces a component of an entity with the init state of the
+	Component type if it owes it.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	assert(*world.addOrResetComponent!int(world.entity.addOrReset!int) == int.init);
+	---
+
+	Params:
+		Comonents: Component types to add or replace.
+		entity: a valid entity.
+
+	Returns: A pointer or `Tuple` of pointers to the added or replaced components.
+	*/
 	auto addOrResetComponent(Components...)(in Entity entity)
 		if (Components.length)
 		in (validEntity(entity))
