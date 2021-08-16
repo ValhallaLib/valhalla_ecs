@@ -503,7 +503,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	auto addOrResetComponent(Components...)(in Entity entity)
 		if (Components.length)
 		in (validEntity(entity))
@@ -1292,7 +1291,7 @@ private:
 
 	struct Position { ulong x, y; }
 	auto entity = world.entity
-		.add!int
+		.addOrReset!int
 		.set("Hello")
 		.emplaceOrReplace!Position(1LU, 4LU);
 
@@ -1346,6 +1345,7 @@ unittest
 
 	assertThrown!AssertError(world.addComponent!int(invalid));
 	assertThrown!AssertError(world.resetComponent!int(invalid));
+	assertThrown!AssertError(world.addOrResetComponent!int(invalid));
 	assertThrown!AssertError(world.setComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.replaceComponent!int(invalid, 0));
