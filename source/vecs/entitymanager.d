@@ -458,12 +458,7 @@ public:
 					ubyte[Component.sizeof] tmp = void;
 					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
-					// emplace can be @trusted if the struct ctor is @safe
-					// with multiple ctors we must verify the correspondent one to args
-					static if (is(Component == struct) && !__traits(compiles, () @safe => Component(forward!args)))
-						c = *emplace!Component(buf, forward!args);
-					else
-						c = *(() @trusted => emplace!Component(buf, forward!args))();
+					c = *emplace!Component(buf, forward!args);
 				});
 			}
 		}
@@ -533,12 +528,7 @@ public:
 							ubyte[Component.sizeof] tmp = void;
 							auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
-							// emplace can be @trusted if the struct ctor is @safe
-							// with multiple ctors we must verify the correspondent one to args
-							static if (is(Component == struct) && !__traits(compiles, () @safe => Component(forward!args)))
-								c = *emplace!Component(buf, forward!args);
-							else
-								c = *(() @trusted => emplace!Component(buf, forward!args))();
+							c = *emplace!Component(buf, forward!args);
 						})
 					: storage.emplace(entity, forward!args);
 			}
