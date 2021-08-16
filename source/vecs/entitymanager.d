@@ -415,7 +415,7 @@ public:
 
 
 	/**
-	Replaces a component of an entity.
+	Replaces components of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
@@ -424,14 +424,24 @@ public:
 	auto world = new EntityManager();
 
 	assert(*world.replaceComponent!int(world.entity.add!int, 3) == 3);
+
+
+	struct Position { ulong x, y; }
+	int* i; Position* pos;
+
+	// with multiple components only the type can be used, not field arguments
+	// components can be infered as well
+	AliasSeq!(i, pos) = world.emplaceComponent!(int, Position)(world.entity.add!(int, Position), 3, Position(1, 2));
+
+	assert(*i = 3 && *pos = Position(1, 2));
 	---
 
 	Params:
-		Comonent: Component type to replace.
+		Components: Component types to replace.
 		entity: a valid entity.
-		args: arguments to contruct the Component type.
+		args: arguments to contruct the Component types.
 
-	Returns: A pointer to the replaced component.
+	Returns: A pointer or `Tuple` of pointers to the replaced components.
 	*/
 	template replaceComponent(Components...)
 		if (Components.length)
