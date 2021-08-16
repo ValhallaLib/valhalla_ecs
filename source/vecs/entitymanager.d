@@ -581,11 +581,7 @@ public:
 
 		static foreach (i, Component; Components)
 			C[i] = _assureStorage!Component.patch(entity, (ref Component c) {
-				import core.lifetime : emplace;
-				ubyte[Component.sizeof] tmp = void;
-				auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
-
-				c = *(() @trusted => emplace!Component(buf, Component.init))();
+				c = Component.init;
 			});
 
 		static if (Components.length == 1)
@@ -626,13 +622,7 @@ public:
 		{
 			auto storage = _assureStorage!Component;
 			C[i] = storage.contains(entity)
-				? storage.patch(entity, (ref Component c) {
-					import core.lifetime : emplace;
-					ubyte[Component.sizeof] tmp = void;
-					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
-
-					c = *(() @trusted => emplace!Component(buf, Component.init))();
-				})
+				? storage.patch(entity, (ref Component c) { c = Component.init; })
 				: storage.add(entity);
 		}
 
