@@ -455,7 +455,8 @@ public:
 				in (validEntity(entity))
 			{
 				return _assureStorage!Component.patch(entity, (ref Component c) {
-					Component[Component.sizeof] buf = void;
+					ubyte[Component.sizeof] tmp = void;
+					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 					// emplace can be @trusted if the struct ctor is @safe
 					// with multiple ctors we must verify the correspondent one to args
@@ -529,7 +530,8 @@ public:
 
 				return storage.contains(entity)
 					? storage.patch(entity, (ref Component c) {
-							Component[Component.sizeof] buf = void;
+							ubyte[Component.sizeof] tmp = void;
+							auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 							// emplace can be @trusted if the struct ctor is @safe
 							// with multiple ctors we must verify the correspondent one to args
@@ -590,7 +592,8 @@ public:
 		static foreach (i, Component; Components)
 			C[i] = _assureStorage!Component.patch(entity, (ref Component c) {
 				import core.lifetime : emplace;
-				Component[Component.sizeof] buf = void;
+				ubyte[Component.sizeof] tmp = void;
+				auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 				c = *(() @trusted => emplace!Component(buf, Component.init))();
 			});
@@ -635,7 +638,8 @@ public:
 			C[i] = storage.contains(entity)
 				? storage.patch(entity, (ref Component c) {
 					import core.lifetime : emplace;
-					Component[Component.sizeof] buf = void;
+					ubyte[Component.sizeof] tmp = void;
+					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 					c = *(() @trusted => emplace!Component(buf, Component.init))();
 				})
