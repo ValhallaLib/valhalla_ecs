@@ -117,35 +117,29 @@ public:
 
 	Returns: A pointer or `Tuple` of pointers to the emplaced components.
 	*/
-	template emplaceComponent(Components...)
-		if (Components.length)
+	Component* emplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
 	{
 		import core.lifetime : forward;
-		static if (Components.length == 1)
-		{
-			alias Component = Components[0];
-			Component* emplaceComponent(Args...)(in Entity entity, auto ref Args args)
-				in (validEntity(entity))
-			{
-				return _assureStorage!Component.emplace(entity, forward!args);
-			}
-		}
-		else
-		{
-			import std.meta : staticMap;
-			alias PointerOf(T) = T*;
 
-			auto emplaceComponent(in Entity entity, auto ref Components args)
-				in (validEntity(entity))
-			{
-				staticMap!(PointerOf, Components) C;
+		return _assureStorage!Component.emplace(entity, forward!args);
+	}
 
-				static foreach (i, Component; Components)
-					C[i] = emplaceComponent!Component(entity, forward!(args[i]));
+	/// Ditto
+	auto emplaceComponent(Components...)(in Entity entity, auto ref Components args)
+		if (Components.length > 1)
+		in (validEntity(entity))
+	{
+		import core.lifetime : forward;
+		import std.meta : staticMap;
 
-				return tuple(C);
-			}
-		}
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components)
+			C[i] = emplaceComponent!Component(entity, forward!(args[i]));
+
+		return tuple(C);
 	}
 
 
@@ -443,41 +437,34 @@ public:
 
 	Returns: A pointer or `Tuple` of pointers to the replaced components.
 	*/
-	template replaceComponent(Components...)
-		if (Components.length)
+	Component* replaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
 	{
 		import core.lifetime : emplace, forward;
 
-		static if (Components.length == 1)
-		{
-			alias Component = Components[0];
-			Component* replaceComponent(Args...)(in Entity entity, auto ref Args args)
-				in (validEntity(entity))
-			{
-				return _assureStorage!Component.patch(entity, (ref Component c) {
-					ubyte[Component.sizeof] tmp = void;
-					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
+		return _assureStorage!Component.patch(entity, (ref Component c) {
+			ubyte[Component.sizeof] tmp = void;
+			auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
-					c = *emplace!Component(buf, forward!args);
-				});
-			}
-		}
-		else
-		{
-			import std.meta : staticMap;
-			alias PointerOf(T) = T*;
+			c = *emplace!Component(buf, forward!args);
+		});
+	}
 
-			auto replaceComponent(in Entity entity, auto ref Components args)
-				in (validEntity(entity))
-			{
-				staticMap!(PointerOf, Components) C;
+	/// Ditto
+	auto replaceComponent(Components...)(in Entity entity, auto ref Components args)
+		if (Components.length > 1)
+		in (validEntity(entity))
+	{
+		import core.lifetime : emplace, forward;
+		import std.meta : staticMap;
 
-				static foreach (i, Component; Components)
-					C[i] = replaceComponent!Component(entity, forward!(args[i]));
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
 
-				return tuple(C);
-			}
-		}
+		static foreach (i, Component; Components)
+			C[i] = replaceComponent!Component(entity, forward!(args[i]));
+
+		return tuple(C);
 	}
 
 
@@ -510,45 +497,38 @@ public:
 
 	Returns: A pointer os `Tuple` of pointers to the emplaced or replaced components.
 	*/
-	template emplaceOrReplaceComponent(Components...)
-		if (Components.length)
+	Component* emplaceOrReplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
 	{
 		import core.lifetime : emplace, forward;
 
-		static if (Components.length)
-		{
-			alias Component = Components[0];
-			Component* emplaceOrReplaceComponent(Args...)(in Entity entity, auto ref Args args)
-				in (validEntity(entity))
-			{
-				auto storage = _assureStorage!Component;
+		auto storage = _assureStorage!Component;
 
-				return storage.contains(entity)
-					? storage.patch(entity, (ref Component c) {
-							ubyte[Component.sizeof] tmp = void;
-							auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
+		return storage.contains(entity)
+			? storage.patch(entity, (ref Component c) {
+					ubyte[Component.sizeof] tmp = void;
+					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
-							c = *emplace!Component(buf, forward!args);
-						})
-					: storage.emplace(entity, forward!args);
-			}
-		}
-		else
-		{
-			import std.meta : staticMap;
-			alias PointerOf(T) = T*;
+					c = *emplace!Component(buf, forward!args);
+				})
+			: storage.emplace(entity, forward!args);
+	}
 
-			auto emplaceOrReplaceComponent(in Entity entity, auto ref Components args)
-				in (validEntity(entity))
-			{
-				staticMap!(PointerOf, Components) C;
+	/// Ditto
+	auto emplaceOrReplaceComponent(Components...)(in Entity entity, auto ref Components args)
+		if (Components.length > 1)
+		in (validEntity(entity))
+	{
+		import core.lifetime : emplace, forward;
+		import std.meta : staticMap;
 
-				static foreach (i, Component; Components)
-					C[i] = emplaceOrReplaceComponent!Component(entity, forward!(args[i]));
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
 
-				return tuple(C);
-			}
-		}
+		static foreach (i, Component; Components)
+			C[i] = emplaceOrReplaceComponent!Component(entity, forward!(args[i]));
+
+		return tuple(C);
 	}
 
 
