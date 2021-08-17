@@ -54,11 +54,13 @@ public:
 	template emplace(Components...)
 		if (Components.length)
 	{
+		import core.lifetime : forward;
+
 		static if (Components.length == 1)
 		{
 			EntityBuilder emplace(Args...)(auto ref Args args)
 			{
-				entityManager.emplaceComponent!Components(entity, args);
+				entityManager.emplaceComponent!Components(entity, forward!args);
 				return this;
 			}
 		}
@@ -66,7 +68,7 @@ public:
 		{
 			EntityBuilder emplace(auto ref Components args)
 			{
-				entityManager.emplaceComponent!Components(entity, args);
+				entityManager.emplaceComponent!Components(entity, forward!args);
 				return this;
 			}
 		}
