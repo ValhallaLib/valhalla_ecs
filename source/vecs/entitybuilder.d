@@ -52,11 +52,23 @@ public:
 	Returns: This instance.
 	*/
 	template emplace(Components...)
+		if (Components.length)
 	{
-		EntityBuilder emplace(Args...)(auto ref Args args)
+		static if (Components.length == 1)
 		{
-			entityManager.emplaceComponent!Components(entity, args);
-			return this;
+			EntityBuilder emplace(Args...)(auto ref Args args)
+			{
+				entityManager.emplaceComponent!Components(entity, args);
+				return this;
+			}
+		}
+		else
+		{
+			EntityBuilder emplace(auto ref Components args)
+			{
+				entityManager.emplaceComponent!Components(entity, args);
+				return this;
+			}
 		}
 	}
 
