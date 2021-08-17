@@ -761,7 +761,7 @@ public:
 	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
 		in (validEntity(e))
 	{
-		return _assureStorage!Component().getOrSet(e, component);
+		return _assureStorage!Component().getOrEmplace(e, component);
 	}
 
 
