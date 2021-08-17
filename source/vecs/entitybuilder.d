@@ -51,27 +51,22 @@ public:
 
 	Returns: This instance.
 	*/
-	template emplace(Components...)
-		if (Components.length)
+	EntityBuilder emplace(Component, Args...)(auto ref Args args)
 	{
 		import core.lifetime : forward;
 
-		static if (Components.length == 1)
-		{
-			EntityBuilder emplace(Args...)(auto ref Args args)
-			{
-				entityManager.emplaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
-		else
-		{
-			EntityBuilder emplace(auto ref Components args)
-			{
-				entityManager.emplaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
+		entityManager.emplaceComponent!Component(entity, forward!args);
+		return this;
+	}
+
+	/// Ditto
+	EntityBuilder emplace(Components...)(auto ref Components args)
+		if (Components.length > 1)
+	{
+		import core.lifetime : forward;
+
+		entityManager.emplaceComponent!Components(entity, forward!args);
+		return this;
 	}
 
 	/**
@@ -123,28 +118,22 @@ public:
 
 	Returns: This instance.
 	*/
-	template replace(Components...)
+	EntityBuilder replace(Component, Args...)(auto ref Args args)
 	{
-		static if (Components.length == 1)
-		{
-			EntityBuilder replace(Args...)(auto ref Args args)
-			{
-				import core.lifetime : forward;
+		import core.lifetime : forward;
 
-				entityManager.replaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
-		else
-		{
-			EntityBuilder replace(auto ref Components args)
-			{
-				import core.lifetime : forward;
+		entityManager.replaceComponent!Component(entity, forward!args);
+		return this;
+	}
 
-				entityManager.replaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
+	/// Ditto
+	EntityBuilder replace(Components...)(auto ref Components args)
+		if (Components.length > 1)
+	{
+		import core.lifetime : forward;
+
+		entityManager.replaceComponent!Components(entity, forward!args);
+		return this;
 	}
 
 	/**
@@ -159,28 +148,22 @@ public:
 
 	Returns: This instance.
 	*/
-	template emplaceOrReplace(Components...)
+	EntityBuilder emplaceOrReplace(Component, Args...)(auto ref Args args)
 	{
-		static if (Components.length == 1)
-		{
-			EntityBuilder emplaceOrReplace(Args...)(auto ref Args args)
-			{
-				import core.lifetime : forward;
+		import core.lifetime : forward;
 
-				entityManager.emplaceOrReplaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
-		else
-		{
-			EntityBuilder emplaceOrReplace(auto ref Components args)
-			{
-				import core.lifetime : forward;
+		entityManager.emplaceOrReplaceComponent!Component(entity, forward!args);
+		return this;
+	}
 
-				entityManager.emplaceOrReplaceComponent!Components(entity, forward!args);
-				return this;
-			}
-		}
+	/// Ditto
+	EntityBuilder emplaceOrReplace(Components...)(auto ref Components args)
+		if (Components.length > 1)
+	{
+		import core.lifetime : forward;
+
+		entityManager.emplaceOrReplaceComponent!Components(entity, forward!args);
+		return this;
 	}
 
 	/**
