@@ -70,24 +70,6 @@ public:
 	}
 
 	/**
-	Assigns the components to an entity.
-
-	Attempting to use an invalid entity leads to undefined behavior.
-
-	Signal: emits `onSet` after each component is assigned.
-
-	Params:
-		components = components to assign.
-
-	Returns: This instance.
-	*/
-	EntityBuilder set(Components...)(Components components)
-	{
-		entityManager.setComponent!Components(entity, components);
-		return this;
-	}
-
-	/**
 	Patch a component of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.

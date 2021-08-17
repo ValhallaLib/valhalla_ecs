@@ -1374,7 +1374,7 @@ private:
 	struct Position { ulong x, y; }
 	auto entity = world.entity
 		.addOrReset!int
-		.set("Hello")
+		.emplaceOrReplace!string("Hello")
 		.emplaceOrReplace!Position(1LU, 4LU);
 
 	int* integral;

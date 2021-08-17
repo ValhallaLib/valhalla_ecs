@@ -81,7 +81,7 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Bar.emplace(Foo(2, 4), 4);
 		entity.add!Foo;
 		entity.add!Foo;
 		entity.add!(Foo, Bar);
@@ -107,7 +107,7 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Bar.emplace(Foo(2, 4), 4);
 		entity.add!Foo;
 		entity.add!Foo;
 		entity.add!(Foo, Bar);
@@ -198,7 +198,7 @@ unittest
 {
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Bar.emplace(Foo(2, 4), 4);
 		entity.add!Foo;
 		entity.add!Foo;
 		entity.add!(Foo, Bar);
@@ -229,7 +229,7 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Bar.emplace(Foo(2, 4), 4);
 		entity.add!Foo;
 		entity.add!Foo;
 		entity.add!(Foo, Bar);
@@ -272,7 +272,7 @@ unittest
 	{
 		auto em = new EntityManager();
 		with(em) {
-			entity.set(Foo(2, 4)).add!Bar.set(4);
+			entity.add!Bar.emplace(Foo(2, 4), 4);
 			entity.add!Foo;
 			entity.add!Foo;
 			entity.add!(Foo, Bar);
@@ -296,9 +296,9 @@ unittest
 	{
 		auto em = new EntityManager();
 		with(em) {
-			entity.set("Foo").set(1f);
-			entity.set("Bar").set(1f);
-			entity.set("Foobar").set(1f).set(5);
+			entity.emplace("Foo", 1f);
+			entity.emplace("Bar", 1f);
+			entity.emplace("Foobar", 1f, 5);
 		}
 
 		assertEquals(*em.query!(Tuple!(string, int)).front[0], *em.query!(string, With!int).front);
@@ -317,7 +317,7 @@ unittest
 
 	auto em = new EntityManager();
 	with(em) {
-		entity.set(Foo(2, 4)).add!Bar.set(4);
+		entity.add!Bar.emplace(Foo(2, 4), 4);
 		entity.add!Foo;
 		entity.add!Foo;
 		entity.add!(Foo, Bar);
