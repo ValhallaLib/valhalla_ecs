@@ -750,15 +750,15 @@ public:
 	 * auto e = em.gen();
 	 *
 	 * // asociates Foo.init with e returning a pointer to it
-	 * assert(Foo.init == *em.getOrSet!Foo(e));
+	 * assert(Foo.init == *em.getOrEmplaceComponent!Foo(e));
 	 *
 	 * // returns a pointer to the already associated Foo
-	 * assert(Foo.init == *em.getOrSet(e, Foo(5)));
+	 * assert(Foo.init == *em.getOrEmplaceComponent(e, Foo(5)));
 	 * ---
 	 *
 	 * Returns: `Component*` pointing to the component associated.
 	 */
-	Component* getOrSet(Component)(in Entity e, Component component = Component.init)
+	Component* getOrEmplaceComponent(Component)(in Entity e, Component component = Component.init)
 		in (validEntity(e))
 	{
 		return _assureStorage!Component().getOrEmplace(e, component);
@@ -1367,8 +1367,8 @@ private:
 	assert(*position == Position(1, 4));
 	assert(!uintegral);
 
-	assert(*world.getOrSet!uint(entity, 45) == 45);
-	assert(*world.getOrSet!uint(entity, 64) == 45);
+	assert(*world.getOrEmplaceComponent!uint(entity, 45) == 45);
+	assert(*world.getOrEmplaceComponent!uint(entity, 64) == 45);
 }
 
 version(assert)
@@ -1393,7 +1393,7 @@ unittest
 	assertThrown!AssertError(world.emplaceOrReplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
 	assertThrown!AssertError(world.getComponent!int(invalid));
-	assertThrown!AssertError(world.getOrSet!int(invalid));
+	assertThrown!AssertError(world.getOrEmplaceComponent!int(invalid));
 	assertThrown!AssertError(world.removeComponent!int(invalid));
 	assertThrown!AssertError(world.removeAllComponents(invalid));
 }
