@@ -741,6 +741,23 @@ public:
 			: storage.emplace(entity, forward!args);
 	}
 
+	/// Ditto
+	auto getOrEmplaceComponent(Components...)(in Entity entity, auto ref Components args)
+		if (Components.length > 1)
+		in (validEntity(entity))
+	{
+		import core.lifetime : forward;
+		import std.meta : staticMap;
+
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components)
+			C[i] = getOrEmplaceComponent!Component(entity, forward!(args[i]));
+
+		return tuple(C);
+	}
+
 
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
