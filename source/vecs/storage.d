@@ -303,26 +303,6 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 
 	/**
-	Assigns or updates the component for the entity.
-
-	Signal: emits $(LREF onSet) after adding the component.
-
-	Params:
-		entity = a valid entity.
-		component = component to assign or update.
-
-	Returns: A pointer to the component of the entity.
-	*/
-	Component* set()(in Entity entity, Component component)
-	{
-		Component* comp = _add(entity);
-		*comp = component;
-		onSet.emit(entity, comp);
-		return comp;
-	}
-
-
-	/**
 	Patch a component of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.
@@ -571,7 +551,7 @@ public:
 	with (storage) {
 		add(Entity(0));
 		emplace(Entity(5), 4, 6);
-		set(Entity(3), Position(2, 3));
+		emplace(Entity(3), Position(2, 3));
 	}
 
 	assert(*storage.get(Entity(0)) == Position.init);
@@ -584,7 +564,6 @@ public:
 	with (storage) {
 		assert(*add(Entity(5)) == *storage.get(Entity(5)));
 		assert(*emplace(Entity(3), 4, 6) == *storage.get(Entity(3)));
-		assert(*set(Entity(0), Position(2, 3)) == *storage.get(Entity(0)));
 	}
 
 	assert( storage.remove(Entity(3)));
