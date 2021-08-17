@@ -123,12 +123,25 @@ public:
 	*/
 	template replace(Components...)
 	{
-		EntityBuilder replace(Args...)(auto ref Args args)
+		static if (Components.length == 1)
 		{
-			import core.lifetime : forward;
+			EntityBuilder replace(Args...)(auto ref Args args)
+			{
+				import core.lifetime : forward;
 
-			entityManager.replaceComponent!Components(entity, forward!args);
-			return this;
+				entityManager.replaceComponent!Components(entity, forward!args);
+				return this;
+			}
+		}
+		else
+		{
+			EntityBuilder replace(auto ref Components args)
+			{
+				import core.lifetime : forward;
+
+				entityManager.replaceComponent!Components(entity, forward!args);
+				return this;
+			}
 		}
 	}
 
