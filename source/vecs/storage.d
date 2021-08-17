@@ -434,7 +434,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	 *
 	 * Returns: `Component*` pointing to the component associated.
 	 */
-	Component* getOrSet()(in Entity e, Component component)
+	Component* getOrEmplace()(in Entity e, Component component)
 		in (!(e.id < _sparsedEntities.length
 			&& _sparsedEntities[e.id] < _packedEntities.length
 			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
@@ -623,24 +623,24 @@ unittest
 	assertThrown!AssertError(storage.add(Entity(1, 4)));
 }
 
-@("[Storage] getOrSet")
+@("[Storage] getOrEmplace")
 @safe pure nothrow unittest
 {
 	scope storage = new Storage!(int, void delegate() @safe pure nothrow @nogc);
 
-	assert(*storage.getOrSet(Entity(0), 55) == 55);
-	assert(*storage.getOrSet(Entity(0), 13) == 55);
+	assert(*storage.getOrEmplace(Entity(0), 55) == 55);
+	assert(*storage.getOrEmplace(Entity(0), 13) == 55);
 }
 
 version(assert)
-@("[Storage] getOrSet (invalid entities)")
+@("[Storage] getOrEmplace (invalid entities)")
 unittest
 {
 	scope storage = new Storage!int;
 
 	storage.add(Entity(0));
 
-	assertThrown!AssertError(storage.getOrSet(Entity(0, 1), 6));
+	assertThrown!AssertError(storage.getOrEmplace(Entity(0, 1), 6));
 }
 
 @("[Storage] signals")
