@@ -728,40 +728,17 @@ public:
 	}
 
 
-	/**
-	 * Fetch the component associated to an entity. If the entity is already
-	 *     associated with a component of that type then the same is immediatly
-	 *     returned, otherwise the component is set and returned. Passing an
-	 *     invalid entity leads to undefined behaviour.
-	 *
-	 * Safety: The **internal code** is @safe, however, because of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet **after** the component is set **if** set.
-	 *
-	 * Params:
-	 *     e = entity to fetch the associated component.
-	 *     component = component to set if there is none associated.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo { int i; }
-	 * auto em = new EntityManager();
-	 * auto e = em.gen();
-	 *
-	 * // asociates Foo.init with e returning a pointer to it
-	 * assert(Foo.init == *em.getOrEmplaceComponent!Foo(e));
-	 *
-	 * // returns a pointer to the already associated Foo
-	 * assert(Foo.init == *em.getOrEmplaceComponent(e, Foo(5)));
-	 * ---
-	 *
-	 * Returns: `Component*` pointing to the component associated.
-	 */
-	Component* getOrEmplaceComponent(Component)(in Entity e, Component component = Component.init)
-		in (validEntity(e))
+	// TODO: documentation
+	// TODO: unit tests
+	Component* getOrEmplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
+		in (validEntity(entity))
 	{
-		return _assureStorage!Component().getOrEmplace(e, component);
+		import core.lifetime : forward;
+
+		auto storage = _assureStorage!Component;
+		return storage.contains(entity)
+			? storage.get(entity)
+			: storage.emplace(entity, forward!args);
 	}
 
 
