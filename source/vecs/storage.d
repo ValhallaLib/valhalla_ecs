@@ -461,7 +461,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
 		)
 	{
-		return contains(e) ? get(e) : set(e, component);
+		return contains(e) ? get(e) : emplace(e, component);
 	}
 
 
