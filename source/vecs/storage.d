@@ -420,32 +420,6 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 
 	/**
-	 * Fetch the component if associated to the entity, otherwise the component
-	 *     passed set then returned. Emits onSet if the component is set.
-	 *
-	 * Safety: The **internal code** is @safe, however, beacause of **Signal**
-	 *     dependency, the method must be @system.
-	 *
-	 * Signal: Emits onSet **after** the component is set **if** set.
-	 *
-	 * Params:
-	 *     e = entity to search.
-	 *     component = component to set if there is none associated.
-	 *
-	 * Returns: `Component*` pointing to the component associated.
-	 */
-	Component* getOrEmplace()(in Entity e, Component component)
-		in (!(e.id < _sparsedEntities.length
-			&& _sparsedEntities[e.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[e.id]].id == e.id
-			&&_packedEntities[_sparsedEntities[e.id]].batch != e.batch)
-		)
-	{
-		return contains(e) ? get(e) : emplace(e, component);
-	}
-
-
-	/**
 	 * Gets the amount of components/entities stored.
 	 *
 	 * Returns: `size_t` with the amount of components/entities.
@@ -621,26 +595,6 @@ unittest
 	storage.add(Entity(1));
 
 	assertThrown!AssertError(storage.add(Entity(1, 4)));
-}
-
-@("[Storage] getOrEmplace")
-@safe pure nothrow unittest
-{
-	scope storage = new Storage!(int, void delegate() @safe pure nothrow @nogc);
-
-	assert(*storage.getOrEmplace(Entity(0), 55) == 55);
-	assert(*storage.getOrEmplace(Entity(0), 13) == 55);
-}
-
-version(assert)
-@("[Storage] getOrEmplace (invalid entities)")
-unittest
-{
-	scope storage = new Storage!int;
-
-	storage.add(Entity(0));
-
-	assertThrown!AssertError(storage.getOrEmplace(Entity(0, 1), 6));
 }
 
 @("[Storage] signals")
