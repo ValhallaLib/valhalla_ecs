@@ -327,45 +327,6 @@ public:
 
 
 	/**
-	Assigns the components to an entity.
-
-	Attempting to use an invalid entity leads to undefined behavior.
-
-	Examples:
-	---
-	struct Position { ulong x, y; }
-	auto world = new EntityManager();
-
-	Position* i = world.set(world.entity, Position(2, 3));
-	Tuple!(int*, string*) = world.set(world.entity, 45, "str")
-	---
-
-	Signal: emits `onSet` after each component is assigned.
-
-	Params:
-		entity = a valid entity.
-		components = components to assign.
-
-	Returns: A pointer or `Tuple` of pointers to the components set.
-	*/
-	auto setComponent(Components...)(in Entity entity, Components components)
-		if (Components.length)
-		in (validEntity(entity))
-	{
-		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
-		staticMap!(PointerOf, Components) C;
-
-		static foreach (i, Component; Components) C[i] = _assureStorage!Component.set(entity, components[i]);
-
-		static if (Components.length == 1)
-			return C[0];
-		else
-			return tuple(C);
-	}
-
-
-	/**
 	Patch a component of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.
@@ -1369,7 +1330,6 @@ private:
 
 	assert(*world.addComponent!int(world.entity) == 0);
 	assert(*world.emplaceComponent!int(world.entity, 34) == 34);
-	assert(*world.setComponent(world.entity, 45) == 45);
 
 	struct Position { ulong x, y; }
 	auto entity = world.entity
@@ -1428,7 +1388,6 @@ unittest
 	assertThrown!AssertError(world.addComponent!int(invalid));
 	assertThrown!AssertError(world.resetComponent!int(invalid));
 	assertThrown!AssertError(world.addOrResetComponent!int(invalid));
-	assertThrown!AssertError(world.setComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.replaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceOrReplaceComponent!int(invalid, 0));
