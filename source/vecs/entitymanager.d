@@ -729,7 +729,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	Component* getOrEmplaceComponent(Component, Args...)(in Entity entity, auto ref Args args)
 		in (validEntity(entity))
 	{
@@ -1361,8 +1360,11 @@ private:
 	assert(*position == Position(1, 4));
 	assert(!uintegral);
 
-	assert(*world.getOrEmplaceComponent!uint(entity, 45) == 45);
-	assert(*world.getOrEmplaceComponent!uint(entity, 64) == 45);
+	int* i; ulong* ul;
+	AliasSeq!(i, ul) = world.getOrEmplaceComponent!(int, ulong)(entity, 24, 45);
+
+	assert(*i == 0); // entity had an int
+	assert(*ul == 45); // entity didn't have an ulong
 }
 
 version(assert)
