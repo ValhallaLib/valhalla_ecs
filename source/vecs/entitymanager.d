@@ -786,6 +786,32 @@ public:
 	}
 
 
+	// TODO: documentation
+	// TODO: unit tests
+	auto getOrAddComponent(Components...)(in Entity entity)
+		if (Components.length)
+		in (validEntity(entity))
+	{
+		import std.meta : staticMap;
+
+		alias PointerOf(T) = T*;
+		staticMap!(PointerOf, Components) C;
+
+		static foreach (i, Component; Components)
+		{
+			auto storage = _assureStorage!Component;
+			C[i] = storage.contains(entity)
+				? storage.get(entity)
+				: storage.add(entity);
+		}
+
+		static if (Components.length == 1)
+			return C[0];
+		else
+			return tuple(C);
+	}
+
+
 	/**
 	 * Get the size of Component Storage. The size represents how many entities
 	 *     and components are stored in the Component's storage.
