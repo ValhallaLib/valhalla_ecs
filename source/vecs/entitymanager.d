@@ -787,7 +787,6 @@ public:
 
 
 	// TODO: documentation
-	// TODO: unit tests
 	auto getOrAddComponent(Components...)(in Entity entity)
 		if (Components.length)
 		in (validEntity(entity))
@@ -1419,6 +1418,8 @@ private:
 
 	assert(*i == 0); // entity had an int
 	assert(*ul == 45); // entity didn't have an ulong
+
+	assert(*world.getOrAddComponent!int(world.entity) == int.init);
 }
 
 version(assert)
@@ -1443,6 +1444,7 @@ unittest
 	assertThrown!AssertError(world.emplaceOrReplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
 	assertThrown!AssertError(world.getComponent!int(invalid));
+	assertThrown!AssertError(world.getOrAddComponent!int(invalid));
 	assertThrown!AssertError(world.getOrEmplaceComponent!int(invalid));
 	assertThrown!AssertError(world.removeComponent!int(invalid));
 	assertThrown!AssertError(world.removeAllComponents(invalid));
