@@ -786,7 +786,33 @@ public:
 	}
 
 
-	// TODO: documentation
+	/**
+	Gets the type if owned by an entity otherwise emplaces a new one constructed
+	to its init state.
+
+	Attempting to use an invalid entity leads to undefined behavior.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	auto entity = world.entity.emplace!int(3);
+
+	struct Position { ulong x, y; }
+	int* i; Position* pos;
+	AliasSeq!(i, pos) = world.getOrAdd!(int, Position)(entity);
+
+	assert(*i == 3); // entity owed an int type
+	assert(*pos == Position.init); // entity didn't owe a Position type
+	---
+
+	Params:
+		Components = Component types to get.
+		entity = a valid entity.
+
+	Returns: A pointer or a `Tuple` of pointers to the components previously
+	owed or emplaced.
+	*/
 	auto getOrAddComponent(Components...)(in Entity entity)
 		if (Components.length)
 		in (validEntity(entity))
