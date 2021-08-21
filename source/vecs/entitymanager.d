@@ -306,7 +306,7 @@ public:
 	 *
 	 * Returns: `Signal!(Entity,Component*)`
 	 */
-	ref auto onRemove(Component)()
+	ref onRemove(Component)()
 	{
 		return _assureStorage!Component.onRemove;
 	}
