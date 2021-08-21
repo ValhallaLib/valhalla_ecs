@@ -306,6 +306,8 @@ public:
 	entity.patch!Position((ref Position pos) { pos.x = 24; });
 	---
 
+	Signal: emits $(LREF onUpdate) after the patch.
+
 	Params:
 		Components: Component types to patch.
 		entity: a valid entity.
@@ -356,6 +358,8 @@ public:
 
 	assert(*i = 3 && *pos = Position(1, 2));
 	---
+
+	Signal: emits $(LREF onUpdate) after the replacement.
 
 	Params:
 		Components: Component types to replace.
@@ -417,6 +421,8 @@ public:
 	assert(*i = 3 && *pos = Position(1, 2));
 	---
 
+	Signal: emits $(LREF onUpdate) if replaced.
+
 	Params:
 		Comonents: Component types to emplace or replace.
 		entity: a valid entity.
@@ -472,6 +478,8 @@ public:
 	assert(*world.resetComponent!int(world.entity.emplace!int(4)) == int.init);
 	---
 
+	Signal: emits $(LREF onUpdate) after the reset.
+
 	Params:
 		Comonents: Component types to replace.
 		entity: a valid entity.
@@ -510,6 +518,8 @@ public:
 
 	assert(*world.addOrResetComponent!int(world.entity.addOrReset!int) == int.init);
 	---
+
+	Signal: emits $(LREF onUpdate) if reset.
 
 	Params:
 		Comonents: Component types to add or replace.
