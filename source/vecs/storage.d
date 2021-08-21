@@ -273,8 +273,10 @@ package class Storage(Component, Fun = void delegate() @safe)
 	*/
 	Component* add()(in Entity entity)
 	{
+		import core.lifetime : emplace;
+
 		Component* component = _add(entity);
-		*component = Component.init;
+		emplace(component);
 		onConstruct.emit(entity, *component);
 		return component;
 	}
