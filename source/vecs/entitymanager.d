@@ -60,7 +60,7 @@ public:
 	Tuple!(int*, string*) t = world.add!(int, string)(world.entity);
 	---
 
-	Signal: emits `onSet` after each component is assigned.
+	Signal: emits `onConstruct` after each component is assigned.
 
 	Params:
 		Components = Component types to add.
@@ -108,7 +108,7 @@ public:
 	assert(*i = 3 && *pos = Position(1, 2));
 	---
 
-	Signal: emits `onSet` after each component is assigned.
+	Signal: emits `onConstruct` after each component is assigned.
 
 	Params:
 		Components = Component types to emplace.
@@ -246,7 +246,7 @@ public:
 
 
 	/**
-	 * This signal occurs every time a Component is set. The onSet signal is
+	 * This signal occurs every time a Component is set. The onConstruct signal is
 	 *     emitted **after** the Component is set. A Component is set when
 	 *     assigning a new one to an entity or when updating an existing one.
 	 *
@@ -263,15 +263,15 @@ public:
 	 * auto fun = (Entity,Foo*) { i++; };
 	 *
 	 * // bind a callback
-	 * em.onSet!Foo().connect(fun);
+	 * em.onConstruct!Foo().connect(fun);
 	 *
-	 * // this emits onSet
+	 * // this emits onConstruct
 	 * em.gen!Foo();
 	 *
 	 * assert(1 == i);
 	 *
 	 * // unbind a callback
-	 * em.onSet!Foo().disconnect(fun);
+	 * em.onConstruct!Foo().disconnect(fun);
 	 *
 	 * em.gen!Foo();
 	 * assert(1 == i);
@@ -279,7 +279,7 @@ public:
 	 *
 	 * Returns: `Signal!(Entity,Component*)`
 	 */
-	ref auto onSet(Component)()
+	ref auto onConstruct(Component)()
 	{
 		return _assureStorage!Component.onConstruct;
 	}
@@ -301,7 +301,7 @@ public:
 	 * auto fun = (Entity,Foo*) { i++; };
 	 *
 	 * // bind a callback
-	 * em.onSet!Foo().connect(fun);
+	 * em.onConstruct!Foo().connect(fun);
 	 *
 	 * // this emits onRemove
 	 * em.destroyEntity(em.gen!Foo());
@@ -309,7 +309,7 @@ public:
 	 * assert(1 == i);
 	 *
 	 * // unbind a callback
-	 * em.onSet!Foo().disconnect(fun);
+	 * em.onConstruct!Foo().disconnect(fun);
 	 *
 	 * em.destroyEntity(em.gen!Foo());
 	 * assert(1 == i);
