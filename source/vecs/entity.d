@@ -177,6 +177,12 @@ struct NullEntity
 		return true;
 	}
 
+	@safe pure nothrow @nogc
+	bool opEquals(typeof(null)) const
+	{
+		return true;
+	}
+
 	Entity opBinary(string op)(in size_t signature) const
 		if (op == "|")
 	{
