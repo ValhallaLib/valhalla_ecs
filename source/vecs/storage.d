@@ -448,9 +448,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	@safe pure nothrow @nogc
 	bool contains(in Entity e) const
 	{
-		return e.id < _sparsedEntities.length
-			&& _sparsedEntities[e.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[e.id]] == e;
+		return e.id < _sparsedEntities.length && _sparsedEntities[e.id] != nullentity;
 	}
 
 
@@ -595,8 +593,9 @@ public:
 
 	assert(!storage.contains(Entity(0)));
 
-	assert(!storage.remove(Entity(5, 1)));
-	assert( storage.contains(Entity(5)));
+	// ignores batches, however they are tested by EntityManagerT
+	assert( storage.remove(Entity(5, 1)));
+	assert(!storage.contains(Entity(5)));
 }
 
 version(assert)
