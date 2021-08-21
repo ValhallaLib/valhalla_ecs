@@ -146,7 +146,9 @@ public:
 	}
 
 	assert(Entity(Entity.maxid) == nullentity);
+	assert(Entity(Entity.maxid) == null);
 	assert(Entity(Entity.maxid, 45) == nullentity);
+	assert(Entity(Entity.maxid, 45) == null);
 }
 
 version(assert)
