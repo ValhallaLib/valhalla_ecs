@@ -271,6 +271,28 @@ public:
 	}
 
 
+	/**
+	Signal emited when a component is contructed.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	int result;
+	world.onUpdate!int.connect((in Entity, ref int i) { result = i; });
+
+	world.entity
+		.add!int
+		.replace!int(5);
+
+	assert(result == 5);
+	---
+
+	Params:
+		Component = Signal's Component type.
+
+	Returns: A reference to the Signal.
+	*/
 	ref onUpdate(Component)()
 	{
 		return _assureStorage!Component.onUpdate;
