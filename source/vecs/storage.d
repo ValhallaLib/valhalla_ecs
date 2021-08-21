@@ -318,6 +318,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	{
 		Component* component = &_components[_sparsedEntities[entity]];
 		fn(*component);
+		onUpdate.emit(entity, *component);
 		return component;
 	}
 
