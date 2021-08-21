@@ -275,7 +275,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	{
 		Component* component = _add(entity);
 		*component = Component.init;
-		onConstruct.emit(entity, component);
+		onConstruct.emit(entity, *component);
 		return component;
 	}
 
@@ -297,7 +297,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 		Component* component = _add(entity);
 		component.emplace(forward!args);
-		onConstruct.emit(entity, component);
+		onConstruct.emit(entity, *component);
 		return component;
 	}
 
@@ -512,7 +512,7 @@ private:
 	Component[] _components;
 
 public:
-	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onConstruct;
+	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onConstruct;
 	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onRemove;
 }
 
@@ -604,10 +604,10 @@ unittest
 	enum e = Entity(0);
 
 	int value;
-	void delegate(Entity, int*) @safe pure nothrow @nogc fun = (Entity, int*) { value++; };
+	void delegate(Entity, ref int) @safe pure nothrow @nogc fun = (Entity, ref int) { value++; };
 
 	storage.onConstruct.connect(fun);
-	storage.onRemove.connect(fun);
+	storage.onRemove.connect((Entity, int*) { value++; });
 
 	storage.add(e);
 	assert(value == 1);
