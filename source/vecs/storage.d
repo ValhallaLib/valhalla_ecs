@@ -496,17 +496,14 @@ private:
 			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
 		))
 	{
-		if (!contains(entity))
-		{
-			_packedEntities ~= entity; // set entity
-			_components.length++;
+		_packedEntities ~= entity; // set entity
+		_components.length++;
 
-			// map to the correct entity from the packedEntities from sparsedEntities
-			if (entity.id >= _sparsedEntities.length)
-				_sparsedEntities.length = entity.id + 1;
+		// map to the correct entity from the packedEntities from sparsedEntities
+		if (entity.id >= _sparsedEntities.length)
+			_sparsedEntities.length = entity.id + 1;
 
-			_sparsedEntities[entity.id] = _packedEntities.length - 1;
-		}
+		_sparsedEntities[entity.id] = _packedEntities.length - 1;
 
 		return &_components[_sparsedEntities[entity.id]];
 	}
