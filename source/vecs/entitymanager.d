@@ -11,7 +11,7 @@ import vecs.resource;
 import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
 import std.meta : AliasSeq, NoDuplicates;
-import std.range : iota;
+import std.range : iota, takeOne;
 import std.traits : isInstanceOf, TemplateArgsOf;
 import std.typecons : Tuple, tuple;
 
@@ -1016,11 +1016,11 @@ public:
 
 
 	/// Ditto
-	auto queryOne(Output)() { return query!Output.front; }
+	auto queryOne(Output)() { return query!Output.takeOne; }
 
 
 	/// Ditto
-	auto queryOne(Output, Filter)() { return query!(Output, Filter).front; }
+	auto queryOne(Output, Filter)() { return query!(Output, Filter).takeOne; }
 
 
 	/**
