@@ -272,40 +272,20 @@ public:
 
 
 	/**
-	 * This signal occurs every time a Component is disassociated from an
-	 *     entity. The onRemove signal is emitted **before** the Component is
-	 *     removed. A Component is removed when removing a one from an entity or
-	 *     when discarding an entity.
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo {}
-	 * auto em = new EntityManager();
-	 * int i;
-	 *
-	 * // callback **MUST be a delegate** and return **void**
-	 * auto fun = (Entity,Foo*) { i++; };
-	 *
-	 * // bind a callback
-	 * em.onConstruct!Foo().connect(fun);
-	 *
-	 * // this emits onRemove
-	 * em.destroyEntity(em.gen!Foo());
-	 *
-	 * assert(1 == i);
-	 *
-	 * // unbind a callback
-	 * em.onConstruct!Foo().disconnect(fun);
-	 *
-	 * em.destroyEntity(em.gen!Foo());
-	 * assert(1 == i);
-	 * ---
-	 *
-	 * Params:
-	 *     Component = a valid component type
-	 *
-	 * Returns: `Signal!(Entity,Component*)`
-	 */
+	Signal emited before a component is removed.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	int result;
+	world.onRemove!int.connect((in Entity, ref int i) { result = i; });
+
+	world.removeComponent!int(world.entity.emplace!int(5));
+
+	assert(result == 5);
+	---
+	*/
 	ref onRemove(Component)()
 	{
 		return _assureStorage!Component.onRemove;
