@@ -279,7 +279,7 @@ public:
 	 *
 	 * Returns: `Signal!(Entity,Component*)`
 	 */
-	ref auto onConstruct(Component)()
+	ref onConstruct(Component)()
 	{
 		return _assureStorage!Component.onConstruct;
 	}
