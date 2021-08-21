@@ -611,11 +611,15 @@ unittest
 	void delegate(Entity, ref int) @safe pure nothrow @nogc fun = (Entity, ref int) { value++; };
 
 	storage.onConstruct.connect(fun);
+	storage.onUpdate.connect(fun);
 	storage.onRemove.connect(fun);
 
 	storage.add(e);
 	assert(value == 1);
 
-	storage.remove(e);
+	storage.patch(e, (ref int) {});
 	assert(value == 2);
+
+	storage.remove(e);
+	assert(value == 3);
 }
