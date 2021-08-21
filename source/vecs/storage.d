@@ -489,11 +489,7 @@ private:
 	*/
 	@safe pure nothrow
 	Component* _add(in Entity entity)
-		in (!(entity.id < _sparsedEntities.length
-			&& _sparsedEntities[entity.id] < _packedEntities.length
-			&& _packedEntities[_sparsedEntities[entity.id]].id == entity.id
-			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
-		))
+		in (!contains(entity))
 	{
 		// map to the correct entity from the packedEntities from sparsedEntities
 		if (entity.id >= _sparsedEntities.length)
@@ -545,11 +541,6 @@ public:
 
 	assert( storage.tryGet(Entity(0)));
 	assert(!storage.tryGet(Entity(1234)));
-
-	with (storage) {
-		assert(*add(Entity(5)) == *storage.get(Entity(5)));
-		assert(*emplace(Entity(3), 4, 6) == *storage.get(Entity(3)));
-	}
 
 	assert( storage.remove(Entity(3)));
 	assert(!storage.tryGet(Entity(3)));
@@ -607,6 +598,7 @@ unittest
 	storage.add(Entity(1));
 
 	assertThrown!AssertError(storage.add(Entity(1, 4)));
+	assertThrown!AssertError(storage.emplace(Entity(1, 4), 0));
 }
 
 @("[Storage] signals")
