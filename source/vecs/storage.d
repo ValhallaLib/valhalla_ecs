@@ -496,14 +496,23 @@ private:
 			&& _packedEntities[_sparsedEntities[entity.id]].batch != entity.batch
 		))
 	{
-		_packedEntities ~= entity; // set entity
-		_components.length++;
-
 		// map to the correct entity from the packedEntities from sparsedEntities
 		if (entity.id >= _sparsedEntities.length)
-			_sparsedEntities.length = entity.id + 1;
+		{
+			import std.algorithm : uninitializedFill;
 
-		_sparsedEntities[entity.id] = _packedEntities.length - 1;
+			immutable size = entity.id + 1;
+
+			_sparsedEntities.reserve(size);
+			auto slice = (() @trusted => _sparsedEntities.ptr[_sparsedEntities.length .. size])();
+			slice.uninitializedFill(nullentity);
+			_sparsedEntities ~= slice;
+		}
+
+		_sparsedEntities[entity.id] = _packedEntities.length;
+
+		_packedEntities ~= entity; // set entity
+		_components.length++;
 
 		return &_components[_sparsedEntities[entity.id]];
 	}
