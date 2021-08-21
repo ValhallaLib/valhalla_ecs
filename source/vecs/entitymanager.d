@@ -246,39 +246,25 @@ public:
 
 
 	/**
-	 * This signal occurs every time a Component is set. The onConstruct signal is
-	 *     emitted **after** the Component is set. A Component is set when
-	 *     assigning a new one to an entity or when updating an existing one.
-	 *
-	 * Params:
-	 *     Component = a valid component type
-	 *
-	 * Examples:
-	 * ---
-	 * struct Foo {}
-	 * auto em = new EntityManager();
-	 * int i;
-	 *
-	 * // callback **MUST be a delegate** and return **void**
-	 * auto fun = (Entity,Foo*) { i++; };
-	 *
-	 * // bind a callback
-	 * em.onConstruct!Foo().connect(fun);
-	 *
-	 * // this emits onConstruct
-	 * em.gen!Foo();
-	 *
-	 * assert(1 == i);
-	 *
-	 * // unbind a callback
-	 * em.onConstruct!Foo().disconnect(fun);
-	 *
-	 * em.gen!Foo();
-	 * assert(1 == i);
-	 * ---
-	 *
-	 * Returns: `Signal!(Entity,Component*)`
-	 */
+	Signal emited when a component is contructed.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	int result;
+	world.onConstruct!int.connect((in Entity, ref int i) { result = i; });
+
+	world.entity.emplace!int(5);
+
+	assert(result == 5);
+	---
+
+	Params:
+		Component = Signal's Component type.
+
+	Returns: A reference to the Signal.
+	*/
 	ref onConstruct(Component)()
 	{
 		return _assureStorage!Component.onConstruct;
