@@ -281,7 +281,7 @@ public:
 	 */
 	ref auto onSet(Component)()
 	{
-		return _assureStorage!Component.onSet;
+		return _assureStorage!Component.onConstruct;
 	}
 
 
