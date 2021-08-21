@@ -264,7 +264,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	/**
 	Adds or updates the component for the entity.
 
-	Signal: emits $(LREF onSet) after adding the component.
+	Signal: emits $(LREF onConstruct) after adding the component.
 
 	Params:
 		entity = a valid entity.
@@ -275,7 +275,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	{
 		Component* component = _add(entity);
 		*component = Component.init;
-		onSet.emit(entity, component);
+		onConstruct.emit(entity, component);
 		return component;
 	}
 
@@ -283,7 +283,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 	/**
 	Emplace or replace the component for the entity.
 
-	Signal: emits $(LREF onSet) after adding the component.
+	Signal: emits $(LREF onConstruct) after adding the component.
 
 	Params:
 		entity = a valid entity.
@@ -297,7 +297,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 		Component* component = _add(entity);
 		component.emplace(forward!args);
-		onSet.emit(entity, component);
+		onConstruct.emit(entity, component);
 		return component;
 	}
 
@@ -512,7 +512,7 @@ private:
 	Component[] _components;
 
 public:
-	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onSet;
+	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onConstruct;
 	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onRemove;
 }
 
@@ -606,7 +606,7 @@ unittest
 	int value;
 	void delegate(Entity, int*) @safe pure nothrow @nogc fun = (Entity, int*) { value++; };
 
-	storage.onSet.connect(fun);
+	storage.onConstruct.connect(fun);
 	storage.onRemove.connect(fun);
 
 	storage.add(e);
