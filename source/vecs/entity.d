@@ -196,6 +196,7 @@ struct NullEntity
 {
 	assert(is(NullEntity : Entity));
 	assert(nullentity == nullentity);
+	assert(nullentity == null);
 	assert(nullentity == Entity.maxid);
 	assert((nullentity | Entity(4, 3)).batch == 3);
 }
