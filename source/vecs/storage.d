@@ -307,6 +307,8 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Attempting to use an invalid entity leads to undefined behavior.
 
+	Signal: emits $(LREF onUpdate) after the patch.
+
 	Params:
 		entity: an entity in the storage.
 		fn: the callback to call.
