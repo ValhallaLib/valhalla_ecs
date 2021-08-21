@@ -368,7 +368,8 @@ package class Storage(Component, Fun = void delegate() @safe)
 		swap(_packedEntities.back, _packedEntities[_sparsedEntities[entity.id]]);
 
 		// map the sparseEntities to the new value in packedEntities
-		swap(_sparsedEntities[last.id], _sparsedEntities[entity.id]);
+		_sparsedEntities[last.id] = _sparsedEntities[entity.id];
+		_sparsedEntities[entity.id] = nullentity;
 
 		// remove the last element
 		_components.popBack;
