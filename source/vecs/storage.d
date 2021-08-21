@@ -354,7 +354,7 @@ package class Storage(Component, Fun = void delegate() @safe)
 		import std.range : back, popBack;
 
 		// emit onRemove
-		onRemove.emit(entity, &_components[_sparsedEntities[entity.id]]);
+		onRemove.emit(entity, _components[_sparsedEntities[entity.id]]);
 
 		immutable last = _packedEntities.back;
 
@@ -513,7 +513,7 @@ private:
 
 public:
 	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onConstruct;
-	SignalT!Fun.parameters!(void delegate(Entity, Component*)) onRemove;
+	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onRemove;
 }
 
 @("[Storage] component manipulation")
@@ -607,7 +607,7 @@ unittest
 	void delegate(Entity, ref int) @safe pure nothrow @nogc fun = (Entity, ref int) { value++; };
 
 	storage.onConstruct.connect(fun);
-	storage.onRemove.connect((Entity, int*) { value++; });
+	storage.onRemove.connect(fun);
 
 	storage.add(e);
 	assert(value == 1);
