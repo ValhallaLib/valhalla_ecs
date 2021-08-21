@@ -513,6 +513,7 @@ private:
 
 public:
 	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onConstruct;
+	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onUpdate;
 	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onRemove;
 }
 
