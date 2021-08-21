@@ -97,6 +97,7 @@ unittest
 	assertRangeEquals([4,0,0,0,0], em.query!int.map!"*a");
 	assertRangeEquals(em.query!(Tuple!int), em.query!int);
 	assertEquals(4, *em.queryOne!int.front);
+	assert(em.queryOne!ulong.empty);
 }
 
 @system
