@@ -271,6 +271,12 @@ public:
 	}
 
 
+	ref onUpdate(Component)()
+	{
+		return _assureStorage!Component.onUpdate;
+	}
+
+
 	/**
 	Signal emited before a component is removed.
 
