@@ -43,6 +43,11 @@ template Query(EntityManagerT, Select, Rules...)
 	alias QueryRules = ApplyRight!(hasUDA, QueryRule);
 
 
+	static assert(is(Select == S!Args, alias S = .Select, Args...),
+		"Type (%s) must be a valid 'vecs.query.Select' type".format(Select.stringof)
+	);
+
+
 	struct Query
 	{
 		Entity[] entities;
