@@ -4,6 +4,7 @@ import vecs.entity;
 import vecs.entitymanager;
 import vecs.storage;
 
+import std.algorithm : minIndex;
 import std.format : format;
 import std.meta : All = allSatisfy;
 import std.meta : IndexOf = staticIndexOf;
@@ -118,6 +119,27 @@ template Query(EntityManagerT, Select, Rules...)
 	struct Query
 	{
 	package:
+		this(SelectStorages selects, RuleStorages rules)
+		{
+			alias storages = AliasSeq!(selects, RuleElements!(With, rules));
+
+			size_t[Include.length] counter;
+			static foreach (i, storage; storages) counter[i] = storage.size();
+
+			Lswitch: final switch (counter[].minIndex())
+			{
+				static foreach (i, storage; storages)
+				{
+					case i: entities = storage.entities(); break Lswitch;
+				}
+			}
+
+			include = storages;
+
+			static if (Exclude.length)
+				exclude = RuleElements!(.Without, rules);
+		}
+
 		Include include;
 		Exclude exclude;
 		alias select = include[0 .. SelectArgs.length];
