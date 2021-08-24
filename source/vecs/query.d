@@ -117,6 +117,10 @@ template Query(EntityManagerT, Select, Rules...)
 
 	struct Query
 	{
+	package:
+		Include include;
+		Exclude exclude;
+		alias select = include[0 .. SelectArgs.length];
 		Entity[] entities;
 	}
 }
