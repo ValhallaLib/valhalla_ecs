@@ -11,6 +11,12 @@ import std.traits : hasUDA;
 
 private enum QueryRule;
 
+/// Include entities with Args
+@QueryRule struct With(Args...) if (Args.length) {}
+
+/// Ignore entities with Args
+@QueryRule struct Without(Args...) if (Args.length) {}
+
 /// Select entities with Args
 struct Select(Args...) if (Args.length) {}
 
