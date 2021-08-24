@@ -3,6 +3,7 @@ module vecs.query;
 import vecs.entity;
 import vecs.entitymanager;
 
+private enum QueryRule;
 
 // TODO: documentation
 // TODO: unittests
