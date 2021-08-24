@@ -11,6 +11,9 @@ import std.traits : hasUDA;
 
 private enum QueryRule;
 
+/// Select entities with Args
+struct Select(Args...) if (Args.length) {}
+
 // TODO: documentation
 // TODO: unittests
 template Query(EntityManagerT, Select, Rules...)
