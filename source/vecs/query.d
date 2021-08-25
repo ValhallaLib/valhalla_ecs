@@ -6,13 +6,35 @@ import vecs.storage;
 
 import std.algorithm : minIndex;
 import std.format : format;
+import std.functional : toDelegate, unaryFun;
 import std.meta : All = allSatisfy;
 import std.meta : IndexOf = staticIndexOf;
 import std.meta : Map = staticMap;
 import std.meta : Not = templateNot;
 import std.meta : AliasSeq, ApplyRight, Filter;
+import std.range : iota;
 import std.traits : hasUDA, TemplateArgsOf, TemplateOf;
 import std.typecons : Tuple, tuple;
+
+
+void each(alias pred, Query)(Query query)
+	if (is(typeof(unaryFun!pred)))
+{
+	static assert (is(Query == Q!Args, alias Q = .Query, Args...),
+		"Type (%s) must be a valid 'vecs.query.Query' type".format(Query.stringof)
+	);
+
+	foreach (entity; query) with (query)
+	{
+		static immutable components = "%(*select[%s].get(entity)%|, %)".format(select.length.iota);
+
+		static if (__traits(compiles, { mixin (q{ pred(entity, %s); }.format(components)); }))
+			mixin (q{ pred(entity, %s); }.format(components));
+		else
+			mixin (q{ pred(%s); }.format(components));
+	}
+}
+
 
 private enum QueryRule;
 
