@@ -232,5 +232,34 @@ template Query(EntityManagerT, Select, Rules...)
 		Exclude exclude;
 		alias select = include[0 .. SelectArgs.length];
 		Entity[] entities;
+
+
+		struct QueryEach
+		{
+			ElementType front() @property
+			{
+				auto entity = query.front;
+				return mixin (q{ ElementType(entity, %(query.select[%s].get(entity)%|, %)) }
+					.format(SelectArgs.length.iota)
+				);
+			}
+
+			void popFront() { query.popFront(); }
+
+			ElementType back() @property
+			{
+				auto entity = query.back;
+				return mixin (q{ ElementType(entity, %(query.select[%s].get(entity)%|, %)) }
+					.format(SelectArgs.length.iota)
+				);
+			}
+
+			void popBack() { query.popBack(); }
+
+			bool empty() @property const { return query.empty; }
+
+		package:
+			Query query;
+		}
 	}
 }
