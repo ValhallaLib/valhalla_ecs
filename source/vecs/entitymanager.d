@@ -1054,6 +1054,7 @@ public:
 	}
 
 
+	/// Query type of this EntityManagerT type
 	template Query(Args...)
 		if (Args.length)
 	{
