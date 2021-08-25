@@ -1063,6 +1063,26 @@ public:
 			alias Query = .Query!(EntityManagerT, Select!Args);
 	}
 
+
+	Query!Args query(Args...)()
+	{
+		static if (TemplateArgsOf!(Query!Args).length == 2)
+		{
+			// Query!(EntityManagerT, Select!(Args...))
+			alias Components = Args;
+		}
+		else
+		{
+			// Query!(EntityManagerT, Args...)
+			import std.meta : Map = staticMap;
+			alias Components = Map!(TemplateArgsOf, Args);
+		}
+
+		return mixin (q{ Query!Args(%(_assureStorage!(Components[%s])%|, %)) }
+			.format(Components.length.iota)
+		);
+	}
+
 private:
 	/**
 	Generates a new entity identifier.
