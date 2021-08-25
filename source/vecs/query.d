@@ -158,6 +158,29 @@ template Query(EntityManagerT, Select, Rules...)
 			return all!(s => s.contains(entity))(include) && all!(s => !s.contains(entity))(exclude);
 		}
 
+		auto get(Components...)(in Entity entity)
+			if (Components.length)
+			in (contains(entity))
+		{
+			enum bool Contains(Component) = IndexOf!(Component, TemplateArgsOf!Select) >= 0;
+			static assert(All!(Contains, Components),
+				"Query can not select %s from %s Components".format(
+					Filter!(Not!Contains, Components).stringof,
+					TemplateArgsOf!Select.stringof
+				)
+			);
+
+			Map!(PointerOf, Components) C;
+
+			static foreach (i, Component; Components)
+				C[i] = include[IndexOf!(Component, TemplateArgsOf!Select)].get(entity);
+
+			static if (Components.length == 1)
+				return C[0];
+			else
+				return tuple(C);
+		}
+
 	package:
 		this(SelectStorages selects, RuleStorages rules)
 		{
