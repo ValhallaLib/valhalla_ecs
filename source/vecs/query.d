@@ -118,6 +118,17 @@ template Query(EntityManagerT, Select, Rules...)
 
 	struct Query
 	{
+		bool contains(in Entity entity)
+		{
+			bool all(alias pred, Storages...)(Storages storages)
+			{
+				foreach (storage; storages) if (!pred(storage)) return false;
+				return true;
+			}
+
+			return all!(s => s.contains(entity))(include) && all!(s => !s.contains(entity))(exclude);
+		}
+
 	package:
 		this(SelectStorages selects, RuleStorages rules)
 		{
