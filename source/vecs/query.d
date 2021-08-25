@@ -35,6 +35,15 @@ void each(alias pred, Query)(Query query)
 	}
 }
 
+Query.QueryEach each(Query)(Query query)
+{
+	static assert (is(Query == Q!Args, alias Q = .Query, Args...),
+		"Type (%s) must be a valid 'vecs.query.Query' type".format(Query.stringof)
+	);
+
+	return Query.QueryEach(query);
+}
+
 
 private enum QueryRule;
 
