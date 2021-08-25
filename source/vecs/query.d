@@ -57,7 +57,6 @@ private enum QueryRule;
 struct Select(Args...) if (Args.length) {}
 
 // TODO: documentation
-// TODO: unittests
 template Query(EntityManagerT, Select, Rules...)
 {
 	static assert(is(EntityManagerT == E!Fun, alias E = .EntityManagerT, Fun),
@@ -283,4 +282,185 @@ template Query(EntityManagerT, Select, Rules...)
 			Query query;
 		}
 	}
+}
+
+///
+@("[Query] basic usage")
+@safe pure nothrow unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	alias World = EntityManagerT!Fun;
+	scope world = new World();
+
+	struct Position { ulong x, y; }
+	struct Velocity { ulong x, y; }
+	with(world) foreach (i; 0 .. 10)
+	{
+		auto entt = entity(Entity(i))
+			.emplace!Position(i, i)
+			.emplace!Velocity(i, i);
+
+		if (i & 1) entt.emplace!string("Hello");
+	}
+
+	@safe pure nothrow @nogc
+	void system(World.Query!(Position, Velocity).Without!string query)
+	{
+		// fancy each
+		query.each!((ref Position pos, ref Velocity vel) { /*...*/ });
+		query.each!((Entity entity, ref Position pos, ref Velocity vel) { /*...*/ });
+
+		// QueryEach range
+		foreach (entity, pos, vel; query.each()) { /*...*/ }
+
+		// Query range
+		foreach (entity; query)
+		{
+			// components can be obtained from the Query
+			Position* pos = query.get!Position(entity);
+			Velocity* vel;
+
+			AliasSeq!(pos, vel) = query.get!(Position, Velocity)(entity);
+		}
+
+		// Query reversed
+		foreach_reverse (entity; query) { /*...*/ }
+		foreach_reverse (entity, pos, vel; query.each()) { /*...*/ }
+
+		// information about what entities reside in the Query can be obtained
+		bool contains(size_t i) { return query.contains(Entity(i)); }
+		foreach (i; 0 .. 10)
+		{
+			if (i & 1) assert(!contains(i));
+			else       assert( contains(i));
+		}
+	}
+
+	system(world.query!(Select!(Position, Velocity), Without!string));
+}
+
+@("[Query] each entity")
+@safe pure nothrow unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	scope world = new EntityManagerT!Fun;
+
+	Entity[5] entities;
+
+	struct Position { ulong x, y; }
+	with (world) entities = [
+		entity.add!(int, Position),
+		entity.add!(ulong, int, Position),
+		entity.add!int,
+		entity.add!(string, Position),
+		entity.add!Position
+	];
+
+	Position[2] positions = [
+		Position(3, 4),
+		Position(5, 7)
+	];
+
+	auto query = world.query!(Select!Position, With!int);
+
+	import std.range : enumerate;
+	foreach (i, entity; query.enumerate()) assert(entity == entities[i]);
+	foreach (i, entity, pos; query.each.enumerate()) *pos = positions[i];
+	query.each!((Entity entity, ref Position pos) { assert(pos == positions[entity]); });
+}
+
+@("[Query] properties")
+@safe pure nothrow unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	scope world = new EntityManagerT!Fun;
+
+	Entity[5] entities;
+
+	struct Position { ulong x, y; }
+	with (world) entities = [
+		entity.add!(int, Position),
+		entity.add!int,
+		entity.add!(ulong, int, Position),
+		entity.add!(string, Position),
+		entity.add!Position
+	];
+
+	auto query = world.query!(Select!Position, With!int);
+	assert( query.entities.length == 3);
+	assert( query.entities == entities[0 .. 3]);
+	assert( query.contains(query.front));
+	assert(!query.contains(entities[1]));
+
+	assert(*query.get!Position(query.front) == Position.init);
+	assert(!__traits(compiles, query.get!int(query.front)));
+
+	assert(is(typeof(query) == Query!(typeof(world), Select!Position).With!int));
+}
+
+version(assert)
+@("[Query] properties (invalid entities)")
+unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	scope world = new EntityManagerT!Fun;
+
+	Entity[5] entities;
+
+	struct Position { ulong x, y; }
+	with (world) entities = [
+		entity.add!(int, Position),
+		entity.add!int,
+		entity.add!(ulong, int, Position),
+		entity.add!(string, Position),
+		entity.add!Position
+	];
+
+	auto query = world.query!(Select!Position, With!int);
+
+	import std.exception : assertThrown;
+	import core.exception : AssertError;
+	assertThrown!AssertError(query.get!Position(entities[1]));
+}
+
+@("[Query] simple query")
+@safe pure nothrow unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	scope world = new EntityManagerT!Fun;
+
+	Entity[4] entities;
+
+	struct Position { ulong x, y; }
+	with (world) entities = [
+		entity.add!(int, Position),
+		entity.add!int,
+		entity.add!(ulong, int, Position),
+		entity.add!(string, Position),
+	];
+
+	import std.algorithm : equal;
+	assert(world.query!(Select!int, Without!ulong).equal(entities[0 .. 2]));
+	assert(world.query!(Select!int, With!Position).equal([entities[0], entities[2]]));
+}
+
+@("[Query] simple query (no rules)")
+@safe pure nothrow unittest
+{
+	alias Fun = void delegate() @safe pure nothrow @nogc;
+	scope world = new EntityManagerT!Fun;
+
+	Entity[4] entities;
+
+	struct Position { ulong x, y; }
+	with (world) entities = [
+		entity.add!(int, Position),
+		entity.add!(ulong, int, Position),
+		entity.add!int,
+		entity.add!(string, Position),
+	];
+
+	import std.algorithm : equal;
+	assert(world.query!int.equal(entities[0 .. 3]));
+	assert(world.query!(int, Position).equal(entities[0 .. 2]));
 }
