@@ -118,6 +118,35 @@ template Query(EntityManagerT, Select, Rules...)
 
 	struct Query
 	{
+		Entity front() @property const
+			in (!empty, "Attempting to fetch the front of an empty query")
+		{
+			return entities[0];
+		}
+
+		void popFront()
+		{
+			do { entities = entities[1 .. $]; }
+			while (!empty && !contains(entities[0]));
+		}
+
+		Entity back() @property const
+			in (!empty, "Attempting to fetch the back of an empty query")
+		{
+			return entities[$ - 1];
+		}
+
+		void popBack()
+		{
+			do { entities = entities[0 .. $ - 1]; }
+			while (!empty && !contains(entities[$ - 1]));
+		}
+
+		bool empty() @property const
+		{
+			return !entities.length;
+		}
+
 		bool contains(in Entity entity)
 		{
 			bool all(alias pred, Storages...)(Storages storages)
