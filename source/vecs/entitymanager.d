@@ -3,6 +3,7 @@ module vecs.entitymanager;
 import vecs.entity;
 import vecs.entitybuilder : EntityBuilder;
 import vecs.storage;
+import vecs.query;
 import vecs.resource;
 
 import std.exception : basicExceptionCtors, enforce;
@@ -1052,6 +1053,15 @@ public:
 		}
 	}
 
+
+	template Query(Args...)
+		if (Args.length)
+	{
+		static if (is(Args[0] Select == S!Components, alias S = .Select, Components...))
+			alias Query = .Query!(EntityManagerT, Select!Components, Args[1 .. $]);
+		else
+			alias Query = .Query!(EntityManagerT, Select!Args);
+	}
 
 private:
 	/**
