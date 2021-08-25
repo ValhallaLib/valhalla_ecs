@@ -149,6 +149,18 @@ template Query(EntityManagerT, Select, Rules...)
 
 	struct Query
 	{
+		template With(Components...)
+			if (Components.length)
+		{
+			alias With = Query!(EntityManagerT, Select, Rules, .With!Components);
+		}
+
+		template Without(Components...)
+			if (Components.length)
+		{
+			alias Without = Query!(EntityManagerT, Select, Rules, .Without!Components);
+		}
+
 		Entity front() @property const
 			in (!empty, "Attempting to fetch the front of an empty query")
 		{
@@ -215,7 +227,7 @@ template Query(EntityManagerT, Select, Rules...)
 	package:
 		this(SelectStorages selects, RuleStorages rules)
 		{
-			alias storages = AliasSeq!(selects, RuleElements!(With, rules));
+			alias storages = AliasSeq!(selects, RuleElements!(.With, rules));
 
 			size_t[Include.length] counter;
 			static foreach (i, storage; storages) counter[i] = storage.size();
