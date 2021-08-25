@@ -217,6 +217,17 @@ template Query(EntityManagerT, Select, Rules...)
 			return all!(s => s.contains(entity))(include) && all!(s => !s.contains(entity))(exclude);
 		}
 
+		/**
+		Fetches components provided in Select of an entity.
+
+		Attempting to use an invalid entity leads to undefined behavior.
+
+		Params:
+			Components = Component types among Select to get.
+			entity = a valid Query entity.
+
+		Returns: A pointer or a `Tuple` of pointers to the components of the entity.
+		*/
 		auto get(Components...)(in Entity entity)
 			if (Components.length)
 			in (contains(entity))
