@@ -17,6 +17,28 @@ import std.traits : hasUDA, TemplateArgsOf, TemplateOf;
 import std.typecons : Tuple, tuple;
 
 
+/++
+Iterate each entity and components through a callback or in a foreach. When no
+lambda is provided a QueryEach range is returned.
+
+Examples:
+---
+auto world = new EntityManager();
+
+// with a callback
+world.query!(int, string).each!((entity, ref i, ref str) { /*...*/ });
+world.query!(int, string).each!((ref i, ref str) { /*...*/ });
+
+// without a callback
+foreach (entity, i, str; world.query!(int, string).each()) { /*...*/ }
+---
+
+Params:
+	pred = Function to apply to each element of the query.
+	query = Query to iterate.
+
+Returns: A QueryEach range if a callback is provided, nothing otherwise.
++/
 void each(alias pred, Query)(Query query)
 	if (is(typeof(unaryFun!pred)))
 {
@@ -35,7 +57,8 @@ void each(alias pred, Query)(Query query)
 	}
 }
 
-Query.QueryEach each(Query)(Query query)
+/// Ditto
+Query.QueryEach each(Query)(auto ref Query query)
 {
 	static assert (is(Query == Q!Args, alias Q = .Query, Args...),
 		"Type (%s) must be a valid 'vecs.query.Query' type".format(Query.stringof)
