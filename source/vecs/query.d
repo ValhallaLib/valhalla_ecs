@@ -56,7 +56,14 @@ private enum QueryRule;
 /// Select entities with Args
 struct Select(Args...) if (Args.length) {}
 
-// TODO: documentation
+/**
+Iterates entities with certaint. components
+
+Params:
+	EntityManagerT = The EntityManagerT type that holds the components.
+	Select = Select wrapper holding the output components
+	Rules = Rule wrappers holding more components for extra filter.
+*/
 template Query(EntityManagerT, Select, Rules...)
 {
 	static assert(is(EntityManagerT == E!Fun, alias E = .EntityManagerT, Fun),
