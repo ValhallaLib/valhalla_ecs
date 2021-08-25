@@ -1065,6 +1065,36 @@ public:
 	}
 
 
+	/**
+	A Query to iterate entities with the provided Component types.
+
+	Examples:
+	---
+	auto world = new EntityManager();
+
+	// Query!(EntityManager, Select!(int, uint))
+	world.query!(int, uint);
+
+	// Query!(EntityManager, Select!int, With!uint, Without!long)
+	world.query!(Select!int, With!uint, Without!long);
+
+	// types can be constructed via building
+	alias MyQuery = EntityManager
+		.Query!(int, uint)
+		.With!long
+		.Without!string;
+
+	// when working with rules Select must be used
+	alias MyOtherQuery = EntityManager
+		.Query!(Select!(int, uint), With!long)
+		.Without!string;
+	---
+
+	Params:
+		Args = Types to select and filter.
+
+	Returns: A new Query instance.
+	*/
 	Query!Args query(Args...)()
 	{
 		static if (TemplateArgsOf!(Query!Args).length == 2)
