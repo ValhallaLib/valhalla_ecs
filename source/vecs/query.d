@@ -149,6 +149,9 @@ template Query(EntityManagerT, Select, Rules...)
 
 			static if (Exclude.length)
 				exclude = RuleElements!(.Without, rules);
+
+			while (!empty && !contains(entities[0])) entities = entities[1 .. $];
+			while (!empty && !contains(entities[$ - 1])) entities = entities[0 .. $ - 1];
 		}
 
 		Include include;
