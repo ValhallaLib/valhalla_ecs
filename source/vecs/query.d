@@ -196,6 +196,16 @@ template Query(EntityManagerT, Select, Rules...)
 			return !entities.length;
 		}
 
+		/**
+		Checks if an entity belongs to a Query.
+
+		Attempting to use an invalid entity leads to undefined behavior.
+
+		Params:
+			entity = a valid entity.
+
+		Returns: True if the entity belongs to the Query, false otherwise.
+		*/
 		bool contains(in Entity entity)
 		{
 			bool all(alias pred, Storages...)(Storages storages)
