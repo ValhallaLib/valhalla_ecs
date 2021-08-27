@@ -4,6 +4,7 @@ import vecs.component;
 import vecs.entity;
 import vecs.entitybuilder : EntityBuilder;
 import vecs.storage;
+import vecs.storageinfo;
 import vecs.query;
 import vecs.resource;
 
