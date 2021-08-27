@@ -69,8 +69,6 @@ enum isComponent(T) = !(is(T == class)
 	assert(!isComponent!wchar);
 }
 
-enum areComponents(T ...) = All!(isComponent, T);
-
 template TypeInfoComponent(Component)
 	if (isComponent!Component)
 {
