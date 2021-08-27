@@ -9,7 +9,6 @@ import std.typecons : Tuple;
 
 version(vecs_unittest)
 {
-	import aurorafw.unit.assertion;
 	import std.exception : assertThrown;
 	import core.exception : AssertError;
 }

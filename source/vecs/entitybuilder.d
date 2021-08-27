@@ -3,8 +3,6 @@ module vecs.entitybuilder;
 import vecs.entity;
 import vecs.entitymanager;
 
-version(vecs_unittest) import aurorafw.unit.assertion;
-
 
 /**
  * Helper struct to perform multiple action sequences.

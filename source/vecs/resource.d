@@ -1,10 +1,6 @@
 module vecs.resource;
 
-version(vecs_unittest)
-{
-	import aurorafw.unit.assertion;
-	import vecs.entitymanager;
-}
+version(vecs_unittest) import vecs.entitymanager;
 
 
 ///
@@ -87,21 +83,23 @@ unittest
 	auto em = new EntityManager();
 
 	em.addResource!State;
-	assertEquals("", em.resource!State.name);
+
+	import std.string : empty;
+	assert(em.resource!State.name.empty);
 
 	em.addResource!CState;
-	assertNull(em.resource!CState);
+	assert(!em.resource!CState);
 
 	// replace old CState resource
 	em.addResource(new CState(2f, 5f));
-	assertEquals(new CState(2f, 5f), em.resource!CState);
+	assert(em.resource!CState == new CState(2f, 5f));
 
 	em.addResource(EState.b);
-	assertEquals(EState.b, em.resource!EState);
+	assert(em.resource!EState == EState.b);
 
-	assertFalse(__traits(compiles, em.addResource!(int)()));
-	assertFalse(__traits(compiles, em.addResource!(int[])()));
-	assertFalse(__traits(compiles, em.addResource!(State*)()));
+	assert(!__traits(compiles, em.addResource!(int)()));
+	assert(!__traits(compiles, em.addResource!(int[])()));
+	assert(!__traits(compiles, em.addResource!(State*)()));
 }
 
 
@@ -124,5 +122,5 @@ unittest
 
 	threads.each!"a.join()";
 
-	assertFalse(ids[0] == ids[1]);
+	assert(ids[0] != ids[1]);
 }
