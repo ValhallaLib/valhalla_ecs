@@ -33,59 +33,131 @@ struct Velocity
 	float y = 0.0f;
 }
 
-struct Grounder {}
-struct Crawler {}
-
-// loops through all (Position, Velocity) components
-void systemA(Query!(Tuple!(Position, Velocity)) query)
+@safe pure nothrow @nogc
+void system(EntityManager.Query!(Position, Velocity) query)
 {
-	foreach(pos, vel; query)
+	// loop with callbacks
+	query.each!((entity, ref pos, ref vel) { /*...*/ });
+	query.each!((ref pos, ref vel) { /*...*/ });
+
+	// loop in a foreach
+	foreach(entity, pos, vel; query.each()) { /*...*/ }
+
+	// loop entities
+	foreach(entity; query)
 	{
-		*pos.x += *vel.x
-		*pos.y += *vel.y
-	}
-}
+		// ask the query for components
+		Position* pos;
+		Velocity* vel;
 
-// loops through all (Position, Velocity) components and entities with (Grounder)
-void systemB(Query!(Tuple!(Entity,Position,Velocity), With!Grounder) query)
-{
-	foreach(e, pos, vel; query)
-	{
-		*pos.x += *vel.x
-		*pos.y += *vel.y
+		AliasSeq!(pos, vel) = query.get!(Position, Velocity)(entity);
 	}
-}
 
-// loops through all (Position, Velocity) components of entities with (Grounder) and without (Crawler)
-void systemC(Query!(Tuple!(Position,Velocity), Tuple!(With!Grounder, Without!Crawler)) query)
-{
-	...
+	// loop reversed
+	foreach_reverse(entity; query) { /*...*/ }
+	foreach_reverse(entity, pos, vel; query.each()) { /*...*/ }
+
+	// ask the query for entites in it
+	assert(query.contains(Entity(0)));
 }
 
 void main()
 {
-	auto em = new EntityManager();
+	auto world = new EntityManager();
 
-	// listen to signals
-	em.onSet!Grounder((Entity,Grounder*) {
-		import std.stdio : writeln;
-		"A Grounder has born".writeln;
-	});
+	foreach (i; 0 .. 10) with (world)
+	{
+		if (!(i & 1))
+			entity(Entity(i)) // constructs or gets the entity with id 'i'
+				.emplace!Position(i, i)
+				.emplace!Velocity(i * 0.1f, i * 0.1f);
+	}
 
-	em.onRemove!Grounder((Entity,Grounder*) {
-		import std.stdio : writeln;
-		"A Grounder has died".writeln;
-	})
+	system(world.query!(Position, Velocity));
+}
+```
 
-	em.entityBuilder()
-		.gen!Position
-		.gen!(Position, Velocity, Grounder)
-		.gen(Position(3.0f, 6.0f))
-		.gen(Velocity(2.0f, 1.0f), Position(3.0f, 6.0f), Grounder.init, Crawler.init);
+## Query Rules
+```d
+// Select:  defines which components are selected, and filters entities that own them
+// With:    behaves as Select but the components are not returned
+// Without: filters entities that do not own the components
 
-	systemA(em.query!(Tuple!(Position,Velocity)));
-	systemB(em.query!(Tuple!(Entity, Position,Velocity), With!Grounder));
-	systemC(em.query!(Tuple!(Position,Velocity), Tuple!(With!Grounder, Without!Crawler)));
+import vecs;
+
+// queries entities with A, B, C, ...
+alias Q1 = EntityManager.Query!(A, B, C, ...);
+
+// queries entities with A, B, C but Selects only A, B
+alias Q2 = EntityManager.Query!(A, B).With!C;
+
+// queries entities with A, B and without C but Selects only A
+alias Q3 = EntityManager.Query!A.With!B.Without!C;
+
+// the above alias to:
+alias _Q1 = Query!(EntityManager, Select!(A, B, C, ...));
+alias _Q2 = Query!(EntityManager, Select!(A, B), With!C);
+alias _Q2 = Query!(EntityManager, Select!A, With!B, Without!C);
+
+void main()
+{
+	auto world = new EntityManager();
+
+	// when using rules the Select wrapper must be used
+	world.query!(Select!(A, B), With!(C, D), ...);
+
+	// Select is a special Rule and can only be used as the first argument
+	// All other argument must be QueryRules 'With and Without'
+	static assert(!_traits(compiles, world.query!(Select!A, Select!B)));
+}
+```
+
+## Safety
+EntityManagerT can be used in `@safe pure nothrow` code and some parts are
+`@nogc`. What defines the majority of code safeness is the Signal. Right now
+in D it is impossible to store functions with different attributes in one common
+type and still be able to track them. The common attribute to all functions is
+having none, which is the same as having `@system`. This forces all code that
+depends on it to be `@system` as well (which is almost the entire lib)
+
+The user can define their own safety restrictions by passing a delegate with the
+attributes they desire for their callbacks. Those attributes influence the
+safeness of almost the entire lib, as explained above.
+```d
+import vecs;
+
+alias World = EntityManagerT!(void delegate() @safe pure nothrow);
+```
+
+Using `@nogc` **does not** make the usage `@nogc`, it only defines that **the
+user** will have **`@nogc` callbacks** and therefore dependent functions will be
+`@nogc` **if they can**.
+```d
+import vecs;
+
+void main()
+{
+	auto world = new EntityManagerT!(void delegate() @nogc);
+
+	world.onConstruct!int.connect((ref int i) {}); // @nogc callback
+	world.entity.emplace!int(4); // this won't be @nogc
+}
+```
+
+This happens because the internal code uses GC for allocations (still). However,
+`@safe pure nothrow` works like a charm.
+```d
+import vecs;
+
+@safe pure nothrow
+void main()
+{
+	auto world = new EntityManagerT!(void delegate() @safe pure nothrow);
+
+	world.onConstruct!int((ref int i) {});
+	auto entity = world.entity.emplace!int(4);
+
+	assert(*world.get!int(entity) == 4);
 }
 ```
 
@@ -94,25 +166,26 @@ void main()
 import vecs;
 
 struct Foo {}
+enum E { first, second }
 
 void main()
 {
-	auto em = new EntityManager();
+	auto world = new EntityManager();
 
-	em.gen(1, 43f, Foo.init);
-	em.gen(1, true, "entity");
-	em.gen(false, Foo.init, 123);
+	with (world)
+	{
+		entity.emplace(1, 43f, Foo.init);
+		entity.emplace(1, true, "entity");
+		entity.emplace(false, E.first, 123);
+	}
 }
 ```
 
 ## Future features:
 * Groups (similar to Entt)
-* Further optimize Query
 * Full nogc support
-* Optimize entity generation
+* Multithread
 * System support within EntityManager (similar to Bevy/Hecs)
-* Events/Signals
-* Fast access to some Storage methods with Query (like `remove`)
 
 ## License:
 Licensed under:
