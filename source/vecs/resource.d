@@ -1,7 +1,5 @@
 module vecs.resource;
 
-version(vecs_unittest) import vecs.entitymanager;
-
 
 ///
 @safe nothrow @nogc
@@ -80,6 +78,7 @@ version(vecs_unittest)
 @system
 unittest
 {
+	import vecs.entitymanager;
 	auto em = new EntityManager();
 
 	em.addResource!State;
