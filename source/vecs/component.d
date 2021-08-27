@@ -5,7 +5,7 @@ import vecs.entity;
 import std.meta : All = allSatisfy;
 import std.traits : isAssignable;
 import std.traits : isCopyable, isSomeChar;
-import std.traits : isDelegate, isFunctionPointer, isSomeFunction;
+import std.traits : isSomeFunction;
 
 /**
 Checks if a type is a valid Component type.
@@ -75,14 +75,6 @@ template TypeInfoComponent(Component)
 	enum TypeInfoComponent = typeid(Component);
 }
 
-package auto assumePure(T)(T t)
-	if (isFunctionPointer!T || isDelegate!T)
-{
-	import std.traits : FunctionAttribute, functionAttributes, functionLinkage, SetFunctionAttributes;
-    enum attrs = functionAttributes!T | FunctionAttribute.pure_;
-    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-}
-
 @safe nothrow @nogc
 private static size_t nextId()
 {
@@ -112,6 +104,7 @@ template ComponentId(Component)
 			return id;
 		};
 
+		import vecs.utils : assumePure;
 		return (() @trusted pure nothrow @nogc => assumePure(ComponentIdImpl)())();
 	}
 }
