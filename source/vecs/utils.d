@@ -9,3 +9,5 @@ package auto assumePure(T)(T t)
     enum attrs = functionAttributes!T | FunctionAttribute.pure_;
     return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
 }
+
+package alias PointerOf(T) = T*;
