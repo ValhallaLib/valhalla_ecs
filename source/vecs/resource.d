@@ -34,7 +34,7 @@ template ResourceId(Res)
 			return id;
 		};
 
-		import vecs.component : assumePure;
+		import vecs.utils : assumePure;
 		return (() @trusted pure nothrow @nogc => assumePure(ResourceIdImpl)())();
 	}
 }
