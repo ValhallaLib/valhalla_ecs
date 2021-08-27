@@ -1,7 +1,5 @@
 module vecs.signal;
 
-version(vecs_unittest) import aurorafw.unit.assertion;
-
 import std.functional : toDelegate;
 import std.traits : isDelegate, Parameters, OriginalType;
 import std.traits : FunctionAttribute, functionAttributes, SetFunctionAttributes;
