@@ -7,12 +7,6 @@ import std.traits : isAssignable;
 import std.traits : isCopyable, isSomeChar;
 import std.traits : isDelegate, isFunctionPointer, isSomeFunction;
 
-// TODO: remove this
-/**
- * A component must define this as an UDA.
- */
-enum Component;
-
 /**
 Checks if a type is a valid Component type.
 
