@@ -7,6 +7,7 @@ import vecs.storage;
 import vecs.storageinfo;
 import vecs.query;
 import vecs.resource;
+import vecs.utils : PointerOf;
 
 import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
@@ -72,7 +73,6 @@ public:
 		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components) C[i] = _assureStorage!Component.add(entity);
@@ -132,7 +132,6 @@ public:
 		import core.lifetime : forward;
 		import std.meta : staticMap;
 
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -345,7 +344,6 @@ public:
 	template patchComponent(Components...)
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 
 		auto patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
 			if (Components.length == Callbacks.length)
@@ -416,7 +414,6 @@ public:
 		import core.lifetime : emplace, forward;
 		import std.meta : staticMap;
 
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -482,7 +479,6 @@ public:
 		import core.lifetime : emplace, forward;
 		import std.meta : staticMap;
 
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -518,7 +514,6 @@ public:
 		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -559,7 +554,6 @@ public:
 		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -677,7 +671,6 @@ public:
 		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components) C[i] = _assureStorage!Component.get(entity);
@@ -719,7 +712,6 @@ public:
 		in (validEntity(entity))
 	{
 		import std.meta : staticMap;
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components) C[i] = _assureStorage!Component.tryGet(entity);
@@ -779,7 +771,6 @@ public:
 		import core.lifetime : forward;
 		import std.meta : staticMap;
 
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
@@ -822,7 +813,6 @@ public:
 	{
 		import std.meta : staticMap;
 
-		alias PointerOf(T) = T*;
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
