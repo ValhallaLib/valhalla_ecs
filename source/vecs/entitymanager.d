@@ -9,12 +9,11 @@ import vecs.query;
 import vecs.resource;
 import vecs.utils : PointerOf;
 
-import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
-import std.meta : AliasSeq, NoDuplicates;
-import std.range : iota, takeOne;
-import std.traits : isInstanceOf, TemplateArgsOf;
-import std.typecons : Tuple, tuple;
+import std.meta : AliasSeq;
+import std.range : iota;
+import std.traits : TemplateArgsOf;
+import std.typecons : tuple;
 
 version(vecs_unittest)
 {
