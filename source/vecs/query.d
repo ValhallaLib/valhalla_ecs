@@ -3,6 +3,7 @@ module vecs.query;
 import vecs.entity;
 import vecs.entitymanager;
 import vecs.storage;
+import vecs.utils : PointerOf;
 
 import std.algorithm : minIndex;
 import std.format : format;
@@ -173,7 +174,6 @@ template Query(EntityManagerT, Select, Rules...)
 
 	// component foreach output type
 	alias ElementType = Tuple!(Entity, Map!(PointerOf, SelectArgs));
-	alias PointerOf(T) = T*;
 
 
 	struct Query
