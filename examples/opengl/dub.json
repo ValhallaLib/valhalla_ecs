@@ -1,0 +1,10 @@
+{
+	"name": "opengl",
+    "targetType": "none",
+    "dependencies": {
+        ":query": "*"
+    },
+    "subPackages": [
+        "cube"
+    ]
+}

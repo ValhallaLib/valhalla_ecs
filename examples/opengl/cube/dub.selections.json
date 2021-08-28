@@ -1,0 +1,11 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"aurorafw": "0.0.1-alpha.4",
+		"bindbc-glfw": "1.0.0",
+		"bindbc-loader": "1.0.1",
+		"bindbc-opengl": "1.0.0",
+		"dlib": "0.22.0",
+		"valhalla_ecs": {"path":"../../../"}
+	}
+}
