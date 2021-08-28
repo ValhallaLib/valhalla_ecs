@@ -1,0 +1,19 @@
+{
+	"name": "cube",
+	"description": "OpenGL + GLFW + VECS simple cubes example",
+	"targetType": "executable",
+	"targetPath": "../../.out/bin",
+	"sourcePaths": ["source"],
+	"importPaths": ["source"],
+	"dependencies": {
+		"valhalla_ecs": {"path": "../../../"},
+		"bindbc-glfw": "~>1.0.0",
+		"bindbc-opengl": "~>1.0.0",
+		"dlib": "~>0.22.0"
+	},
+	"subConfigurations": {
+		"bindbc-glfw": "static"
+	},
+	"libs": ["glfw3"],
+	"versions": ["GLFW_33","GL_33", "VECS_EXAMPLE_LOGGING"]
+}

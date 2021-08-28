@@ -6,6 +6,7 @@
     },
     "subPackages": [
         "benchamrks",
+		"opengl",
 		"signals"
     ]
 }
