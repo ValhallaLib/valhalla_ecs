@@ -8,17 +8,21 @@ import std.stdio;
  // Simple combat system
 // ====================
 
-void combatSystem(Body* enemy, Query!(Body, Without!Enemy) query)
+@safe
+void combatSystem(World.Query!Body.With!Enemy queryEnemies, World.Query!Body.Without!Enemy queryOthers)
 {
-	foreach (b; query)
+	// assume there is an entity
+	auto enemyBody = queryEnemies.get!Body(queryEnemies.front);
+
+	foreach (_, otherBody; queryOthers.each())
 	{
 		// enemy gets hit
-		onHit.emit(b, enemy);
-		if (enemy.hp <= 0) break;
+		onHit.emit(*otherBody, *enemyBody);
+		if (enemyBody.hp <= 0) break;
 
 		// enemy hits back
-		onHit.emit(enemy, b);
-		if (b.hp <= 0) break;
+		onHit.emit(*enemyBody, *otherBody);
+		if (otherBody.hp <= 0) break;
 	}
 }
 
@@ -27,15 +31,15 @@ void combatSystem(Body* enemy, Query!(Body, Without!Enemy) query)
  // Game State system
 // =================
 
-void gameSystem(Query!Body query, ref State state)
+@safe pure nothrow
+void gameSystem(World.Query!Body query, ref State state)
 {
 	import std.algorithm : filter, each;
-	import std.typecons : No;
+	import std.range : takeOne;
 
-	query.filter!"a.hp <= 0".each!((q) {
-		state = State.over;
-		return No.each;
-	});
+	query.filter!((entity) => query.get!Body(entity).hp <= 0)
+		.takeOne
+		.each!(_ => state.running = true);
 }
 
 
@@ -43,10 +47,9 @@ void gameSystem(Query!Body query, ref State state)
  // Listens to onHit emissions
 // ==========================
 
-void hitListener(Body* hit, Body* damaged)
+@safe
+void hitListener(ref Body hit, ref Body damaged)
 {
-	import std.format : format;
-
 	damaged.hp -= hit.damage;
 	writefln!"%s was hitted by %s and suffered %s damage! HP left: %s"(damaged.name, hit.name, hit.damage, damaged.hp);
 }
@@ -58,24 +61,25 @@ void hitListener(Body* hit, Body* damaged)
 
 struct Body { int hp; int damage; string name; }
 struct Enemy {}
-enum State { over, running }
+struct State { bool running; }
 
-Signal!(Body*,Body*) onHit;
+SignalT!(void delegate(ref Body, ref Body) @safe) onHit;
 
+alias World = EntityManager;
 
 void main()
 {
-	auto em = new EntityManager();
+	auto world = new World();
 
 	  // ============
 	 // Bind signals
 	// ============
 
 	import std.functional : toDelegate;
-	onHit.connect(toDelegate(&hitListener));
+	onHit.connect(&hitListener);
 
 	// on Body set
-	em.onSet!Body().connect((Entity,Body* b) {
+	world.onConstruct!Body.connect((Entity, ref Body b) {
 		writefln!"Entity %s created with %s HP and %s damage."(b.name, b.hp, b.damage);
 	});
 
@@ -84,17 +88,19 @@ void main()
 	 // Create resources
 	// ================
 
-	em.addResource(State.running);
+	world.addResource!State;
 
 
 	  // ===============
 	 // Create entities
 	// ===============
 
-	em.entityBuilder()
-		.gen(Body(10, 3, "Foo"))
-		.gen(Body(10, 3, "Bar"))
-		.gen(Body(13, 1, "Enemy"), Enemy());
+	with (world)
+	{
+		entity.emplace!Body(10, 3, "Foo");
+		entity.emplace!Body(10, 3, "Bar");
+		entity.emplace!Body(13, 1, "Enemy").add!Enemy;
+	}
 
 
 
@@ -102,10 +108,10 @@ void main()
 	 // Main loop
 	// =========
 
-	while (em.resource!State() == State.running)
+	while (world.resource!State.running) with (world)
 	{
-		combatSystem(em.queryOne!(Body, With!Enemy), em.query!(Body, Without!Enemy));
-		gameSystem(em.query!Body, em.resource!State);
+		combatSystem(query!(Select!Body, With!Enemy), query!(Select!Body, Without!Enemy));
+		gameSystem(query!Body, resource!State);
 	}
 
 	"Over!".writeln;
