@@ -1,0 +1,33 @@
+name: Run unit tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [assigned, opened, reopened, ready_for_review, synchronize]
+  workflow_dispatch:
+    workflows: ["Run tests"]
+    types: [requested]
+
+jobs:
+  test:
+    name: Run tests
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        dc: [dmd-latest, ldc-latest]
+        build_types: [debug, release, release-debug, release-inline]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Install D compiler'
+      uses: dlang-community/setup-dlang@v1
+      with:
+        compiler: ${{ matrix.dc }}
+
+    - name: 'Build and test'
+      run: |
+        # Test multiple builds
+          dub test --build=${{ matrix.build_types }} --coverage --DRT-covopt="merge:1"
