@@ -1,15 +1,11 @@
 module app;
 
-import vecs.entity;
-import vecs.storage;
-import vecs.query;
-import vecs.queryfilter;
+import vecs;
 
-import std.algorithm : each;
+import std.algorithm : std_each = each;
 import std.datetime.stopwatch : benchmark;
 import std.range : iota;
 import std.stdio;
-import std.typecons : Tuple;
 
 struct PositionComponent
 {
@@ -33,30 +29,33 @@ struct ComflabulationComponent
 
 void main()
 {
-	auto em = new EntityManager();
+	auto world = new EntityManager();
 	enum Loops = 100_000;
 
-	3_000.iota.each!(i => em.gen!(PositionComponent)());
-	3_000.iota.each!(i => em.gen!(PositionComponent, DirectionComponent)());
-	1_000.iota.each!(i => em.gen!(ComflabulationComponent, DirectionComponent)());
-	1_000.iota.each!(i => em.gen!(ComflabulationComponent, DirectionComponent, PositionComponent)());
-	2_000.iota.each!(i => em.gen!(DirectionComponent, ComflabulationComponent)());
+	with (world)
+	{
+		3_000.iota.std_each!(i => entity.add!PositionComponent);
+		3_000.iota.std_each!(i => entity.add!(PositionComponent, DirectionComponent));
+		1_000.iota.std_each!(i => entity.add!(ComflabulationComponent, DirectionComponent));
+		1_000.iota.std_each!(i => entity.add!(ComflabulationComponent, DirectionComponent, PositionComponent));
+		2_000.iota.std_each!(i => entity.add!(DirectionComponent, ComflabulationComponent));
+	}
 
-	benchmark!({
-		foreach (pos, dir; em.query!(Tuple!(PositionComponent, DirectionComponent)))
+	with (world) benchmark!({
+		foreach (_, pos, dir; query!(PositionComponent, DirectionComponent).each())
 		{
 			pos.x += dir.x * 0.15;
 			pos.y += dir.y * 0.15;
 		}
 	},{
-		foreach (com; em.query!(ComflabulationComponent))
+		foreach (_, com; query!(ComflabulationComponent).each())
 		{
 			com.thingy *= 1.0000001f;
 			com.dingy++;
 			com.mingy = !com.mingy;
 		}
 	},{
-		foreach (pos, dir, com; em.query!(Tuple!(PositionComponent, DirectionComponent, ComflabulationComponent)))
+		foreach (_, pos, dir, com; query!(PositionComponent, DirectionComponent, ComflabulationComponent).each())
 		{
 			if ((com.mingy = !com.mingy) == false)
 			{
@@ -69,15 +68,15 @@ void main()
 			com.thingy *= 1.0000001f;
 		}
 	},{
-		foreach (pos, i; em.query!(Tuple!(PositionComponent, int)))
+		foreach (_, pos, i; query!(PositionComponent, int).each())
 		{
 			pos.x++;
 		}
 	},{
-		foreach (pos, dir; em.query!(Tuple!(PositionComponent, DirectionComponent), With!(ComflabulationComponent)))
+		foreach (_, pos, dir; query!(Select!(PositionComponent, DirectionComponent), With!ComflabulationComponent).each())
 		{
 			pos.x += dir.x * 0.15;
 			pos.y += dir.y * 0.15;
 		}
-	})(Loops).each!(dur => writeln(dur/Loops));
+	})(Loops).std_each!(dur => writeln(dur/Loops));
 }
