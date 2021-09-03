@@ -16,7 +16,23 @@
 			"dependencies": {
 				"aurorafw:unit": "0.0.1-alpha.4"
 			},
-			"versions": ["vecs_unittest"]
+			"versions": ["vecs_unittest"],
+			"dflags-dmd": ["-check=in=on"],
+			"dflags-ldc": ["--enable-preconditions=1"]
 		}
-	]
+	],
+	"buildTypes": {
+		"debug": {
+			"buildOptions": [ "unittests", "debugMode", "debugInfo" ]
+		},
+		"release": {
+			"buildOptions": [ "unittests", "releaseMode", "optimize", "noBoundsCheck" ]
+		},
+		"release-debug": {
+			"buildOptions": [ "unittests", "releaseMode", "optimize", "noBoundsCheck", "debugInfo" ]
+		},
+		"release-inline": {
+			"buildOptions": [ "unittests", "releaseMode", "optimize", "inline", "noBoundsCheck" ]
+		}
+	}
 }
