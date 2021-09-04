@@ -30,4 +30,10 @@ jobs:
     - name: 'Build and test'
       run: |
         # Test multiple builds
-          dub test --build=${{ matrix.build_types }} --config=unittest
+        dub test --build=${{ matrix.build_types }} --config=unittest-cov --DRT-covopt="merge:1"
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./
