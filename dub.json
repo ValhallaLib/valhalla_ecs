@@ -20,6 +20,17 @@
 			"dflags-dmd": ["-check=in=on"],
 			"dflags-ldc": ["--enable-preconditions=1"],
 			"buildOptions": ["unittests"]
+		},
+		{
+			"name": "unittest-cov",
+			"targetType": "autodetect",
+			"dependencies": {
+				"aurorafw:unit": "0.0.1-alpha.4"
+			},
+			"versions": ["vecs_unittest"],
+			"dflags-dmd": ["-check=in=on"],
+			"dflags-ldc": ["--enable-preconditions=1"],
+			"buildOptions": ["unittests", "coverage"]
 		}
 	],
 	"buildTypes": {
