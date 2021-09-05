@@ -18,21 +18,22 @@
 			},
 			"versions": ["vecs_unittest"],
 			"dflags-dmd": ["-check=in=on"],
-			"dflags-ldc": ["--enable-preconditions=1"]
+			"dflags-ldc": ["--enable-preconditions=1"],
+			"buildOptions": ["unittests"]
 		}
 	],
 	"buildTypes": {
 		"debug": {
-			"buildOptions": [ "unittests", "debugMode", "debugInfo" ]
+			"buildOptions": [ "debugMode", "debugInfo" ]
 		},
 		"release": {
-			"buildOptions": [ "unittests", "releaseMode", "optimize", "noBoundsCheck" ]
+			"buildOptions": [ "releaseMode", "optimize", "noBoundsCheck" ]
 		},
 		"release-debug": {
-			"buildOptions": [ "unittests", "releaseMode", "optimize", "noBoundsCheck", "debugInfo" ]
+			"buildOptions": [ "releaseMode", "optimize", "noBoundsCheck", "debugInfo" ]
 		},
 		"release-inline": {
-			"buildOptions": [ "unittests", "releaseMode", "optimize", "inline", "noBoundsCheck" ]
+			"buildOptions": [ "releaseMode", "optimize", "inline", "noBoundsCheck" ]
 		}
 	}
 }
