@@ -2,6 +2,7 @@
 	"fileVersion": 1,
 	"versions": {
 		"aurorafw": "0.0.1-alpha.4",
-		"valhalla_ecs": {"path":"../../../"}
+		"valhalla_ecs": {"path":"../../../"},
+		"vsignal": "0.1.0"
 	}
 }
