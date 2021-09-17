@@ -2,7 +2,10 @@ module vecs.storage;
 
 import vecs.component;
 import vecs.entity;
-import vecs.signal;
+import vsignal.signal;
+import vsignal.sink;
+
+import std.traits : functionAttributes, functionLinkage, SetFunctionAttributes;
 
 version(vecs_unittest)
 {
@@ -20,6 +23,14 @@ version(vecs_unittest)
 package class Storage(Component, Fun = void delegate() @safe)
 	if (isComponent!Component)
 {
+	this() @trusted
+	{
+		// @trusted according to Signal.sink's documentation
+		onConstructSink = onConstruct.sink;
+		onUpdateSink = onUpdate.sink;
+		onRemoveSink = onRemove.sink;
+	}
+
 	/**
 	Adds or updates the component for the entity.
 
@@ -276,10 +287,21 @@ private:
 	Entity[] _packedEntities;
 	Component[] _components;
 
+	alias CallbackFun = SetFunctionAttributes!(
+		void delegate(Entity, ref Component),
+		functionLinkage!Fun,
+		functionAttributes!Fun
+	);
+
+package:
+	Sink!CallbackFun onConstructSink;
+	Sink!CallbackFun onUpdateSink;
+	Sink!CallbackFun onRemoveSink;
+
 public:
-	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onConstruct;
-	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onUpdate;
-	SignalT!Fun.parameters!(void delegate(Entity, ref Component)) onRemove;
+	Signal!CallbackFun onConstruct;
+	Signal!CallbackFun onUpdate;
+	Signal!CallbackFun onRemove;
 }
 
 @("[Storage] component manipulation")
@@ -369,9 +391,9 @@ unittest
 	int value;
 	void delegate(Entity, ref int) @safe pure nothrow @nogc fun = (Entity, ref int) { value++; };
 
-	storage.onConstruct.connect(fun);
-	storage.onUpdate.connect(fun);
-	storage.onRemove.connect(fun);
+	storage.onConstructSink.connect!fun;
+	storage.onUpdateSink.connect!fun;
+	storage.onRemoveSink.connect!fun;
 
 	storage.add(e);
 	assert(value == 1);
