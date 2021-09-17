@@ -6,6 +6,9 @@
 	"targetPath": "bin",
 	"license": "MIT",
 	"targetType": "library",
+	"dependencies": {
+		"vsignal": "~>0.1.0"
+	},
 	"configurations": [
 		{
 			"name": "default"

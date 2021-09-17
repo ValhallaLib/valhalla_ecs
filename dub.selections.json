@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"aurorafw": "0.0.1-alpha.4"
+		"aurorafw": "0.0.1-alpha.4",
+		"vsignal": "0.1.0"
 	}
 }
