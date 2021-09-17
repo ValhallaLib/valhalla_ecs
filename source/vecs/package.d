@@ -5,4 +5,3 @@ public:
 	import vecs.entitymanager;
 	import vecs.entitybuilder;
 	import vecs.query;
-	import vecs.signal;
