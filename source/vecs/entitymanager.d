@@ -264,7 +264,7 @@ public:
 	*/
 	ref onConstruct(Component)()
 	{
-		return _assureStorage!Component.onConstruct;
+		return _assureStorage!Component.onConstructSink;
 	}
 
 
@@ -292,7 +292,7 @@ public:
 	*/
 	ref onUpdate(Component)()
 	{
-		return _assureStorage!Component.onUpdate;
+		return _assureStorage!Component.onUpdateSink;
 	}
 
 
@@ -313,7 +313,7 @@ public:
 	*/
 	ref onRemove(Component)()
 	{
-		return _assureStorage!Component.onRemove;
+		return _assureStorage!Component.onRemoveSink;
 	}
 
 
