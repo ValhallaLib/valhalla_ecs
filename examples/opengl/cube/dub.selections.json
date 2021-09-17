@@ -6,6 +6,7 @@
 		"bindbc-loader": "1.0.1",
 		"bindbc-opengl": "1.0.0",
 		"dlib": "0.22.0",
-		"valhalla_ecs": {"path":"../../../"}
+		"valhalla_ecs": {"path":"../../../"},
+		"vsignal": "0.1.0"
 	}
 }
