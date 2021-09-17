@@ -63,7 +63,7 @@ struct Body { int hp; int damage; string name; }
 struct Enemy {}
 struct State { bool running; }
 
-SignalT!(void delegate(ref Body, ref Body) @safe) onHit;
+Signal!(void delegate(ref Body, ref Body) @safe) onHit;
 
 alias World = EntityManager;
 
@@ -76,10 +76,10 @@ void main()
 	// ============
 
 	import std.functional : toDelegate;
-	onHit.connect(&hitListener);
+	onHit.sink.connect!hitListener;
 
 	// on Body set
-	world.onConstruct!Body.connect((Entity, ref Body b) {
+	world.onConstruct!Body.connect!((Entity, ref Body b) {
 		writefln!"Entity %s created with %s HP and %s damage."(b.name, b.hp, b.damage);
 	});
 
