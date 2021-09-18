@@ -344,12 +344,7 @@ public:
 		if (Callbacks.length)
 		in (validEntity(entity))
 	{
-		Component* component;
-
-		static foreach (i, callback; callbacks)
-			component = _assureStorage!Component.patch(entity, callbacks[i]);
-
-		return component;
+		return _assureStorage!Component.patch(entity, callbacks);
 	}
 
 
