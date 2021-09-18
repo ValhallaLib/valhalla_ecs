@@ -23,7 +23,8 @@ Signal: emits $(LREF onUpdate) after the patch.
 
 Params:
 	entity: an entity in the storage.
-	fn: the callback to call.
+	storage: the Storage that holds the component.
+	callbacks: callbacks to call.
 
 Returns: A pointer to the patched component.
 */
