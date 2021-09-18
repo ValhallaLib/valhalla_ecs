@@ -22,6 +22,7 @@ version(vecs_unittest)
 }
 
 
+// Workaround for: https://issues.dlang.org/show_bug.cgi?id=5710
 /**
 Patch a component of an entity.
 
@@ -33,17 +34,18 @@ struct Position { ulong x, y; }
 auto world = new EntityManager();
 
 auto entity = world.entity.add!Position;
-entity.patch!Position((ref Position pos) { pos.x = 24; });
+world.patchComponent!(Position, (ref position) { pos.x = 24; })(entity);
 ---
 
 Signal: emits $(LREF onUpdate) after the patch.
 
 Params:
-	Components: Component types to patch.
+	Component: Component type to patch.
 	entity: a valid entity.
-	callbacks: callbacks to call for each Component type.
+	entityManager: the EntityManagerT that holds the entity.
+	callbacks: callbacks to call.
 
-Returns: A pointer or `Tuple` of pointers to the patched components.
+Returns: A pointer the patched component.
 */
 template patchComponent(Component, callbacks...)
 	if (callbacks.length)
