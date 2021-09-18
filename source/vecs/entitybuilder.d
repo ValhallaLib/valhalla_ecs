@@ -10,10 +10,11 @@ Patch a component of an entity.
 Attempting to use an invalid entity leads to undefined behavior.
 
 Params:
-	Components: Component types to patch.
-	callbacks: callbacks to call for each Component type.
+	Component: Component type to patch.
+	entityBuilder: the EntityBuilder that holds the Entity and EntityManagerT.
+	callbacks: callbacks to call.
 
-Returns: This instance.
+Returns: The entityBuilder used.
 */
 template patch(Component, callbacks...)
 {
