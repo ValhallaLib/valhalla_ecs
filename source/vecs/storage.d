@@ -87,15 +87,16 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Returns: A pointer to the patched component.
 	*/
-	Component* patch(Callback)(in Entity entity, Callback callback)
+	Component* patch(Callbacks...)(in Entity entity, Callbacks callbacks)
 		in (contains(entity))
 	{
+		import std.meta : All = allSatisfy;
 		import std.traits : Parameters, ReturnType;
 		enum isCallback(Fun) = is(ReturnType!Fun function(Parameters!Fun) : void function(ref Component));
-		static assert(isCallback!Callback);
+		static assert(All!(isCallback, Callbacks));
 
 		Component* component = &_components[_sparsedEntities[entity]];
-		callback(*component);
+		static foreach (callback; callbacks) callback(*component);
 		onUpdate.emit(entity, *component);
 		return component;
 	}
