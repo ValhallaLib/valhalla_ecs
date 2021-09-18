@@ -2,8 +2,8 @@ module vecs.entitymanager;
 
 import vecs.component;
 import vecs.entity;
-import vecs.entitybuilder : EntityBuilder;
-import vecs.storage;
+import vecs.entitybuilder;
+import vecs.storage : Storage;
 import vecs.storageinfo;
 import vecs.query;
 import vecs.resource;
@@ -21,6 +21,43 @@ version(vecs_unittest)
 	import core.exception : AssertError;
 }
 
+
+/**
+Patch a component of an entity.
+
+Attempting to use an invalid entity leads to undefined behavior.
+
+Examples:
+---
+struct Position { ulong x, y; }
+auto world = new EntityManager();
+
+auto entity = world.entity.add!Position;
+entity.patch!Position((ref Position pos) { pos.x = 24; });
+---
+
+Signal: emits $(LREF onUpdate) after the patch.
+
+Params:
+	Components: Component types to patch.
+	entity: a valid entity.
+	callbacks: callbacks to call for each Component type.
+
+Returns: A pointer or `Tuple` of pointers to the patched components.
+*/
+template patchComponent(Component, callbacks...)
+	if (callbacks.length)
+{
+	Component* patchComponent(EntityManager)(EntityManager entityManager, in Entity entity)
+		if (is(EntityManager == EM!Args, alias EM =.EntityManagerT, Args...))
+		in (entityManager.validEntity(entity))
+	{
+		import vecs.storage : patch;
+		return entityManager._assureStorage!Component.patch!callbacks(entity);
+	}
+}
+
+
 alias EntityManager = EntityManagerT!(void delegate() @safe);
 
 /**
@@ -30,6 +67,8 @@ alias EntityManager = EntityManagerT!(void delegate() @safe);
 class EntityManagerT(Fun)
 	if(is(Fun : void delegate()))
 {
+	import vecs.storage : patch;
+
 public:
 	/**
 	Registers all `Components` in `EntityManager`.
@@ -318,37 +357,6 @@ public:
 
 
 	/**
-	Patch a component of an entity.
-
-	Attempting to use an invalid entity leads to undefined behavior.
-
-	Examples:
-	---
-	struct Position { ulong x, y; }
-	auto world = new EntityManager();
-
-	auto entity = world.entity.add!Position;
-	entity.patch!Position((ref Position pos) { pos.x = 24; });
-	---
-
-	Signal: emits $(LREF onUpdate) after the patch.
-
-	Params:
-		Components: Component types to patch.
-		entity: a valid entity.
-		callbacks: callbacks to call for each Component type.
-
-	Returns: A pointer or `Tuple` of pointers to the patched components.
-	*/
-	Component* patchComponent(Component, Callbacks...)(in Entity entity, Callbacks callbacks)
-		if (Callbacks.length)
-		in (validEntity(entity))
-	{
-		return _assureStorage!Component.patch(entity, callbacks);
-	}
-
-
-	/**
 	Replaces components of an entity.
 
 	Attempting to use an invalid entity leads to undefined behavior.
@@ -384,12 +392,12 @@ public:
 	{
 		import core.lifetime : emplace, forward;
 
-		return _assureStorage!Component.patch(entity, (ref Component c) {
+		return _assureStorage!Component.patch!((ref Component c) {
 			ubyte[Component.sizeof] tmp = void;
 			auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 			c = *emplace!Component(buf, forward!args);
-		});
+		})(entity);
 	}
 
 	/// Ditto
@@ -448,12 +456,12 @@ public:
 		auto storage = _assureStorage!Component;
 
 		return storage.contains(entity)
-			? storage.patch(entity, (ref Component c) {
+			? storage.patch!((ref Component c) {
 					ubyte[Component.sizeof] tmp = void;
 					auto buf = (() @trusted => cast(Component*)(tmp.ptr))();
 
 					c = *emplace!Component(buf, forward!args);
-				})
+				})(entity)
 			: storage.emplace(entity, forward!args);
 	}
 
@@ -503,9 +511,9 @@ public:
 		staticMap!(PointerOf, Components) C;
 
 		static foreach (i, Component; Components)
-			C[i] = _assureStorage!Component.patch(entity, (ref Component c) {
+			C[i] = _assureStorage!Component.patch!((ref Component c) {
 				c = Component.init;
-			});
+			})(entity);
 
 		static if (Components.length == 1)
 			return C[0];
@@ -546,7 +554,7 @@ public:
 		{
 			auto storage = _assureStorage!Component;
 			C[i] = storage.contains(entity)
-				? storage.patch(entity, (ref Component c) { c = Component.init; })
+				? storage.patch!((ref c) { c = Component.init; })(entity)
 				: storage.add(entity);
 		}
 
@@ -1223,17 +1231,18 @@ private:
 	assert(*integral == 0);
 	assert(*str == "Hello");
 
-	assert(!__traits(compiles, entity.patch!int()));
-	assert(!__traits(compiles, entity.patch!int((int) {})));
-	assert(!__traits(compiles, entity.patch!int((char) {})));
-	assert(!__traits(compiles, entity.patch!int((ref int i) => i++)));
-	assert( __traits(compiles, entity.patch!int((ref int) {}, (ref int) {})));
+	assert(!__traits(compiles, entity.patch!(int)));
+	assert( __traits(compiles, entity.patch!(int, (int) {})));
+	assert(!__traits(compiles, entity.patch!(int, (char) {})));
+	assert( __traits(compiles, entity.patch!(int, (ref int i) => i++)));
+	assert( __traits(compiles, entity.patch!(int, (ref int) {}, (const ref int) {})));
+	assert( __traits(compiles, entity.patch!(int, (const int) {}, (_) {})));
 
-	entity.patch!int((ref int i) { i = 45; });
+	entity.patch!(int, (ref i) { i = 45; });
 
 	assert(*integral == 45);
-	assert(world.patchComponent!(int)(entity, (ref int) {}) == integral);
-	assert(world.patchComponent!(string)(entity, (ref string s) {}) == str);
+	assert(world.patchComponent!(int, (_) {})(entity) == integral);
+	assert(world.patchComponent!(string, (_) {})(entity) == str);
 
 	assert(*world.replaceComponent!int(entity, 3) == 3);
 	assert(*world.resetComponent!int(entity) == int.init);
@@ -1265,7 +1274,7 @@ unittest
 	assertThrown!AssertError(world.getComponent!int(entity));
 	assertThrown!AssertError(world.resetComponent!int(entity));
 	assertThrown!AssertError(world.replaceComponent!int(entity, 0));
-	assertThrown!AssertError(world.patchComponent!int(entity, (ref int i) {}));
+	assertThrown!AssertError(world.patchComponent!(int, (_) {})(entity));
 
 	const invalid = Entity(entity.id, entity.batch + 1);
 
@@ -1275,7 +1284,7 @@ unittest
 	assertThrown!AssertError(world.emplaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.replaceComponent!int(invalid, 0));
 	assertThrown!AssertError(world.emplaceOrReplaceComponent!int(invalid, 0));
-	assertThrown!AssertError(world.patchComponent!int(invalid, (ref int i) {}));
+	assertThrown!AssertError(world.patchComponent!(int, (_) {})(invalid));
 	assertThrown!AssertError(world.getComponent!int(invalid));
 	assertThrown!AssertError(world.getOrAddComponent!int(invalid));
 	assertThrown!AssertError(world.getOrEmplaceComponent!int(invalid));

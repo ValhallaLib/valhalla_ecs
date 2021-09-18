@@ -15,6 +15,37 @@ version(vecs_unittest)
 
 
 /**
+Patch a component of an entity.
+
+Attempting to use an invalid entity leads to undefined behavior.
+
+Signal: emits $(LREF onUpdate) after the patch.
+
+Params:
+	entity: an entity in the storage.
+	fn: the callback to call.
+
+Returns: A pointer to the patched component.
+*/
+package template patch(callbacks...)
+	if(callbacks.length)
+{
+	auto patch(Storage)(Storage storage, in Entity entity)
+		if (is(Storage == S!Args, alias S = .Storage, Args...))
+		in (storage.contains(entity))
+	{
+		with (storage)
+		{
+			auto component = &_components[_sparsedEntities[entity]];
+			static foreach (callback; callbacks) callback(*component);
+			onUpdate.emit(entity, *component);
+			return component;
+		}
+	}
+}
+
+
+/**
  * Used to save every component of a Component type and to keep track of which
  *     entities of type  are connected to a component.
  *
@@ -70,34 +101,6 @@ package class Storage(Component, Fun = void delegate() @safe)
 		Component* component = _add(entity);
 		component.emplace(forward!args);
 		onConstruct.emit(entity, *component);
-		return component;
-	}
-
-
-	/**
-	Patch a component of an entity.
-
-	Attempting to use an invalid entity leads to undefined behavior.
-
-	Signal: emits $(LREF onUpdate) after the patch.
-
-	Params:
-		entity: an entity in the storage.
-		fn: the callback to call.
-
-	Returns: A pointer to the patched component.
-	*/
-	Component* patch(Callbacks...)(in Entity entity, Callbacks callbacks)
-		in (contains(entity))
-	{
-		import std.meta : All = allSatisfy;
-		import std.traits : Parameters, ReturnType;
-		enum isCallback(Fun) = is(ReturnType!Fun function(Parameters!Fun) : void function(ref Component));
-		static assert(All!(isCallback, Callbacks));
-
-		Component* component = &_components[_sparsedEntities[entity]];
-		static foreach (callback; callbacks) callback(*component);
-		onUpdate.emit(entity, *component);
 		return component;
 	}
 
@@ -318,7 +321,7 @@ public:
 	assert( storage.remove(Entity(3)));
 	assert(!storage.tryGet(Entity(3)));
 
-	storage.patch(Entity(0), (ref Position pos) { pos.x = 12; });
+	storage.patch!((ref pos) { pos.x = 12; })(Entity(0));
 
 	assert(storage.get(Entity(0)).x == 12);
 }
@@ -390,7 +393,7 @@ unittest
 	storage.add(e);
 	assert(value == 1);
 
-	storage.patch(e, (ref int) {});
+	storage.patch!((_) {})(e);
 	assert(value == 2);
 
 	storage.remove(e);
