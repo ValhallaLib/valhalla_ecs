@@ -5,6 +5,26 @@ import vecs.entitymanager;
 
 
 /**
+Patch a component of an entity.
+
+Attempting to use an invalid entity leads to undefined behavior.
+
+Params:
+	Components: Component types to patch.
+	callbacks: callbacks to call for each Component type.
+
+Returns: This instance.
+*/
+template patch(Component, callbacks...)
+{
+	ref EntityBuilder patch(EntityBuilder)(return ref EntityBuilder entityBuilder)
+	{
+		with(entityBuilder) entityManager.patchComponent!(Component, callbacks)(entity);
+		return entityBuilder;
+	}
+}
+
+/**
  * Helper struct to perform multiple action sequences.
  */
 struct EntityBuilder(EntityManagerT)
@@ -65,26 +85,6 @@ public:
 
 		entityManager.emplaceComponent!Components(entity, forward!args);
 		return this;
-	}
-
-	/**
-	Patch a component of an entity.
-
-	Attempting to use an invalid entity leads to undefined behavior.
-
-	Params:
-		Components: Component types to patch.
-		callbacks: callbacks to call for each Component type.
-
-	Returns: This instance.
-	*/
-	template patch(Components...)
-	{
-		EntityBuilder patch(Callbacks...)(Callbacks callbacks)
-		{
-			entityManager.patchComponent!Components(entity, callbacks);
-			return this;
-		}
 	}
 
 	/**
