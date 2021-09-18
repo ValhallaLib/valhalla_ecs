@@ -87,26 +87,17 @@ package class Storage(Component, Fun = void delegate() @safe)
 
 	Returns: A pointer to the patched component.
 	*/
-	Component* patch(Fn : void delegate(ref Component))(in Entity entity, Fn fn)
+	Component* patch(Callback)(in Entity entity, Callback callback)
 		in (contains(entity))
 	{
+		import std.traits : Parameters, ReturnType;
+		enum isCallback(Fun) = is(ReturnType!Fun function(Parameters!Fun) : void function(ref Component));
+		static assert(isCallback!Callback);
+
 		Component* component = &_components[_sparsedEntities[entity]];
-		fn(*component);
+		callback(*component);
 		onUpdate.emit(entity, *component);
 		return component;
-	}
-
-
-	/// Ditto
-	Component* patch(Fn : void function(ref Component))(in Entity entity, Fn fn)
-	{
-		import std.functional : toDelegate;
-
-		// workarround for toDelegate bug not working with @safe functions
-		static if (is(Fn : void function(ref Component) @safe))
-			return patch(entity, (() @trusted => fn.toDelegate())());
-		else
-			return patch(entity, fn.toDelegate());
 	}
 
 
