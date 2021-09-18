@@ -340,24 +340,16 @@ public:
 
 	Returns: A pointer or `Tuple` of pointers to the patched components.
 	*/
-	template patchComponent(Components...)
+	Component* patchComponent(Component, Callbacks...)(in Entity entity, Callbacks callbacks)
+		if (Callbacks.length)
+		in (validEntity(entity))
 	{
-		import std.meta : staticMap;
+		Component* component;
 
-		auto patchComponent(Callbacks...)(in Entity entity, Callbacks callbacks)
-			if (Components.length == Callbacks.length)
-			in (validEntity(entity))
-		{
-			staticMap!(PointerOf, Components) C;
+		static foreach (i, callback; callbacks)
+			component = _assureStorage!Component.patch(entity, callbacks[i]);
 
-			static foreach (i, Component; Components)
-				C[i] = _assureStorage!Component.patch(entity, callbacks[i]);
-
-			static if (Components.length == 1)
-				return C[0];
-			else
-				return tuple(C);
-		}
+		return component;
 	}
 
 
@@ -1240,12 +1232,13 @@ private:
 	assert(!__traits(compiles, entity.patch!int((int) {})));
 	assert(!__traits(compiles, entity.patch!int((char) {})));
 	assert(!__traits(compiles, entity.patch!int((ref int i) => i++)));
-	assert(!__traits(compiles, entity.patch!int((ref int) {}, (ref int) {})));
+	assert( __traits(compiles, entity.patch!int((ref int) {}, (ref int) {})));
 
 	entity.patch!int((ref int i) { i = 45; });
 
 	assert(*integral == 45);
-	assert(world.patchComponent!(int, string)(entity, (ref int) {}, (ref string s) {}) == tuple(integral, str));
+	assert(world.patchComponent!(int)(entity, (ref int) {}) == integral);
+	assert(world.patchComponent!(string)(entity, (ref string s) {}) == str);
 
 	assert(*world.replaceComponent!int(entity, 3) == 3);
 	assert(*world.resetComponent!int(entity) == int.init);
