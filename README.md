@@ -1,6 +1,13 @@
 # Valhalla ECS - VECS
 An Entity Component System library written in D.
 
+---
+
+[![codecov](https://codecov.io/gh/ValhallaLib/valhalla_ecs/branch/master/graph/badge.svg?token=5K0BE7HG2X)](https://codecov.io/gh/ValhallaLib/valhalla_ecs)
+![workflow](https://github.com/ValhallaLib/valhalla_ecs/actions/workflows/workflow.yml/badge.svg)
+
+---
+
 ## Brief
 An entity component system is a pattern used mostly in gamedev. The objective is
 to classify everything in a game as an `Entity`. `Components` are just data
