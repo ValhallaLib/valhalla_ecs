@@ -250,7 +250,7 @@ public:
 	auto world = new EntityManager();
 
 	int result;
-	world.onConstruct!int.connect((in Entity, ref int i) { result = i; });
+	world.onConstruct!int.connect!((in Entity, ref i) { result = i; });
 
 	world.entity.emplace!int(5);
 
@@ -276,7 +276,7 @@ public:
 	auto world = new EntityManager();
 
 	int result;
-	world.onUpdate!int.connect((in Entity, ref int i) { result = i; });
+	world.onUpdate!int.connect!((in Entity, ref i) { result = i; });
 
 	world.entity
 		.add!int
@@ -304,7 +304,7 @@ public:
 	auto world = new EntityManager();
 
 	int result;
-	world.onRemove!int.connect((in Entity, ref int i) { result = i; });
+	world.onRemove!int.connect!((in Entity, ref i) { result = i; });
 
 	world.removeComponent!int(world.entity.emplace!int(5));
 
