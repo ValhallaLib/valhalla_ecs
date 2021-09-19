@@ -139,7 +139,7 @@ void main()
 {
 	auto world = new EntityManagerT!(void delegate() @nogc);
 
-	world.onConstruct!int.connect((ref int i) {}); // @nogc callback
+	world.onConstruct!int.connect!((const ref i) {}); // @nogc callback
 	world.entity.emplace!int(4); // this won't be @nogc
 }
 ```
@@ -154,7 +154,7 @@ void main()
 {
 	auto world = new EntityManagerT!(void delegate() @safe pure nothrow);
 
-	world.onConstruct!int((ref int i) {});
+	world.onConstruct!int.connect!((const ref i) {});
 	auto entity = world.entity.emplace!int(4);
 
 	assert(*world.get!int(entity) == 4);
